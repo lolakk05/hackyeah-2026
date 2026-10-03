@@ -1,5 +1,11 @@
 # Test your FastAPI endpoints
 
+### Ask the local model
+POST http://127.0.0.1:8001/guide
+Content-Type: application/json
+
+{"question":"Wymień 3 ciekawe miejsca do zobaczenia na Wawelu w Krakowie. Odpowiedz krótko."}
+
 GET http://127.0.0.1:8000/
 Accept: application/json
 

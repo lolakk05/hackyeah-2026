@@ -1,9 +1,21 @@
 [project]
 name = "ai-service"
 version = "0.1.0"
-description = "Add your description here"
+description = "FastAPI endpoint for questions to a local Ollama model"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.142.2",
+    "httpx>=0.28.1",
+    "ollama>=0.6.3",
+    "pydantic>=2.13.5",
     "uvicorn>=0.54.0",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
