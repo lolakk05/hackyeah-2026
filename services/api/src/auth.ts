@@ -22,5 +22,9 @@ export const auth = betterAuth({
     requireEmailVerification: false,
   },
 
-  trustedOrigins: ["http://localhost:8081"],
+  trustedOrigins: [
+  "http://localhost:8081",
+  "http://localhost:3000",
+  "https://easeful-sulphate-lethargic.ngrok-free.dev",
+],
 });
