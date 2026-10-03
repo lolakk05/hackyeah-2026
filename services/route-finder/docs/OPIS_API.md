@@ -184,7 +184,8 @@ ograniczonych. Znaczenie historycznego przykładu opisuje [spis dokumentacji](RE
 | `scripts/smoke_plan.py` | Opcjonalny test planera z żywym OSRM. |
 | `tests/conftest.py` | Tymczasowe POI i odpowiedzi transportu testowego. |
 | `tests/test_api.py` | Integracja HTTP, routing, budżet, cache, błędy i współbieżność. |
-| `tests/test_spatial.py` | Odległości, walidacja zbioru, ścieżki i import danych. |
+| `tests/test_spatial.py` | Odległości, walidacja zbioru, ścieżki i metadane importu. |
+| `tests/test_import_pois.py` | Promień selekcji, filtrowanie atrakcji, duplikaty i bezpieczny zapis. |
 | `tests/__init__.py` | Oznaczenie pakietu testów. |
 | `hardcoded-zgloszenie/` | Niezależne API symulacji; własną strukturę opisuje jego README. |
 | `pyproject.toml`, `uv.lock` | Zależności, konfiguracja narzędzi i przypięte wersje. |

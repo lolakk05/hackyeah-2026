@@ -1,126 +1,134 @@
-# Lokalny zbiór turystycznych POI Krakowa
+# Wybrane atrakcje ścisłego centrum Krakowa
 
-[Spis dokumentacji](README.md). Ten plik dotyczy wyłącznie źródła, zawartości,
-transformacji i utrzymania danych. Modele HTTP są w [API.md](API.md), a filtrowanie
-POI przez planer i indeksowanie w [OPIS_API.md](OPIS_API.md).
+[Spis dokumentacji](README.md). Tutaj utrzymujemy zakres zbioru, reguły selekcji,
+pochodzenie i import. Modele HTTP są w [API.md](API.md), indeksowanie i wybór trasy
+w [OPIS_API.md](OPIS_API.md).
 
-## Snapshot dostarczony z serwisem
+## Aktualny zbiór
 
-- **3090 obiektów OSM**, 16 głównych kategorii.
-- Pobranie: **2026-10-03 11:47:45 UTC**.
-- Data bazy zgłoszona przez Overpass: **2026-10-03 11:46:02 UTC**.
-- Źródło: `https://overpass-api.de/api/interpreter`.
-- Granica miasta: [relacja OSM 449696](https://www.openstreetmap.org/relation/449696).
-- Plik: `krakow_pois.geojson`. Metadane są również dostępne przez `GET /dataset`.
+`krakow_pois.geojson` zawiera **116 POI** wybranych z wcześniejszych 3090 obiektów OSM.
+Każdy zapisany punkt leży **najwyżej 1500 m od środka Rynku Głównego**:
+`latitude=50.0617`, `longitude=19.9373`. Najdalszy punkt jest oddalony o około 1497,34 m.
 
 | Kategoria | Liczba |
 |---|---:|
-| historic | 1734 |
-| artwork | 290 |
-| attraction | 266 |
-| park | 233 |
-| place_of_worship | 206 |
-| museum | 91 |
-| viewpoint | 63 |
-| cave_entrance | 38 |
-| gallery | 38 |
-| nature_reserve | 37 |
-| theatre | 32 |
-| arts_centre | 31 |
-| garden | 22 |
-| theme_park | 7 |
-| planetarium | 1 |
-| zoo | 1 |
+| museum | 41 |
+| place_of_worship | 45 |
+| historic | 27 |
+| theatre | 2 |
+| cave_entrance | 1 |
 
-Liczby dotyczą tego eksportu. Po odświeżeniu wiążące są metadane nowego pliku.
+Pozostają m.in. Sukiennice, Wawel, Bazylika Mariacka, Barbakan, Brama Floriańska,
+Rynek Podziemny, Smok Wawelski i Smocza Jama. Nie ma kategorii parków, ogrodów,
+przypadkowych galerii ani ogólnej kolekcji dzieł sztuki. Wybrane rozpoznawalne rzeźby
+trafiają do `historic`, np. Smok i Eros spętany; ich oryginalne tagi OSM są zachowane.
 
-## Co oznacza zakres „wszystkie miejsca”
+Limit dotyczy **odległości sferycznej punktu POI**, nie długości spaceru. Nie ogranicza
+pozycji użytkownika ani całej geometrii wyliczonej przez OSRM. Trasa może wychodzić
+poza koło, mimo że jej atrakcje znajdują się wewnątrz.
 
-Eksport pobiera **wszystkie obiekty zwrócone przez poniższe zapytanie**, bez limitu
-liczby rekordów i bez ręcznego wyboru kilku najpopularniejszych miejsc. Obejmuje
-muzea, galerie, atrakcje, punkty widokowe, sztukę w przestrzeni publicznej, obiekty
-historyczne, świątynie, teatry, centra sztuki, parki, rezerwaty, wybrane ogrody i jaskinie.
-Nie obejmuje automatycznie hoteli, restauracji, sklepów ani zwykłych nienazwanych ogrodów.
+## Reguły selekcji
 
-To nie jest gwarancja kompletności wszystkich realnych atrakcji. OSM jest aktualizowane
-społecznościowo: obiekty mogą nie mieć tagów turystycznych, być nieopisane, nieaktualne,
-czasowo zamknięte albo występować jako kilka osobnych obiektów. Sam fakt występowania
-w OSM nie potwierdza dostępności turystycznej. Definicja atrakcji jest tu jawnie oparta
-na tagach; można poszerzyć selekcję w importerze i ponowić eksport.
+Jedyną implementacją reguł jest [scripts/import_pois.py](../scripts/import_pois.py).
+Selekcja ma wersję `central-attractions-v1` i obowiązuje zarówno przy pobieraniu
+z Overpass, jak i czyszczeniu lokalnego GeoJSON.
 
-## Zapytanie Overpass
+1. Odrzuć współrzędne poza promieniem; sprawdź również centra poligonów i relacji.
+   Żaden wyjątek redakcyjny nie może ominąć tego warunku.
+2. Wymagaj niepustego `name:pl` lub `name`. Usuń obiekty z `access=private/no`,
+   `foot=no`, `closed=yes`, `disused=yes`, `abandoned=yes` lub `demolished=yes`.
+3. Wyklucz parki, ogrody, rezerwaty, malowidła, graffiti oraz tablice pamiątkowe.
+4. Zachowaj wybrane rodzaje obiektów:
+   - muzea z odnośnikiem `wikidata` lub `wikipedia` oraz jawnie wskazane wyjątki;
+   - świątynie z takim odnośnikiem i dodatkowym oznaczeniem zabytku, atrakcji,
+     katedry lub synagogi;
+   - zamki, bramy, wieże, ruiny i stanowiska archeologiczne z odnośnikiem;
+   - historyczne budynki oznaczone jednocześnie jako atrakcja i obiekt dziedzictwa;
+   - pomniki z wybranymi identyfikatorami `MONUMENT_WIKIDATA`;
+   - konkretne atrakcje z `CURATED_POIS`, m.in. Sukiennice, Smok, dwa teatry i Smocza Jama.
+5. Usuń powtórzone ID. Scal bliskie reprezentacje tego samego miejsca: wspólny
+   `wikidata`/`wikipedia` do 100 m albo ta sama nazwa do 50 m. Preferuj obiekt
+   budynku, następnie relację. Oddalone oddziały i odrębne wystawy pozostają osobne.
 
-`3600449696` to identyfikator obszaru utworzonego z relacji miasta `449696`.
-Wybór według granicy administracyjnej obejmuje Kraków, a nie prostokąt z okolicznymi gminami.
+W pierwszym czyszczeniu odrzucono 2064 obiekty poza promieniem, 909 niespełniających
+selekcji i jeden dodatkowy marker Wawelu. Kategorie są nadawane ponownie na podstawie
+tagów; stara kategoria nie pozwala obejść filtrów.
 
-```overpass
-[out:json][timeout:180];
-area(3600449696)->.city;
-(
-  nwr(area.city)["tourism"~"^(attraction|museum|gallery|viewpoint|zoo|theme_park|aquarium|artwork)$"];
-  nwr(area.city)["historic"]["historic"!="no"];
-  nwr(area.city)["amenity"~"^(place_of_worship|theatre|arts_centre|planetarium)$"];
-  nwr(area.city)["leisure"~"^(park|nature_reserve)$"];
-  nwr(area.city)["leisure"="garden"]["name"];
-  nwr(area.city)["leisure"="garden"]["garden:type"~"^(botanical|arboretum)$"];
-  nwr(area.city)["natural"="cave_entrance"];
-);
-out center tags;
-```
+Odnośnik do Wikipedii/Wikidanych jest sygnałem pomocniczym, a nie obiektywną oceną
+atrakcyjności. To selekcja oparta na jawnych regułach i wyjątkach, nie lista wszystkich
+atrakcji ani ranking popularności. Aby dopuścić ważne miejsce z niepełnymi tagami,
+dodaj wpis do `CURATED_POIS` i odpowiedni test. Nie rozszerzaj przy tym promienia.
+Po zmianie reguł zaktualizuj `SELECTION_VERSION` i ponownie uruchom import.
 
-Sposób selekcji obiektów przecinających granicę wynika z semantyki `area` w Overpass.
-Środek większego obiektu/relacji nie musi być wejściem ani leżeć na dostępnej ścieżce.
+## Pochodzenie i metadane
 
-## Konwersja do punktów i kategorie
+Obecny plik został **przefiltrowany lokalnie**, bez nowego pobrania danych:
 
-- ID zachowuje typ i numer OSM, np. `way-123`. Duplikaty dokładnie tego samego ID
-  w odpowiedzi są scalane. Różne ID nie są automatycznie łączone po nazwie.
-- Węzły (`node`) zachowują oryginalną lokalizację.
-- Drogi/poligony (`way`) i relacje używają `center` zwróconego przez Overpass:
-  środka prostokąta obwiedni. To punkt reprezentacyjny, nie środek geometryczny
-  powierzchni ani potwierdzone wejście. Oznacza go `coordinate_source=bounds_center`.
-- Nazwa pochodzi z `name:pl`, potem `name`. Brak obu tworzy nazwę kategorii z ID.
-- Pierwszeństwo kategorii: pasujący `tourism`, następnie `historic`, wybrane `amenity`,
-  następnie `leisure` i jaskinia. Oryginalne tagi pozostają w `properties.tags`.
+- oryginalny eksport OSM: 2026-10-03 11:47:45 UTC;
+- data bazy podana przez Overpass: 2026-10-03 11:46:02 UTC;
+- źródło: `https://overpass-api.de/api/interpreter`;
+- pierwotny obszar źródłowy: granica Krakowa, relacja OSM 449696.
 
-Tagi nie są potwierdzeniem aktualnych godzin otwarcia, warunków wstępu lub pełnej
-dostępności. Brak tagu o schodach albo wózku nie dowodzi braku bariery. Reguły wyboru
-POI i zależność od profilu grafu opisuje [architektura](OPIS_API.md).
+`fetched_at` i `osm_base_timestamp` zachowują datę źródła. `filtered_at` oznacza
+czas zastosowania selekcji. `source_query` i `source_boundary` opisują dawny eksport,
+a nie obecny zakres. Środek, promień, wersja reguł, statystyki i odrzucone rekordy
+znajdują się w `metadata`, dostępnym także przez endpoint zbioru.
 
-## Trzy odrębne źródła geometrii
+Przy nowym imporcie zapytanie `QUERY` pobiera kandydatów przez Overpass `around`
+oraz jawne ID wyjątków. Dokładne zapytanie trafia do `metadata.query`. Ostateczny
+warunek promienia jest zawsze liczony lokalnie, również dla wyjątków i środków
+obiektów powierzchniowych. Nie opieramy gwarancji promienia wyłącznie na Overpass.
 
-- `krakow_pois.geojson` zawiera punkty atrakcji, a nie sieć chodników i ulic.
-- Przebieg trasy, manewry i dopasowane punkty pochodzą z grafu wybranego backendu OSRM.
-  Mogą mieć inną datę aktualizacji niż lokalny katalog POI. Odświeżenie POI nie przebudowuje grafu.
-- `hardcoded-zgloszenie/data/rynek_wawel_routes.json` przechowuje dwa wcześniej
-  pobrane warianty demo; nie jest źródłem tras głównego planera.
+## Pobranie i ponowne filtrowanie
 
-Własne grafy bez schodów i dla wózka muszą zawierać reguły dla odcinków i barier;
-sam plik turystycznych POI nie wystarcza do ich przygotowania. API raportuje
-dopasowanie pozycji do sieci zgodnie z [kontraktem](API.md); nie potwierdza wejścia
-na teren atrakcji ani możliwości pokonania przestrzeni pomiędzy markerem i waypointem.
-
-## Aktualizacja i własne dane
+Z katalogu serwisu, pobranie aktualnych kandydatów z OSM i zastosowanie selekcji:
 
 ```powershell
 uv run python scripts/import_pois.py
 ```
 
-Można wskazać `--endpoint` oraz `--output`. Import jest operacją ręczną, niezależną
-od startu serwisu. Odpowiedź z `remark` (np. timeout części zapytania), pustą listą lub
-brakującą geometrią jest odrzucana. Najpierw zapisywany jest plik tymczasowy, a dopiero
-po sukcesie podmieniany docelowy. Po zmianie danych zrestartuj API, aby przebudować RAM.
+Czyszczenie istniejącego zbioru bez dostępu do sieci:
 
-Własny plik musi być `FeatureCollection` z tablicą `features`. Każdy obiekt wymaga
-`type=Feature`, `geometry.type=Point`, dwóch poprawnych współrzędnych `[lon,lat]`
-i niepustego `properties.category`. `name`, `id`, tagi i metadane są opcjonalne.
-Bez ID nadawany jest indeks w tablicy, ale stabilne ID są zalecane. Powtarzające się
-ID, geometrie inne niż Point i niepoprawne zakresy współrzędnych blokują start serwisu.
+```powershell
+uv run python scripts/import_pois.py --input krakow_pois.geojson
+```
+
+Zapis do osobnego pliku do przeglądu:
+
+```powershell
+uv run python scripts/import_pois.py --input krakow_pois.geojson --output preview.geojson
+```
+
+`--endpoint` zmienia serwer Overpass w trybie pobierania; `--output` wskazuje cel
+w obu trybach. Nie ma flagi powiększającej promień. Tryb lokalny nie odzyska obiektów
+usuniętych wcześniej — po rozszerzeniu selekcji pobierz dane ponownie.
+
+Importer odrzuca częściową odpowiedź z `remark`, brak geometrii, nieprawidłowe
+współrzędne i pusty wynik selekcji. Walidacja kończy się przed zapisem; plik docelowy
+jest podmieniany dopiero po utworzeniu kompletnego pliku tymczasowego.
+**Po zmianie pliku zrestartuj API**, aby odświeżyć indeks w RAM i cache planera.
+
+## Współrzędne i ograniczenia danych
+
+ID zachowuje typ i numer OSM. Węzły mają oryginalne położenie; `way` i `relation`
+używają środka prostokąta obwiedni zwróconego przez Overpass, oznaczonego jako
+`coordinate_source=bounds_center`. To punkt reprezentacyjny, nie zweryfikowane wejście.
+Promień jest sprawdzany dla tego punktu, nie całego obrysu budynku.
+
+Plik POI nie zawiera sieci ulic. Przebieg i manewry pochodzą z osobnego grafu OSRM;
+odświeżenie POI nie przebudowuje grafu. Osobne demo zgłoszeń ma własny snapshot tras.
+Brak informacji o schodach lub zamknięciu nie dowodzi braku bariery. Godziny otwarcia
+i dostępność nie zostały zweryfikowane terenowo.
+
+Własny zbiór ładowany przez API wymaga `FeatureCollection`, obiektów `Feature`
+z geometrią `Point`, współrzędnych `[longitude, latitude]` i niepustej kategorii.
+Nazwa, ID, tagi i metadane są opcjonalne dla samego loadera; bez ID nadawany jest
+indeks. Importer jest bardziej restrykcyjny i wymaga nazw oraz tagów potrzebnych
+do selekcji. Ustawienie `POI_FILE` na inny, nieprzefiltrowany plik omija politykę
+importu — loader API sam nie nakłada ograniczenia do centrum.
 
 ## Atrybucja
 
-Dane © OpenStreetMap contributors, [Open Database License](https://www.openstreetmap.org/copyright).
-Zachowuj atrybucję i metadane przy dalszym udostępnianiu pliku. Na mapie użytkownika
-pokaż atrybucję OSM; serwer routingu wymaga również linku do
-[poprawiania mapy](https://www.openstreetmap.org/fixthemap).
-Dokumentacja selekcji: [Overpass QL](https://wiki.openstreetmap.org/wiki/Overpass_API/Overpass_QL).
+Dane © OpenStreetMap contributors, [ODbL](https://www.openstreetmap.org/copyright).
+Zachowuj metadane i atrybucję przy udostępnianiu. Na mapie pokaż atrybucję OSM
+i link do [poprawiania mapy](https://www.openstreetmap.org/fixthemap).

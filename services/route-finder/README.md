@@ -59,15 +59,11 @@ możliwej trasy w całym Krakowie. Czas jest szacunkiem profilu OSRM, nie gwaran
 
 ## Dane POI i ich kompletność
 
-Plik zawiera eksport obiektów OpenStreetMap w granicy Krakowa. Dokładny zakres,
-liczba obiektów, data eksportu, data bazy OSM i zapytanie Overpass znajdują się
-w `metadata` pliku oraz pod `/dataset`. Szczegóły: [docs/DATA.md](docs/DATA.md).
-
-Nie ma kompletnego, obiektywnego rejestru „wszystkich miejsc turystycznych”. Ten zbiór
-obejmuje wszystkie obiekty zwrócone przez udokumentowany filtr OSM, a nie gwarantowany
-spis wszystkich atrakcji istniejących w rzeczywistości. Obiekty powierzchniowe mają
-środek prostokąta obwiedni, nie zweryfikowane wejście. OSRM może dopasować POI do
-ścieżki w odległości do 100 m; przesunięcia są zwracane w `snapped_waypoints`.
+Plik zawiera wybrane atrakcje centrum, wszystkie w promieniu maksymalnie 1,5 km
+od środka Rynku. Importer odrzuca m.in. parki, malowidła i tablice pamiątkowe.
+Reguły selekcji, statystyki oraz pochodzenie danych: [docs/DATA.md](docs/DATA.md).
+Punkty reprezentujące budynki nie są zweryfikowanymi wejściami; limit dotyczy
+lokalizacji POI, a nie całego przebiegu trasy OSRM.
 
 Odświeżenie pliku (ręcznie, następnie restart API):
 
