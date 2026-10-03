@@ -2,7 +2,9 @@ import "dotenv/config";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "@better-auth/prisma-adapter";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../generated/prisma/client';
+import { admin } from "better-auth/plugins";
+import { adminClient } from "better-auth/client/plugins";
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL,
@@ -26,5 +28,10 @@ export const auth = betterAuth({
   "http://localhost:8081",
   "http://localhost:3000",
   "https://easeful-sulphate-lethargic.ngrok-free.dev",
-],
+    ],
+
+  plugins: [
+    admin(),
+    adminClient()
+  ]
 });
