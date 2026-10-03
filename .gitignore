@@ -26,3 +26,6 @@ docker-compose.override.yml
 **/__pycache__/
 **/*.pyc
 **/.venv/
+node_modules/
+dist/
+.env

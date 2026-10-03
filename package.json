@@ -1,5 +1,14 @@
 {
   "dependencies": {
+    "@prisma/orm-postgres": "^8.0.0-rc.14",
+    "dotenv": "^18.0.5"
+  },
+  "scripts": {
+    "contract:emit": "prisma contract emit"
+  },
+  "devDependencies": {
+    "@prisma/cli-engine": "^0.6.2",
+    "@types/node": "^26.6.4",
     "prisma": "^8.0.0-rc.19"
   }
 }
