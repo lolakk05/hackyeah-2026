@@ -1,0 +1,55 @@
+:root {
+  font-family: 'Spline Sans', Inter, ui-sans-serif, system-ui, sans-serif;
+  color: #f2f5fa;
+  background: #0f1724;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-optical-sizing: auto;
+  font-weight: 400;
+
+  --ink: #f2f5fa;
+  --muted: #93a2b8;
+  --line: #2a3850;
+  --paper: #1a2537;
+  --green: #3ddc97;
+  --green-soft: #173a36;
+  --amber: #ffb547;
+  --amber-soft: #382f25;
+  --red: #ff6b6b;
+  --red-soft: #3b2933;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 360px;
+  min-height: 100vh;
+  margin: 0;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid #ffb547;
+  outline-offset: 2px;
+}
+
+::selection {
+  background: #51402b;
+}
