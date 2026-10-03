@@ -1,0 +1,98 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  userId    String   @id @default(uuid()) @map("user_id")
+  name      String
+  email     String
+  password  String
+  score     Int      @default(0)
+  money     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reports          Report[]
+  userRewards      UserReward[]
+  userAchievements UserAchievement[]
+}
+
+model Reward {
+  rewardId    String  @id @default(uuid())
+  name        String
+  description String
+  price       Int
+  active      Boolean
+  quantity    Int?
+
+  userRewards UserReward[]
+}
+
+model Place {
+  placeId      String             @id @default(uuid())
+  photo        String
+  openingHours PlaceOpeningHour[]
+}
+
+model PlaceOpeningHour {
+  id         String @id @default(uuid())
+  placeId    String
+  dayOfWeek  Int
+  openTime   String
+  closeTime  String
+  isClosed   Boolean @default(false)
+
+  place Place @relation(fields: [placeId], references: [placeId], onDelete: Cascade)
+
+  @@unique([placeId, dayOfWeek])
+}
+
+model Achievement {
+  achievementId String @id @default(uuid())
+  name          String
+  description   String
+  reward        Int
+  target        Int
+  image         String
+
+  userAchievements UserAchievement[]
+}
+
+model Report {
+  reportId  String @id @default(uuid())
+  latitude  Float
+  longitude Float
+  userId    String
+
+  user User @relation(fields: [userId], references: [userId])
+}
+
+model UserAchievement {
+  userAchievementId String   @id @default(uuid())
+  userId            String
+  achievementId     String
+  unlockedAt        DateTime @default(now())
+
+  user        User        @relation(fields: [userId], references: [userId])
+  achievement Achievement @relation(fields: [achievementId], references: [achievementId])
+}
+
+model UserReward {
+  userRewardId String   @id @default(uuid())
+  userId       String
+  rewardId     String
+  purchasedAt  DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [userId])
+  reward Reward @relation(fields: [rewardId], references: [rewardId])
+}
