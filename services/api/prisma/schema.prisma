@@ -4,8 +4,7 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -40,7 +39,7 @@ model Reward {
 
 model Place {
   placeId      String             @id @default(uuid())
-  photo        String
+  photos        String[]
   openingHours PlaceOpeningHour[]
 }
 
@@ -48,8 +47,8 @@ model PlaceOpeningHour {
   id         String @id @default(uuid())
   placeId    String
   dayOfWeek  Int
-  openTime   String
-  closeTime  String
+  openTime   String?
+  closeTime  String?
   isClosed   Boolean @default(false)
 
   place Place @relation(fields: [placeId], references: [placeId], onDelete: Cascade)
