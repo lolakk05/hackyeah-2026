@@ -12,7 +12,7 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('HackYeah')
-    .setDescription('Swagger')
+    .setDescription('Fistaszkowy Swagger')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
