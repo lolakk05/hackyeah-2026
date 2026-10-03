@@ -75,7 +75,7 @@ def create_app(
         return {
             "max_intermediate_stops": 10,
             "default_intermediate_stops": 5,
-            "duration_minutes": {"min": 5, "max": 240},
+            "duration_minutes": {"min": 5, "max": 360},
             "origin_snap_radius_m": config.origin_snap_radius_m,
             "navigation_steps": True,
             "profiles": {

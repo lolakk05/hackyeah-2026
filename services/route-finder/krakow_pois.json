@@ -1,0 +1,466 @@
+[
+  {
+    "name": "Muzeum Dominikanów",
+    "category": "museum"
+  },
+  {
+    "name": "Brama Rzeźnicza w Krakowie",
+    "category": "historic"
+  },
+  {
+    "name": "Muzeum Geologiczne ING PAN",
+    "category": "museum"
+  },
+  {
+    "name": "Rynek Podziemny",
+    "category": "museum"
+  },
+  {
+    "name": "Pałac Biskupa Erazma Ciołka",
+    "category": "museum"
+  },
+  {
+    "name": "Józef Dietl",
+    "category": "historic"
+  },
+  {
+    "name": "Stanisław Wyspiański",
+    "category": "historic"
+  },
+  {
+    "name": "Ignacy Jan Paderewski",
+    "category": "historic"
+  },
+  {
+    "name": "Muzeum Ogrodu Botanicznego UJ",
+    "category": "museum"
+  },
+  {
+    "name": "Eros spętany",
+    "category": "historic"
+  },
+  {
+    "name": "Piotr Skrzynecki",
+    "category": "historic"
+  },
+  {
+    "name": "Muzeum Stanisława Wyspiańskiego",
+    "category": "museum"
+  },
+  {
+    "name": "Mikołaj Kopernik",
+    "category": "historic"
+  },
+  {
+    "name": "Piotr Skarga",
+    "category": "historic"
+  },
+  {
+    "name": "Pomnik Grunwaldzki",
+    "category": "historic"
+  },
+  {
+    "name": "Smocza Jama",
+    "category": "cave_entrance"
+  },
+  {
+    "name": "Smok Wawelski",
+    "category": "historic"
+  },
+  {
+    "name": "Pies Dżok",
+    "category": "historic"
+  },
+  {
+    "name": "Pomnik Marszałka Józefa Piłsudskiego i Legionistów",
+    "category": "historic"
+  },
+  {
+    "name": "Jan Matejko",
+    "category": "historic"
+  },
+  {
+    "name": "Muzeum Paleobotaniczne UJ",
+    "category": "museum"
+  },
+  {
+    "name": "Muzeum Katedralne im. Jana Pawła II",
+    "category": "museum"
+  },
+  {
+    "name": "Muzeum Geologiczne WGGiOŚ AGH",
+    "category": "museum"
+  },
+  {
+    "name": "Galeria Sztuki Polskiej XIX wieku",
+    "category": "museum"
+  },
+  {
+    "name": "Muzeum i Archiwum Marii Angeli Truszkowskiej",
+    "category": "museum"
+  },
+  {
+    "name": "Ulica Pomorska",
+    "category": "museum"
+  },
+  {
+    "name": "Muzeum Farmacji UJ",
+    "category": "museum"
+  },
+  {
+    "name": "Muzeum Uniwersytetu Jagiellońskiego",
+    "category": "museum"
+  },
+  {
+    "name": "Pałac Krzysztofory",
+    "category": "museum"
+  },
+  {
+    "name": "Kamienica Szołayskich",
+    "category": "museum"
+  },
+  {
+    "name": "Muzeum Przyrodnicze PAN",
+    "category": "museum"
+  },
+  {
+    "name": "Żydowskie Muzeum Galicja",
+    "category": "museum"
+  },
+  {
+    "name": "Bunkier Sztuki",
+    "category": "museum"
+  },
+  {
+    "name": "Muzeum Witrażu w Krakowie",
+    "category": "museum"
+  },
+  {
+    "name": "Żywe Muzeum Obwarzanka",
+    "category": "museum"
+  },
+  {
+    "name": "Muzeum Anatomii",
+    "category": "museum"
+  },
+  {
+    "name": "Muzeum AGH",
+    "category": "museum"
+  },
+  {
+    "name": "Cerkiew Zaśnięcia Najświętszej Marii Panny",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Wawel Zaginiony",
+    "category": "museum"
+  },
+  {
+    "name": "Skarbiec Koronny",
+    "category": "museum"
+  },
+  {
+    "name": "Barbakan",
+    "category": "museum"
+  },
+  {
+    "name": "Muzeum Fotografii w Krakowie",
+    "category": "museum"
+  },
+  {
+    "name": "Muzeum Armii Krajowej",
+    "category": "museum"
+  },
+  {
+    "name": "Muzeum Archeologiczne",
+    "category": "museum"
+  },
+  {
+    "name": "Collegium Maius",
+    "category": "historic"
+  },
+  {
+    "name": "Zamek Królewski na Wawelu",
+    "category": "historic"
+  },
+  {
+    "name": "Pałac Zbaraskich",
+    "category": "historic"
+  },
+  {
+    "name": "Pałac Wielopolskich",
+    "category": "historic"
+  },
+  {
+    "name": "Kościół pw. Świętych Apostołów Piotra i Pawła",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Kościół Świętego Marcina",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Domek Loretański",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Muzeum Narodowe w Krakowie",
+    "category": "museum"
+  },
+  {
+    "name": "Muzeum Książąt Czartoryskich w Krakowie",
+    "category": "museum"
+  },
+  {
+    "name": "Kościół pw. Świętego Krzyża",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Kościół pw. Matki Boskiej Śnieżnej",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Kościół pw. Świętej Barbary",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Kościół pw. Świętego Tomasza Apostoła",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Synagoga Wolfa Poppera",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Stara Synagoga",
+    "category": "museum"
+  },
+  {
+    "name": "Bazylika Najświętszego Serca Pana Jezusa",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Pałac Rzewuskich w Krakowie",
+    "category": "historic"
+  },
+  {
+    "name": "Kościół pw. Przemienienia Pańskiego",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Dom Jana Matejki",
+    "category": "museum"
+  },
+  {
+    "name": "Teatr im. Juliusza Słowackiego",
+    "category": "theatre"
+  },
+  {
+    "name": "Kościół pw. Świętego Franciszka z Asyżu w Krakowie",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Arsenał Miejski",
+    "category": "historic"
+  },
+  {
+    "name": "Kościół pw. Świętego Idziego",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Bazylika Nawiedzenia Najświętszej Maryi Panny",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Kościół Zwiastowania Najświętszej Maryi Panny",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Kościół pw. Niepokalanego Poczęcia Najświętszej Maryi Panny",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Sukiennice",
+    "category": "historic"
+  },
+  {
+    "name": "Dawny Hotel \"Cracovia\"",
+    "category": "museum"
+  },
+  {
+    "name": "Kościół pw. Świętego Szczepana",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Muzeum Sztuki i Techniki Japońskiej Manggha",
+    "category": "museum"
+  },
+  {
+    "name": "Kaplica pw. Świętego Piotra i Świętego Pawła",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Bazylika Przenajświętszej Trójcy",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Wieża Ratuszowa",
+    "category": "museum"
+  },
+  {
+    "name": "Brama Wazów",
+    "category": "historic"
+  },
+  {
+    "name": "Bazylika Wniebowzięcia Najświętszej Maryi Panny",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Pałac Biskupi",
+    "category": "historic"
+  },
+  {
+    "name": "Bazylika Świętego Floriana",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Kościół pw. Świętego Andrzeja",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Kościół pw. Świętego Wojciecha Biskupa i Męczennika",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Kościół pw. Niepokalanego Serca Najświętszej Marii Panny",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Kościół pw. Świętej Teresy od Jezusa i Świętego Jana od Krzyża",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Cerkiew pw. Podwyższenia Krzyża Świętego",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Celestat",
+    "category": "museum"
+  },
+  {
+    "name": "Bazylika Świętego Michała Archanioła i Świętego Stanisława Biskupa",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Bazylika Bożego Ciała",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Synagoga Remuh",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Collegium Śniadeckiego",
+    "category": "historic"
+  },
+  {
+    "name": "Adam Mickiewicz",
+    "category": "historic"
+  },
+  {
+    "name": "Kościół pw. Świętej Katarzyny Aleksandryjskiej",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Kościół pw. Świętej Agnieszki",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Pałac Sztuki",
+    "category": "museum"
+  },
+  {
+    "name": "Kościół pw. Świętego Marka",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Kościół pw. Świętego Kazimierza Królewicza",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Brama Floriańska",
+    "category": "historic"
+  },
+  {
+    "name": "Kościół pw. Świętej Anny",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Narodowy Stary Teatr imienia Heleny Modrzejewskiej",
+    "category": "theatre"
+  },
+  {
+    "name": "Kościół pw. Świętego Jana Chrzciciela i Świętego Jana Ewangelisty",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Kościół pw. Świętego Józefa",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Kościół pw. Najświętszego Serca Pana Jezusa",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Dom Józefa Mehoffera",
+    "category": "museum"
+  },
+  {
+    "name": "Kościół pw. Świętego Franciszka Salezego",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Kościół pw. Świętego Mikołaja",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Kościół pw. Niepokalanego Poczęcia Najświętszej Maryi Panny",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Synagoga Tempel w Krakowie",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Synagoga Kupa",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Synagoga Izaaka Jakubowicza",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Kościół pw. Świętego Bernardyna ze Sieny",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Pomnik Tadeusza Kościuszki",
+    "category": "historic"
+  },
+  {
+    "name": "Wieża Zygmunta III Wazy",
+    "category": "historic"
+  },
+  {
+    "name": "Bazylika archikatedralna Świętych Stanisława i Wacława",
+    "category": "place_of_worship"
+  },
+  {
+    "name": "Muzeum Politechniki Krakowskiej",
+    "category": "museum"
+  },
+  {
+    "name": "Muzeum im. Emeryka Hutten-Czapskiego",
+    "category": "museum"
+  }
+]

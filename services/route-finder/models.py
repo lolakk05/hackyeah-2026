@@ -63,8 +63,8 @@ class PlanRequest(BaseModel):
             ]
         },
     )
-    duration_minutes: Annotated[FiniteFloat, Field(ge=5, le=240)] = Field(
-        description="Maksymalny czas marszu w minutach (5–240); "
+    duration_minutes: Annotated[FiniteFloat, Field(ge=5, le=360)] = Field(
+        description="Maksymalny czas marszu w minutach (5–360); "
         "obejmuje dojście od punktu startowego do pierwszego POI, bez zwiedzania."
     )
     start_mode: Literal["market", "user", "poi"] | None = Field(

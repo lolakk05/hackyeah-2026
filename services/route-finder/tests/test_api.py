@@ -68,12 +68,32 @@ def test_final_route_cannot_exceed_budget(client_factory):
     assert response.json()["detail"]["code"] == "no_route_within_budget"
 
 
+@pytest.mark.parametrize("minutes", [241, 360])
+def test_extended_duration_budget_is_accepted(client_factory, minutes):
+    with client_factory() as client:
+        response = client.post("/routes/plan", json={"duration_minutes": minutes})
+    assert response.status_code == 200
+    assert response.json()["requested_duration_s"] == minutes * 60
+    assert response.json()["duration_s"] <= minutes * 60
+
+
+def test_duration_limit_is_published_in_capabilities_and_openapi(client_factory):
+    with client_factory() as client:
+        capabilities = client.get("/capabilities").json()
+        schema = client.get("/openapi.json").json()
+    assert capabilities["duration_minutes"] == {"min": 5, "max": 360}
+    duration = schema["components"]["schemas"]["PlanRequest"]["properties"]["duration_minutes"]
+    assert duration["minimum"] == 5
+    assert duration["maximum"] == 360
+
+
 @pytest.mark.parametrize(
     "body",
     [
         {},
         {"duration_minutes": 4},
-        {"duration_minutes": 241},
+        {"duration_minutes": 361},
+        {"duration_minutes": 360.01},
         {"duration_minutes": 10, "max_intermediate_stops": 11},
         {"duration_minutes": 10, "tolerance_percent": -1},
         {"duration_minutes": 10, "start_location": {"latitude": 100, "longitude": 19}},

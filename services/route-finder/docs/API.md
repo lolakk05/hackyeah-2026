@@ -40,7 +40,7 @@ JSON jest kodowany w UTF-8. Nieznane pola modeli żądań są odrzucane.
 
 | Pole | Typ i domyślnie | Reguły |
 |---|---|---|
-| `duration_minutes` | number, wymagane | Skończona liczba 5–240; dopuszcza ułamki. |
+| `duration_minutes` | number, wymagane | Skończona liczba 5–360 (do 6 godzin); dopuszcza ułamki. |
 | `start_mode` | `market` / `user` / `poi` / null, domyślnie null | Bez wartości tryb jest wywnioskowany z pól startu. |
 | `user_location` | Location/null, domyślnie null | Wymagane dla `user`. |
 | `start_poi_id` | string/null, domyślnie null | ID z katalogu, 1–100 znaków; wymagane dla `poi`. |
