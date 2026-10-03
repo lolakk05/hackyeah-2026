@@ -48,7 +48,7 @@ JSON jest kodowany w UTF-8. Nieznane pola modeli żądań są odrzucane.
 | `wheelchair` | boolean, domyślnie false | Wybiera profil `wheelchair`, także przy `avoid_stairs=false`. |
 | `avoid_stairs` | boolean, domyślnie false | Bez wózka wybiera profil `step_free`. |
 | `category` | string/null, domyślnie null | 1–100 znaków po obcięciu spacji; filtruje cele i przystanki, nie pierwszy POI. |
-| `max_intermediate_stops` | integer, domyślnie 5 | **0–10**, maksimum dodatkowych POI między pierwszym a ostatnim. |
+| `max_intermediate_stops` | integer, domyślnie 8 | **0–10**, maksimum dodatkowych POI między pierwszym a ostatnim. |
 | `tolerance_percent` | number, domyślnie 15 | Skończona liczba 0–50; dozwolony niedobór czasu, nie przekroczenie budżetu. |
 
 `Location` wymaga skończonych liczb: `latitude` −90..90, `longitude` −180..180.

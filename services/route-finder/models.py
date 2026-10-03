@@ -58,7 +58,7 @@ class PlanRequest(BaseModel):
                     "user_location": {"latitude": 50.0617, "longitude": 19.9373},
                     "wheelchair": True,
                     "avoid_stairs": False,
-                    "max_intermediate_stops": 5,
+                    "max_intermediate_stops": 8,
                 },
             ]
         },
@@ -93,7 +93,7 @@ class PlanRequest(BaseModel):
         "nie ogranicza punktu startowego. Brak oznacza dowolną kategorię.",
     )
     max_intermediate_stops: int = Field(
-        default=5,
+        default=8,
         ge=0,
         le=10,
         description="Maksymalnie 0–10 dodatkowych POI między pierwszym a ostatnim POI.",

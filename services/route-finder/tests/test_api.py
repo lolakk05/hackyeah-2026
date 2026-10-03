@@ -77,14 +77,19 @@ def test_extended_duration_budget_is_accepted(client_factory, minutes):
     assert response.json()["duration_s"] <= minutes * 60
 
 
-def test_duration_limit_is_published_in_capabilities_and_openapi(client_factory):
+def test_planner_limits_are_published_in_capabilities_and_openapi(client_factory):
     with client_factory() as client:
         capabilities = client.get("/capabilities").json()
         schema = client.get("/openapi.json").json()
     assert capabilities["duration_minutes"] == {"min": 5, "max": 360}
+    assert capabilities["default_intermediate_stops"] == 8
+    assert capabilities["max_intermediate_stops"] == 10
     duration = schema["components"]["schemas"]["PlanRequest"]["properties"]["duration_minutes"]
     assert duration["minimum"] == 5
     assert duration["maximum"] == 360
+    stops = schema["components"]["schemas"]["PlanRequest"]["properties"]["max_intermediate_stops"]
+    assert stops["default"] == 8
+    assert stops["maximum"] == 10
 
 
 @pytest.mark.parametrize(

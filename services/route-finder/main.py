@@ -74,7 +74,7 @@ def create_app(
         config = request.app.state.settings
         return {
             "max_intermediate_stops": 10,
-            "default_intermediate_stops": 5,
+            "default_intermediate_stops": 8,
             "duration_minutes": {"min": 5, "max": 360},
             "origin_snap_radius_m": config.origin_snap_radius_m,
             "navigation_steps": True,
@@ -216,7 +216,7 @@ def create_app(
         routing_profile_not_configured; nie jest zastępowany zwykłym profilem pieszym.
 
         Planer wybiera do 24 kandydatów z RAM, pobiera macierz czasów OSRM i sprawdza
-        warianty z 0–10 punktami pośrednimi (domyślnie 5) przez ograniczone beam search.
+        warianty z 0–10 punktami pośrednimi (domyślnie 8) przez ograniczone beam search.
         Preferuje trasy w tolerancji, potem więcej POI,
         następnie dłuższy marsz. Finalną geometrię i czas potwierdza /route/v1/foot/.
         steps=true dostarcza manewry, geometrię kroków i odcinków. stops ma kolejność,
