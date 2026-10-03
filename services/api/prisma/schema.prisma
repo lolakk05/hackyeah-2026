@@ -13,10 +13,9 @@ datasource db {
 }
 
 model User {
-  userId    String   @id @default(uuid()) @map("user_id")
+  id        String   @id @default(uuid()) @map("user_id")
   name      String
-  email     String
-  password  String
+  email     String   @unique
   score     Int      @default(0)
   money     Int      @default(0)
   createdAt DateTime @default(now())
@@ -25,6 +24,12 @@ model User {
   reports          Report[]
   userRewards      UserReward[]
   userAchievements UserAchievement[]
+  emailVerified    Boolean           @default(false)
+  image            String?
+  sessions         Session[]
+  accounts         Account[]
+
+  @@map("user")
 }
 
 model Reward {
@@ -45,12 +50,12 @@ model Place {
 }
 
 model PlaceOpeningHour {
-  id         String @id @default(uuid())
-  placeId    String
-  dayOfWeek  Int
-  openTime   String
-  closeTime  String
-  isClosed   Boolean @default(false)
+  id        String  @id @default(uuid())
+  placeId   String
+  dayOfWeek Int
+  openTime  String
+  closeTime String
+  isClosed  Boolean @default(false)
 
   place Place @relation(fields: [placeId], references: [placeId], onDelete: Cascade)
 
@@ -74,7 +79,7 @@ model Report {
   longitude Float
   userId    String
 
-  user User @relation(fields: [userId], references: [userId])
+  user User @relation(fields: [userId], references: [id])
 }
 
 model UserAchievement {
@@ -83,7 +88,7 @@ model UserAchievement {
   achievementId     String
   unlockedAt        DateTime @default(now())
 
-  user        User        @relation(fields: [userId], references: [userId])
+  user        User        @relation(fields: [userId], references: [id])
   achievement Achievement @relation(fields: [achievementId], references: [achievementId])
 }
 
@@ -93,6 +98,54 @@ model UserReward {
   rewardId     String
   purchasedAt  DateTime @default(now())
 
-  user   User   @relation(fields: [userId], references: [userId])
+  user   User   @relation(fields: [userId], references: [id])
   reward Reward @relation(fields: [rewardId], references: [rewardId])
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
 }
