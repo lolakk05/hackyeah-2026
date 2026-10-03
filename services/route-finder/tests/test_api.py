@@ -12,7 +12,7 @@ from main import create_app
 from tests.conftest import POINTS, osrm_response
 
 
-def test_plan_time_only_and_cache(client_factory):
+def test_plan_with_randomization_disabled_and_cache(client_factory):
     calls = []
 
     def handle(request):
@@ -20,8 +20,9 @@ def test_plan_time_only_and_cache(client_factory):
         return osrm_response(request)
 
     with client_factory(handle) as client:
-        first = client.post("/routes/plan", json={"duration_minutes": 10}).json()
-        second = client.post("/routes/plan", json={"duration_minutes": 10}).json()
+        body = {"duration_minutes": 10, "randomize": False}
+        first = client.post("/routes/plan", json=body).json()
+        second = client.post("/routes/plan", json=body).json()
     assert first["start_poi"]["id"] == "p0"
     assert first["end_poi"]["id"] == "p2"
     assert [p["id"] for p in first["intermediate_pois"]] == ["p1"]
@@ -304,15 +305,16 @@ def test_cache_expiry_and_rate_limited_fallback(client_factory):
         return osrm_response(request)
 
     with client_factory(handler) as client:
-        assert client.post("/routes/plan", json={"duration_minutes": 10}).status_code == 200
-        assert client.post("/routes/plan", json={"duration_minutes": 11}).status_code == 503
-        cached = client.post("/routes/plan", json={"duration_minutes": 10})
+        body = {"duration_minutes": 10, "randomize": False}
+        assert client.post("/routes/plan", json=body).status_code == 200
+        assert client.post("/routes/plan", json={**body, "duration_minutes": 11}).status_code == 503
+        cached = client.post("/routes/plan", json=body)
         assert cached.json()["source"] == "cache"
         assert len(calls) == 3
         cache = client.app.state.planner._cache
         key = next(iter(cache))
         cache[key] = (time.monotonic() - 4000, cache[key][1])
-        assert client.post("/routes/plan", json={"duration_minutes": 10}).status_code == 503
+        assert client.post("/routes/plan", json=body).status_code == 503
         assert len(calls) == 3
 
 

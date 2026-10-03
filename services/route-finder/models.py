@@ -59,6 +59,7 @@ class PlanRequest(BaseModel):
                     "wheelchair": True,
                     "avoid_stairs": False,
                     "max_intermediate_stops": 8,
+                    "randomize": True,
                 },
             ]
         },
@@ -102,6 +103,11 @@ class PlanRequest(BaseModel):
         default=15,
         description="Akceptowany niedobór czasu w procentach budżetu. "
         "Nigdy nie zezwala na przekroczenie budżetu.",
+    )
+    randomize: bool = Field(
+        default=True,
+        description="Losuj kandydatów i podobnie ocenione warianty, pomijając cache. "
+        "Nie gwarantuje innego wyniku, jeśli dostępnych tras jest niewiele.",
     )
 
     @model_validator(mode="after")

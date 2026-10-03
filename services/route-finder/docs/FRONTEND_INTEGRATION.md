@@ -28,6 +28,7 @@ nie jest gwarancją, że routing odpowie; nadal potrzebna jest obsługa błędó
 | Kategoria | `category` | Etykiety można tłumaczyć; wysyłaj oryginalny klucz z listy kategorii. „Dowolne” pomija pole. |
 | Maksymalna liczba przystanków | `max_intermediate_stops` | Użyj limitu z capabilities; to maksimum, a nie liczba gwarantowana. |
 | Dopuszczalne skrócenie | `tolerance_percent` | Opcja zaawansowana; nie przedstawiaj jej jako zgody na dłuższą podróż. |
+| Przycisk „Losuj inną trasę” | `randomize` | Wyślij dotychczasowe parametry z włączonym losowaniem; zachowaj start i preferencje. |
 
 Request buduj jawnie z obsługiwanych pól. Nie wysyłaj całego stanu komponentu.
 Puste pola opcjonalne pomijaj, liczby konwertuj z inputów, przełączniki wysyłaj jako
@@ -62,6 +63,12 @@ serwera opisanym w [konfiguracji](OPIS_API.md), dodając zapas na sieć.
 Zachowaj formularz i dotychczasową trasę do czasu otrzymania nowego wyniku.
 Po zmianie danych formularza nie przypisuj spóźnionej odpowiedzi do nowego wyboru.
 Cache jest zwykłym sukcesem; nie wymaga osobnego ekranu ani dodatkowego requestu.
+
+Przycisk losowania uruchamia kolejne planowanie. Zachowaj poprzednią trasę do
+otrzymania sukcesu i nie wysyłaj wielu losowań jednocześnie. Nowy wynik może
+powtórzyć wcześniejsze miejsca; nie obiecuj użytkownikowi gwarantowanej unikalności.
+Przy awarii pokaż błąd i pozostaw poprzednią trasę, bez przedstawiania jej jako
+nowego losowania. Zasady cache i zakres pola określa [kontrakt](API.md).
 
 ## Roadmapa i podsumowanie podróży
 

@@ -95,7 +95,8 @@ Zmienne środowiskowe są czytane przy starcie. Plik `.env` nie jest ładowany a
 
 Klient rozdziela początki wywołań OSRM co najmniej sekundą i respektuje `Retry-After`
 (sekundy lub HTTP-date). Nie wykonuje natychmiastowych ponowień po 429. Udany plan
-jest odtwarzany z cache dla identycznego żądania. Brak potwierdzonej trasy po awarii
+jest odtwarzany z cache dla identycznego żądania bez losowania. Domyślne losowanie
+opisuje [kontrakt API](docs/API.md). Brak potwierdzonej trasy po awarii
 OSRM daje 503. Tylko starszy GET `/route` ma fallback w linii prostej.
 
 Uruchamiaj **jeden worker** przy korzystaniu z publicznego OSRM: limit, kolejka planera

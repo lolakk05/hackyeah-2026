@@ -1,6 +1,7 @@
 """Bounded time-budget search over local POIs and OSRM walking durations."""
 
 import asyncio
+import random
 import time
 from collections import OrderedDict
 
@@ -83,7 +84,9 @@ class Planner:
                 "Brak innych dostępnych POI dla podanej kategorii i obszaru.",
             )
         limit = self.settings.candidate_limit
-        if len(pool) > limit:
+        if request.randomize:
+            pool = random.sample(pool, min(len(pool), limit))
+        elif len(pool) > limit:
             pool = [pool[round(i * (len(pool) - 1) / (limit - 1))] for i in range(limit)]
         return [start, *pool]
 
@@ -128,6 +131,23 @@ class Planner:
             ranked.sort(key=lambda item: item[0], reverse=True)
             ranked = ranked[:256]
         ranked.sort(key=lambda item: item[0], reverse=True)
+        if request.randomize and ranked:
+            best_score = ranked[0][0]
+            preferred = []
+            remaining = []
+            for score, path in ranked:
+                # Keep target fit and, for fitting plans, the best POI count.
+                # For short plans, explore alternatives within 10% of the best time.
+                if (
+                    score[0] == best_score[0]
+                    and (not best_score[0] or score[1] == best_score[1])
+                    and score[2] >= best_score[2] * 0.9
+                ):
+                    preferred.append((score, path))
+                else:
+                    remaining.append((score, path))
+            random.shuffle(preferred)
+            ranked = preferred + remaining
         return [path for _, path in ranked]
 
     async def plan(self, request: PlanRequest) -> PlanResponse:
@@ -141,7 +161,7 @@ class Planner:
                 "Sprawdź GET /capabilities; nie użyto zastępczej trasy pieszej.",
             )
         key = request.model_dump_json()
-        cached = self._cache.get(key)
+        cached = self._cache.get(key) if not request.randomize else None
         if cached and time.monotonic() - cached[0] < self.settings.cache_ttl_s:
             self._cache.move_to_end(key)
             return cached[1].model_copy(update={"source": "cache"}, deep=True)
@@ -182,9 +202,10 @@ class Planner:
                     },
                     headers={"Retry-After": str(exc.retry_after_s)},
                 ) from exc
-        self._cache[key] = (time.monotonic(), result)
-        while len(self._cache) > self.settings.cache_size:
-            self._cache.popitem(last=False)
+        if not request.randomize:
+            self._cache[key] = (time.monotonic(), result)
+            while len(self._cache) > self.settings.cache_size:
+                self._cache.popitem(last=False)
         return result
 
     async def _plan(self, request: PlanRequest) -> PlanResponse:
@@ -291,8 +312,8 @@ class Planner:
                         else "intermediate",
                         poi=poi,
                         snapped_location=waypoints[waypoint_index].location,
-                        arrival_distance_m=sum(l.distance for l in route.legs[:waypoint_index]),
-                        arrival_duration_s=sum(l.duration for l in route.legs[:waypoint_index]),
+                        arrival_distance_m=sum(leg.distance for leg in route.legs[:waypoint_index]),
+                        arrival_duration_s=sum(leg.duration for leg in route.legs[:waypoint_index]),
                     )
                 )
             xs, ys = zip(*route.geometry.coordinates)

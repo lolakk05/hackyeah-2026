@@ -219,13 +219,15 @@ def create_app(
         warianty z 0–10 punktami pośrednimi (domyślnie 8) przez ograniczone beam search.
         Preferuje trasy w tolerancji, potem więcej POI,
         następnie dłuższy marsz. Finalną geometrię i czas potwierdza /route/v1/foot/.
+        Domyślnie randomize=true losuje kandydatów i podobnie ocenione warianty, pomijając cache;
+        punkt startowy, kategoria, budżet i ograniczenia dostępności są zachowane.
         steps=true dostarcza manewry, geometrię kroków i odcinków. stops ma kolejność,
         dopasowane lokalizacje i narastające czasy dotarcia. Punkt wejściowy może zostać
         dopasowany do sieci (domyślnie do 25 m); przesunięcie jest jawne w start.
         Zwrócony czas nigdy nie przekracza budżetu. Gdy trasa jest zbyt krótka,
         matches_target=false. Dobór jest heurystyczny, bez gwarancji globalnego optimum.
 
-        Udane plany są przechowywane w cache RAM (domyślnie 1 h); source=cache oznacza
+        Udane plany bez randomize są przechowywane w cache RAM (domyślnie 1 h); source=cache oznacza
         ponowne użycie planu dla identycznego żądania. Po 429 respektowany jest Retry-After.
         Bez potwierdzonej trasy lub cache zwracane jest 503, a nie geometria w linii prostej.
         Jednocześnie może powstawać jeden nowy plan na proces; inny otrzymuje 503 planner_busy.
