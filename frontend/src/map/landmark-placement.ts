@@ -60,7 +60,7 @@ export const KIND_CONFIG: Record<ModelKind, KindConfig> = {
     fallback: { length: 145, width: 16, axisBearing: 0 },
     noBuilding: true,
   },
-  generic: { names: [], heightMeters: 14, fallback: { length: 12, width: 12, axisBearing: 0 }, noBuilding: true },
+  generic: { names: [], heightMeters: 30, fallback: { length: 12, width: 12, axisBearing: 0 }, noBuilding: true },
 };
 
 /** All landmark name patterns, for the Overpass query. */

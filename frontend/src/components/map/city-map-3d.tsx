@@ -35,6 +35,8 @@ interface Props {
   user: LatLng | null;
   /** Walking route to draw (from the user to the next stop). */
   route: LatLng[] | null;
+  /** Whole planned route, drawn as a thin line under the current leg. */
+  fullRoute?: LatLng[] | null;
   onPressLandmark?: (id: string) => void;
   ref?: Ref<CityMapHandle>;
 }
@@ -60,7 +62,7 @@ interface CityContent {
  * The map shows immediately with the landmarks; ordinary buildings appear as
  * soon as they're loaded (usually already prefetched / saved on the phone).
  */
-export function CityMap3D({ landmarks, stops, user, route, onPressLandmark, ref }: Props) {
+export function CityMap3D({ landmarks, stops, user, route, fullRoute = null, onPressLandmark, ref }: Props) {
   const { s, fmt } = useI18n();
   const [buildingsState, setBuildingsState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [reloadKey, setReloadKey] = useState(0);
@@ -72,9 +74,9 @@ export function CityMap3D({ landmarks, stops, user, route, onPressLandmark, ref 
   const camera = useRef<THREE.PerspectiveCamera | null>(null);
   const running = useRef(false);
   const content = useRef<CityContent | null>(null);
-  const latest = useRef({ stops, user, route });
+  const latest = useRef({ stops, user, route, fullRoute });
   useEffect(() => {
-    latest.current = { stops, user, route };
+    latest.current = { stops, user, route, fullRoute };
   });
 
   // Landmarks placed without OSM data, so they can be shown right away.
@@ -104,6 +106,7 @@ export function CityMap3D({ landmarks, stops, user, route, onPressLandmark, ref 
   };
   const applyUser = () => city.current?.setUser(latest.current.user ? toLocal(latest.current.user) : null);
   const applyRoute = () => city.current?.setRoute(latest.current.route?.map(toLocal) ?? null);
+  const applyFullRoute = () => city.current?.setFullRoute(latest.current.fullRoute?.map(toLocal) ?? null);
 
   // ── Load buildings (usually already prefetched) ──
   const landmarkKey = landmarks.map((l) => l.id).join();
@@ -131,6 +134,7 @@ export function CityMap3D({ landmarks, stops, user, route, onPressLandmark, ref 
   useEffect(applyStops, [stops]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(applyUser, [user]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(applyRoute, [route]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(applyFullRoute, [fullRoute]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useImperativeHandle(ref, () => ({
     flyTo: (p, distance) => rig.flyTo(toLocal(p), distance),
@@ -161,6 +165,7 @@ export function CityMap3D({ landmarks, stops, user, route, onPressLandmark, ref 
       applyStops();
       applyUser();
       applyRoute();
+      applyFullRoute();
 
       const start = Date.now();
       let lastLabels = 0;

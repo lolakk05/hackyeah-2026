@@ -1,11 +1,14 @@
 import { createContext, use, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 
-import { awardPoints, fetchLandmarks, planTrip, submitAccessibilityReport } from '@/api/client';
+import { fetchLandmarks, planTrip, submitAccessibilityReport } from '@/api/client';
 import { MAP_DATA_URL } from '@/api/config';
 import type { AccessibilityReport, Landmark, LatLng, ReportCategory, TripPlan, TripPreferences } from '@/api/types';
 import { useI18n } from '@/i18n/language-context';
+import { distanceMeters } from '@/map/geo';
 import { allLandmarkNamePatterns } from '@/map/landmark-placement';
 import { loadMapData } from '@/map/osm';
+
+import { useAccount, type XpAward } from './account-context';
 
 export const DEFAULT_PREFERENCES: TripPreferences = {
   durationMinutes: 120,
@@ -25,8 +28,8 @@ interface JourneyState {
   completedIds: string[];
   /** Id of the next stop to visit, or null when no trip / trip finished. */
   currentId: string | null;
-  /** Experience points (total from the API). */
-  xp: number;
+  /** XP earned on the current trip. */
+  tripXp: number;
   isFinished: boolean;
 
   /** Landmarks shown on the roadmap: the planned stops, or every landmark before planning. */
@@ -34,21 +37,41 @@ interface JourneyState {
   statusOf: (id: string) => StopStatus;
 
   startTrip: (prefs: TripPreferences) => Promise<void>;
-  /** Mark a stop visited and award XP through the API. Returns the points awarded. */
-  completeStop: (id: string) => Promise<number>;
+  /**
+   * Mark a stop visited and earn XP (more for a longer walk to it).
+   * After the last stop the route bonus is added too.
+   */
+  completeStop: (id: string) => Promise<StopReward>;
   resetTrip: () => void;
 
   /** The walking path of the current leg (set by the map), used for accessibility reports. */
   setLegPath: (toStopId: string, path: LatLng[]) => void;
-  /** Send a yes/no accessibility answer for the leg that ended at `toStopId`. Returns XP awarded. */
-  reportLeg: (toStopId: string, category: ReportCategory, accessible: boolean) => Promise<number>;
+  /** Send a yes/no accessibility answer for the leg that ended at `toStopId`. Returns what it earned. */
+  reportLeg: (toStopId: string, category: ReportCategory, accessible: boolean) => Promise<XpAward>;
 }
+
+/** What reaching a stop earned. */
+export interface StopReward {
+  visit: XpAward;
+  /** Bonus for finishing the whole route (only after the last stop). */
+  route: XpAward | null;
+}
+
+/** Walking is ~30% longer than the straight line between two points. */
+const WALK_FACTOR = 1.3;
 
 const JourneyContext = createContext<JourneyState | null>(null);
 
 export function JourneyProvider({ children }: { children: ReactNode }) {
   const { lang } = useI18n();
-  const [landmarks, setLandmarks] = useState<Landmark[]>([]);
+  const { award } = useAccount();
+  const [catalog, setLandmarks] = useState<Landmark[]>([]);
+  /** Places returned with the current plan (from the route planner). */
+  const [planLandmarks, setPlanLandmarks] = useState<Landmark[]>([]);
+  const landmarks = useMemo(() => {
+    const ids = new Set(planLandmarks.map((l) => l.id));
+    return [...planLandmarks, ...catalog.filter((l) => !ids.has(l.id))];
+  }, [catalog, planLandmarks]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -56,7 +79,7 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
   const [preferences, setPreferences] = useState<TripPreferences>(DEFAULT_PREFERENCES);
   const [plan, setPlan] = useState<TripPlan | null>(null);
   const [completedIds, setCompletedIds] = useState<string[]>([]);
-  const [xp, setXp] = useState(0);
+  const [tripXp, setTripXp] = useState(0);
   const [legPaths, setLegPaths] = useState<Record<string, LatLng[]>>({});
 
   // Landmarks (in the chosen language)
@@ -103,30 +126,61 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
 
   const startTrip = useCallback(
     async (prefs: TripPreferences) => {
+      const result = await planTrip(prefs, catalog);
       setPreferences(prefs);
-      const newPlan = await planTrip(prefs, landmarks);
-      setPlan(newPlan);
+      setPlanLandmarks(result.landmarks);
+      setPlan(result.plan);
       setCompletedIds([]);
       setLegPaths({});
+      setTripXp(0);
     },
-    [landmarks],
+    [catalog],
   );
 
-  const completeStop = useCallback(async (id: string) => {
-    setCompletedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
-    try {
-      const res = await awardPoints(id, 'visit');
-      setXp(res.total);
-      return res.awarded;
-    } catch {
-      return 0;
-    }
-  }, []);
+  /** Metres walked to a stop: the planner's leg, else the straight line from the previous stop. */
+  const legDistance = useCallback(
+    (id: string): number => {
+      const leg = plan?.route?.legs.find((l) => l.toId === id);
+      if (leg) return leg.distanceMeters;
+      const index = plan?.stopIds.indexOf(id) ?? -1;
+      if (!plan || index <= 0) return 0;
+      const a = landmarks.find((l) => l.id === plan.stopIds[index - 1]);
+      const b = landmarks.find((l) => l.id === id);
+      return a && b ? distanceMeters(a.coordinates, b.coordinates) * WALK_FACTOR : 0;
+    },
+    [plan, landmarks],
+  );
+
+  const completeStop = useCallback(
+    async (id: string): Promise<StopReward> => {
+      const none = { visit: { xp: 0, coins: 0 }, route: null };
+      if (!plan || completedIds.includes(id)) return none;
+      const isLast = plan.stopIds.every((s) => s === id || completedIds.includes(s));
+      setCompletedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+
+      const visit = await award({ type: 'visit', landmarkId: id, distanceMeters: Math.round(legDistance(id)) });
+      let route: XpAward | null = null;
+      if (isLast) {
+        const routeMeters =
+          plan.route?.distanceMeters ?? plan.stopIds.reduce((sum, s) => sum + legDistance(s), 0);
+        route = await award({
+          type: 'route_complete',
+          distanceMeters: Math.round(routeMeters),
+          stops: plan.stopIds.length,
+        });
+      }
+      setTripXp((x) => x + visit.xp + (route?.xp ?? 0));
+      return { visit, route };
+    },
+    [plan, completedIds, award, legDistance],
+  );
 
   const resetTrip = useCallback(() => {
     setPlan(null);
+    setPlanLandmarks([]);
     setCompletedIds([]);
     setLegPaths({});
+    setTripXp(0);
   }, []);
 
   const setLegPath = useCallback((toStopId: string, path: LatLng[]) => {
@@ -140,7 +194,9 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
       const byId = (id: string | null) => landmarks.find((l) => l.id === id);
       const to = byId(toStopId);
       const from = byId(fromStopId);
-      const path = legPaths[toStopId] ?? [from?.coordinates, to?.coordinates].filter((p): p is LatLng => !!p);
+      const plannedLeg = plan?.route?.legs.find((l) => l.toId === toStopId)?.path;
+      const path =
+        legPaths[toStopId] ?? plannedLeg ?? [from?.coordinates, to?.coordinates].filter((p): p is LatLng => !!p);
       const report: AccessibilityReport = {
         category,
         accessible,
@@ -150,14 +206,14 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
       };
       try {
         await submitAccessibilityReport(report);
-        const res = await awardPoints(toStopId, 'report');
-        setXp(res.total);
-        return res.awarded;
       } catch {
-        return 0;
+        // kept on the phone by the client
       }
+      const earned = await award({ type: 'report', landmarkId: toStopId, category });
+      setTripXp((x) => x + earned.xp);
+      return earned;
     },
-    [plan, landmarks, legPaths, preferences.needs],
+    [plan, landmarks, legPaths, preferences.needs, award],
   );
 
   const value: JourneyState = {
@@ -169,7 +225,7 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
     plan,
     completedIds,
     currentId,
-    xp,
+    tripXp,
     isFinished: !!plan && plan.stopIds.length > 0 && currentId === null,
     roadmap,
     statusOf,

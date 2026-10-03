@@ -8,6 +8,7 @@ import { useI18n } from '@/i18n/language-context';
 import { themedStyles, useDuo } from '@/state/theme-context';
 
 export const MIN_TRIP = 30;
+/** Up to 6 hours (the Route Finder backend accepts up to 360 minutes). */
 export const MAX_TRIP = 360;
 const STEP = 30;
 
@@ -51,7 +52,7 @@ export function TripLengthSlider({ value, onChange }: { value: number; onChange:
           30 min
         </DuoText>
         <DuoText variant="caption" color={t.textMuted}>
-          6 h
+          {formatDuration(MAX_TRIP)}
         </DuoText>
       </View>
     </View>

@@ -7,6 +7,7 @@ import { tapFeedback } from '@/components/duo/haptics';
 import { Brand } from '@/constants/duo-theme';
 import { useI18n } from '@/i18n/language-context';
 import type { Lang } from '@/i18n/strings';
+import { useAccount } from '@/state/account-context';
 import { themedStyles, useDuo } from '@/state/theme-context';
 
 const LANGUAGES: { lang: Lang; flag: string; name: string; hint: string }[] = [
@@ -19,11 +20,12 @@ export default function LanguageScreen() {
   const t = useDuo();
   const styles = useStyles();
   const { lang, setLang } = useI18n();
+  const { status } = useAccount();
 
   const choose = (l: Lang) => {
     tapFeedback(true);
     setLang(l);
-    router.push('/welcome');
+    router.push(status === 'signedIn' ? '/welcome' : '/login');
   };
 
   return (

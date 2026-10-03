@@ -21,11 +21,14 @@ export function RoadmapNode({
   landmark,
   status,
   index,
+  walkMinutes,
   onPress,
 }: {
   landmark: Landmark;
   status: StopStatus;
   index: number;
+  /** Walking time from the previous stop (from the route planner). */
+  walkMinutes?: number;
   onPress: () => void;
 }) {
   const t = useDuo();
@@ -65,7 +68,10 @@ export function RoadmapNode({
 
           <View style={styles.texts}>
             <DuoText variant="label" color={current ? Brand.primary : t.textMuted}>
-              {fmt(s.roadmap.stop, { n: index + 1 })} · {fmt(s.roadmap.visit, { time: formatDuration(landmark.visitMinutes) })}
+              {fmt(s.roadmap.stop, { n: index + 1 })} ·{' '}
+              {walkMinutes
+                ? fmt(s.roadmap.walkFrom, { n: walkMinutes })
+                : fmt(s.roadmap.visit, { time: formatDuration(landmark.visitMinutes) })}
             </DuoText>
             <DuoText variant="heading" color={locked ? t.textMuted : t.text} numberOfLines={2}>
               {landmark.name}

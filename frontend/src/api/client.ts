@@ -3,19 +3,37 @@
  *  API CLIENT: the only place the app talks to the backend
  * ─────────────────────────────────────────────────────────────
  *
- * Every function has two branches:
- *   1. USE_MOCK_API → returns prop data (mock-data.ts / mock-ai.ts)
- *   2. real API     → fetch() to your backend (look for "TODO(API)")
- *
- * If your backend's JSON looks different from the `Landmark` type,
- * adapt it in `toLandmark()` below; the UI will keep working.
+ * USE_MOCK_API (no EXPO_PUBLIC_API_URL) → sample data (mock-data.ts / mock-ai.ts)
+ * otherwise → the Route Finder backend:
+ *   POST /routes/plan   plan a walk for the chosen time   (route-finder.ts maps the JSON)
+ *   GET  /pois/{id}     details of one place
+ * Features the backend doesn't have yet (AI guide, accessibility reports)
+ * fall back to local behaviour automatically, so the app keeps working.
+ * Accounts, XP, ranking and rewards are in account.ts.
  */
-import { API_BASE_URL, ENDPOINTS, MOCK_DELAY_MS, USE_MOCK_API } from './config';
 import type { Lang } from '@/i18n/strings';
 
+import {
+  API_BASE_URL,
+  ENDPOINTS,
+  MAX_INTERMEDIATE_STOPS,
+  MOCK_DELAY_MS,
+  PLAN_TIMEOUT_MS,
+  TOLERANCE_PERCENT,
+  USE_MOCK_API,
+} from './config';
 import { mockAnswer } from './mock-ai';
 import { MOCK_LANDMARKS } from './mock-data';
 import { localizeToPolish } from './mock-data-pl';
+import {
+  planResponseToTrip,
+  poiToLandmark,
+  RouteFinderError,
+  toRouteFinderError,
+  type RfPlanRequest,
+  type RfPlanResponse,
+  type RfPoi,
+} from './route-finder';
 import { planTripLocally, walkMinutes } from './trip-planner';
 import type {
   AccessibilityNeeds,
@@ -23,83 +41,73 @@ import type {
   ChatMessage,
   Landmark,
   LatLng,
-  PointsResult,
   TripPlan,
   TripPreferences,
   WalkingRoute,
 } from './types';
 
+export { RouteFinderError } from './route-finder';
+
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** Language for texts returned by the API (set from the language screen). */
+/** Language for texts (set from the language screen). */
 let apiLang: Lang = 'en';
 export function setApiLanguage(lang: Lang) {
   apiLang = lang;
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const sep = path.includes('?') ? '&' : '?';
-  const res = await fetch(`${API_BASE_URL}${path}${sep}lang=${apiLang}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      'Accept-Language': apiLang,
-      // TODO(API): add auth here if needed, e.g. Authorization: `Bearer ${token}`
-      ...init?.headers,
-    },
-  });
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    throw new Error(`API ${res.status} on ${path}: ${body.slice(0, 200)}`);
-  }
-  return (await res.json()) as T;
-}
-
 /**
- * TODO(API): map your backend's landmark JSON to the app's `Landmark` type.
- * Fill in missing fields with sensible defaults so the UI never crashes.
+ * Call the backend. Throws RouteFinderError for HTTP errors (with the
+ * backend's `detail.code`) and for network problems (code "network").
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function toLandmark(raw: any): Landmark {
-  return {
-    id: String(raw.id),
-    name: raw.name ?? 'Unknown place',
-    tagline: raw.tagline ?? raw.short_description ?? '',
-    description: raw.description ?? raw.text ?? '',
-    photos: raw.photos ?? raw.images ?? [],
-    visitMinutes: raw.visitMinutes ?? raw.visit_minutes ?? 30,
-    walkMinutesFromPrevious: raw.walkMinutesFromPrevious ?? raw.walk_minutes ?? 10,
-    coordinates: raw.coordinates ?? { latitude: raw.lat ?? 0, longitude: raw.lng ?? 0 },
-    accessibility: {
-      wheelchair: raw.accessibility?.wheelchair ?? 'partial',
-      stepFree: raw.accessibility?.stepFree ?? raw.accessibility?.step_free ?? false,
-      accessibleToilet: raw.accessibility?.accessibleToilet ?? raw.accessibility?.toilet ?? false,
-      audioGuide: raw.accessibility?.audioGuide ?? raw.accessibility?.audio_guide ?? false,
-      hearingSupport: raw.accessibility?.hearingSupport ?? raw.accessibility?.hearing_support ?? false,
-      notes: raw.accessibility?.notes ?? '',
-    },
-    facts: raw.facts ?? [],
-    model: raw.model ?? 'generic',
-    color: raw.color ?? '#1CB0F6',
-    suggestedQuestions: raw.suggestedQuestions ?? raw.suggested_questions ?? [],
-  };
+async function request<T>(path: string, init?: RequestInit, timeoutMs = 20_000): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'Accept-Language': apiLang,
+        // ngrok's free plan shows a warning page instead of the API without this.
+        'ngrok-skip-browser-warning': 'true',
+        // TODO(API): add auth here if needed, e.g. Authorization: `Bearer ${token}`
+        ...init?.headers,
+      },
+    });
+  } catch (e) {
+    const aborted = e instanceof Error && e.name === 'AbortError';
+    throw new RouteFinderError(
+      aborted ? 'Request timed out' : `Network error: ${e instanceof Error ? e.message : String(e)}`,
+      0,
+      aborted ? 'client_timeout' : 'network',
+    );
+  } finally {
+    clearTimeout(timer);
+  }
+  if (!res.ok) throw await toRouteFinderError(res);
+  return (await res.json()) as T;
 }
 
 const mockLandmarks = () => (apiLang === 'pl' ? localizeToPolish(MOCK_LANDMARKS) : MOCK_LANDMARKS);
 
-/** All landmarks, in route order. */
+/**
+ * Landmarks shown before a trip is planned (roadmap preview).
+ * The Route Finder backend picks places only when planning, so this is empty
+ * with the real API.
+ */
 export async function fetchLandmarks(): Promise<Landmark[]> {
   if (USE_MOCK_API) {
     await wait(MOCK_DELAY_MS);
     return mockLandmarks();
   }
-  // TODO(API): GET /landmarks
-  const raw = await request<unknown[]>(ENDPOINTS.landmarks);
-  return raw.map(toLandmark);
+  return [];
 }
 
-/** One landmark with all details (text, photos, accessibility, facts). */
+/** One place with all details. Real API: GET /pois/{id}. */
 export async function fetchLandmark(id: string): Promise<Landmark> {
   if (USE_MOCK_API) {
     await wait(MOCK_DELAY_MS);
@@ -107,68 +115,69 @@ export async function fetchLandmark(id: string): Promise<Landmark> {
     if (!lm) throw new Error(`Landmark "${id}" not found`);
     return lm;
   }
-  // TODO(API): GET /landmarks/:id
-  return toLandmark(await request<unknown>(ENDPOINTS.landmark(id)));
+  return poiToLandmark(await request<RfPoi>(ENDPOINTS.poi(id)), apiLang);
 }
 
-/** Pick stops that fit the trip length and accessibility needs. */
-export async function planTrip(prefs: TripPreferences, landmarks: Landmark[]): Promise<TripPlan> {
+/**
+ * Plan the walk.
+ * Real API: POST /routes/plan → start POI, stops, end POI, route line and legs.
+ * Returns the plan and the places in it (the roadmap is built from these).
+ */
+export async function planTrip(
+  prefs: TripPreferences,
+  landmarks: Landmark[],
+): Promise<{ plan: TripPlan; landmarks: Landmark[] }> {
   if (USE_MOCK_API) {
     await wait(MOCK_DELAY_MS);
-    return planTripLocally(landmarks, prefs);
+    return { plan: planTripLocally(landmarks, prefs), landmarks };
   }
-  // TODO(API): POST /trips/plan. If your backend has no planner, just
-  // `return planTripLocally(landmarks, prefs)` here instead.
-  return request<TripPlan>(ENDPOINTS.planTrip, {
-    method: 'POST',
-    body: JSON.stringify(prefs),
-  });
+
+  // Only fields from the contract (anything else → 422).
+  // Wheelchair / no-stairs are not supported by the planner yet, so they are not sent.
+  const body: RfPlanRequest = {
+    duration_minutes: Math.min(360, Math.max(5, prefs.durationMinutes)),
+    max_intermediate_stops: MAX_INTERMEDIATE_STOPS,
+    tolerance_percent: TOLERANCE_PERCENT,
+  };
+  if (prefs.startLocation) {
+    body.start_location = { latitude: prefs.startLocation.latitude, longitude: prefs.startLocation.longitude };
+  }
+  const res = await request<RfPlanResponse>(
+    ENDPOINTS.planTrip,
+    { method: 'POST', body: JSON.stringify(body) },
+    PLAN_TIMEOUT_MS,
+  );
+  return planResponseToTrip(res, apiLang);
 }
 
-/** Ask the AI guide a question about a landmark. */
+/** Ask the AI guide a question about a place (falls back to sample answers). */
 export async function askAboutLandmark(
   landmark: Landmark,
   question: string,
   history: ChatMessage[],
 ): Promise<string> {
-  if (USE_MOCK_API) {
-    await wait(MOCK_DELAY_MS * 2);
-    return mockAnswer(landmark, question, apiLang);
+  if (!USE_MOCK_API && ENDPOINTS.ask) {
+    try {
+      const res = await request<{ answer: string }>(ENDPOINTS.ask(landmark.id), {
+        method: 'POST',
+        body: JSON.stringify({ question, history: history.map(({ role, text }) => ({ role, text })) }),
+      });
+      return res.answer;
+    } catch (e) {
+      console.warn('[ask] AI endpoint failed, using sample answer', e);
+    }
   }
-  // TODO(API): POST /landmarks/:id/ask → { answer }
-  const res = await request<{ answer: string }>(ENDPOINTS.ask(landmark.id), {
-    method: 'POST',
-    body: JSON.stringify({
-      question,
-      history: history.map(({ role, text }) => ({ role, text })),
-    }),
-  });
-  return res.answer;
+  await wait(MOCK_DELAY_MS * 2);
+  return mockAnswer(landmark, question, apiLang);
 }
 
 /**
- * Walking route from the visitor's position to the next stop (for the 3D map).
- *
- * Real API: POST /route { from, to, needs } → { path, distanceMeters, durationMinutes }
- * Mock: free OpenStreetMap foot routing (routing.openstreetmap.de), and a
- * straight line if that is unreachable.
+ * Walking route from the visitor's position to a stop, used on the 3D map
+ * when the visitor is not on the planned route line (e.g. walking to the start).
+ * Uses free OpenStreetMap foot routing; a straight line if that is unreachable.
  */
 export async function fetchWalkingRoute(from: LatLng, to: LatLng, needs: AccessibilityNeeds): Promise<WalkingRoute> {
   const slow = needs.wheelchair || needs.reducedMobility;
-
-  if (!USE_MOCK_API) {
-    // TODO(API): your backend can pick step-free paths for wheelchair users here.
-    try {
-      const res = await request<Omit<WalkingRoute, 'source'>>(ENDPOINTS.route, {
-        method: 'POST',
-        body: JSON.stringify({ from, to, needs }),
-      });
-      return { ...res, source: 'api' };
-    } catch (e) {
-      console.warn('[route] API failed, falling back to OSM routing', e);
-    }
-  }
-
   try {
     const url =
       `https://routing.openstreetmap.de/routed-foot/route/v1/foot/` +
@@ -182,7 +191,12 @@ export async function fetchWalkingRoute(from: LatLng, to: LatLng, needs: Accessi
     if (!r) throw new Error('no route');
     const path = r.geometry.coordinates.map(([lon, lat]) => ({ latitude: lat, longitude: lon }));
     const speed = slow ? 50 : 75; // m/min
-    return { path: [from, ...path, to], distanceMeters: r.distance, durationMinutes: Math.max(1, Math.round(r.distance / speed)), source: 'osm' };
+    return {
+      path: [from, ...path, to],
+      distanceMeters: r.distance,
+      durationMinutes: Math.max(1, Math.round(r.distance / speed)),
+      source: 'osm',
+    };
   } catch {
     const minutes = walkMinutes(from, to, slow);
     const meters = (minutes * (slow ? 50 : 75)) / 1.3;
@@ -190,48 +204,21 @@ export async function fetchWalkingRoute(from: LatLng, to: LatLng, needs: Accessi
   }
 }
 
-// ─── Experience points ──────────────────────────────────────
-
-let mockTotal = 0;
-export const POINTS = { visit: 50, report: 10 } as const;
-
-/**
- * Award XP. Called when the visitor reaches a landmark ("visit") and when they
- * answer an accessibility question ("report").
- *
- * Real API: POST /points { landmarkId, reason } → { awarded, total }
- */
-export async function awardPoints(landmarkId: string, reason: 'visit' | 'report'): Promise<PointsResult> {
-  if (USE_MOCK_API) {
-    await wait(150);
-    mockTotal += POINTS[reason];
-    return { awarded: POINTS[reason], total: mockTotal };
-  }
-  // TODO(API): identify the user (auth header in request()) so points add up per person.
-  return request<PointsResult>(ENDPOINTS.points, {
-    method: 'POST',
-    body: JSON.stringify({ landmarkId, reason }),
-  });
-}
-
 // ─── Accessibility reports ──────────────────────────────────
 
-/** Answers collected while in mock mode (handy to inspect while developing). */
-export const mockReports: AccessibilityReport[] = [];
+/** Answers kept on the phone when no reports endpoint is available. */
+export const localReports: AccessibilityReport[] = [];
 
-/**
- * Send a yes/no accessibility answer about the route section just walked.
- *
- * Real API: POST /reports AccessibilityReport → 201
- * The backend should aggregate answers per street segment and let /route and
- * /trips/plan avoid segments that many people marked as not accessible.
- */
+/** Send a yes/no accessibility answer about the route section just walked. */
 export async function submitAccessibilityReport(report: AccessibilityReport): Promise<void> {
-  if (USE_MOCK_API) {
-    await wait(150);
-    mockReports.push(report);
-    console.log('[mock] accessibility report', report.category, report.accessible, report.segment.toStopId);
-    return;
+  if (!USE_MOCK_API && ENDPOINTS.reports) {
+    try {
+      await request<unknown>(ENDPOINTS.reports, { method: 'POST', body: JSON.stringify(report) });
+      return;
+    } catch (e) {
+      console.warn('[reports] endpoint failed, keeping report locally', e);
+    }
   }
-  await request<unknown>(ENDPOINTS.reports, { method: 'POST', body: JSON.stringify(report) });
+  await wait(150);
+  localReports.push(report);
 }

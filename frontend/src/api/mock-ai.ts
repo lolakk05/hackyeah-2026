@@ -13,8 +13,8 @@ export function mockAnswer(landmark: Landmark, question: string, lang: Lang): st
 
   if (/(wheelchair|accessib|stairs|ramp|lift|elevator|wózk|schod|dostęp|wind)/.test(q)) {
     const level = pl
-      ? { full: 'jest w pełni dostępne dla wózków', partial: 'jest częściowo dostępne dla wózków', none: 'niestety nie jest dostępne dla wózków' }[a.wheelchair]
-      : { full: 'is fully wheelchair accessible', partial: 'is partly wheelchair accessible', none: 'is unfortunately not wheelchair accessible' }[a.wheelchair];
+      ? { full: 'jest w pełni dostępne dla wózków', partial: 'jest częściowo dostępne dla wózków', none: 'niestety nie jest dostępne dla wózków', unknown: 'nie ma jeszcze danych o dostępności dla wózków' }[a.wheelchair]
+      : { full: 'is fully wheelchair accessible', partial: 'is partly wheelchair accessible', none: 'is unfortunately not wheelchair accessible', unknown: 'has no wheelchair information yet' }[a.wheelchair];
     return `${landmark.name} ${level}. ${a.notes}`;
   }
   if (/(kid|child|family|dzieci|dzieck|rodzin)/.test(q)) {

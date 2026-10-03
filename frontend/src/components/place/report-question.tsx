@@ -6,6 +6,8 @@ import { DuoButton } from '@/components/duo/duo-button';
 import { DuoText } from '@/components/duo/duo-text';
 import { successFeedback } from '@/components/duo/haptics';
 import { Brand } from '@/constants/duo-theme';
+import { formatCoins } from '@/game/progression';
+import type { XpAward } from '@/state/account-context';
 import { useI18n } from '@/i18n/language-context';
 import { themedStyles, useDuo } from '@/state/theme-context';
 
@@ -30,23 +32,23 @@ export function ReportQuestion({
 }: {
   visible: boolean;
   category: ReportCategory;
-  /** Send the answer; resolves to XP awarded. */
-  onAnswer: (accessible: boolean) => Promise<number>;
+  /** Send the answer; resolves to what it earned. */
+  onAnswer: (accessible: boolean) => Promise<XpAward>;
   /** Called when the dialog should close (answered or skipped). */
   onDone: () => void;
 }) {
   const t = useDuo();
   const styles = useStyles();
-  const { s, fmt } = useI18n();
+  const { s, fmt, lang } = useI18n();
   const [sending, setSending] = useState<boolean | null>(null);
-  const [thanks, setThanks] = useState<number | null>(null);
+  const [thanks, setThanks] = useState<XpAward | null>(null);
 
   const answer = async (accessible: boolean) => {
     setSending(accessible);
-    const points = await onAnswer(accessible);
+    const earned = await onAnswer(accessible);
     successFeedback();
     setSending(null);
-    setThanks(points);
+    setThanks(earned);
     setTimeout(onDone, 1100);
   };
 
@@ -58,7 +60,7 @@ export function ReportQuestion({
             <View style={styles.thanks}>
               <DuoText style={styles.bigIcon}>🙌</DuoText>
               <DuoText variant="title" style={styles.center}>
-                {fmt(s.report.thanks, { n: thanks })}
+                {fmt(s.report.thanks, { n: thanks.xp, coins: formatCoins(thanks.coins, lang) })}
               </DuoText>
             </View>
           ) : (

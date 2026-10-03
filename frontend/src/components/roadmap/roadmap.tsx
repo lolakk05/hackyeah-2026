@@ -11,10 +11,13 @@ import { CARD_PADDING, RoadmapNode, TILE } from './roadmap-node';
 export function Roadmap({
   landmarks,
   statusOf,
+  walkMinutesTo,
   onPressStop,
 }: {
   landmarks: Landmark[];
   statusOf: (id: string) => StopStatus;
+  /** Walking minutes into each stop (route planner legs), by landmark id. */
+  walkMinutesTo?: Record<string, number>;
   onPressStop: (landmark: Landmark) => void;
 }) {
   const theme = useDuo();
@@ -26,7 +29,13 @@ export function Roadmap({
         const reached = next ? statusOf(next.id) !== 'locked' : false;
         return (
           <View key={lm.id}>
-            <RoadmapNode landmark={lm} index={i} status={statusOf(lm.id)} onPress={() => onPressStop(lm)} />
+            <RoadmapNode
+              landmark={lm}
+              index={i}
+              status={statusOf(lm.id)}
+              walkMinutes={walkMinutesTo?.[lm.id]}
+              onPress={() => onPressStop(lm)}
+            />
             {next ? (
               <View style={[styles.connector, { backgroundColor: reached ? Brand.success : theme.border }]} />
             ) : null}

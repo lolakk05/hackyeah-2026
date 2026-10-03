@@ -1,121 +1,131 @@
 # Connecting the backend
 
-The app reads all of its data through **`client.ts`**. No component calls `fetch` directly.
+The app reads all of its data through **`client.ts`**. No screen calls `fetch` directly.
 
-| File | What to change |
+| File | What it does |
 | --- | --- |
-| `config.ts` | Backend URL, endpoint paths, and the mock on/off switch |
-| `client.ts` | The real `fetch` calls (search for `TODO(API)`) and `toLandmark()`, which maps your JSON to the app's types |
-| `types.ts` | The data shapes the UI expects |
-| `mock-data.ts`, `mock-ai.ts` | Sample data used while mocks are on |
+| `config.ts` | Backend address, endpoint paths, planner options |
+| `client.ts` | Route planning and places, plus local fallbacks for features the backend doesn't have yet |
+| `account.ts` | Sign-in, XP, coins, ranking and rewards |
+| `mock-accounts.ts` | Sample account backend kept on the phone, used when no account server is set |
+| `route-finder.ts` | Route Finder types, converting its JSON to the app's types, and its error codes |
+| `types.ts` | The data shapes the screens use |
+| `mock-data.ts`, `mock-data-pl.ts`, `mock-ai.ts` | Sample data used when no backend is set |
 
-## Switching from mock data to the real API
+## Switching to the Route Finder backend
 
-Create a `.env` file in `frontend/`:
+1. Start the backend so the phone can reach it, for example `uvicorn … --host 0.0.0.0 --port 8000`.
+2. In `frontend/.env` (copy it from `.env.example` if it's missing), set:
+   ```
+   EXPO_PUBLIC_API_URL=http://192.168.0.12:8000
+   ```
+   Use your computer's LAN IP address (not `127.0.0.1`). The phone and computer must be on the same Wi-Fi.
+3. Restart `npx expo start -c`. With the URL set, the sample data turns off.
 
-```
-EXPO_PUBLIC_API_URL=http://192.168.0.12:8000
-```
+A release build bakes this address in when you build, so rebuild after you change it.
 
-On a real phone, use your computer's LAN IP address, not `localhost`. Then restart `npx expo start`.
-When `EXPO_PUBLIC_API_URL` is set, the mocks turn off automatically.
+## What the app uses from Route Finder
 
-## Language
+### `POST /routes/plan`
 
-Every request gets `?lang=pl` or `?lang=en` and an `Accept-Language` header.
-Return landmark texts (name, tagline, description, facts, accessibility notes, suggested questions) and AI answers in that language.
-
-## Endpoints the app expects
-
-### `GET /landmarks` → `Landmark[]` (in route order)
+Sent from the setup screen:
 
 ```json
-{
-  "id": "wawel-castle",
-  "name": "Wawel Castle",
-  "tagline": "Royal castle on the hill",
-  "description": "Long text…",
-  "photos": ["https://…jpg"],
-  "visitMinutes": 60,
-  "walkMinutesFromPrevious": 15,
-  "coordinates": { "latitude": 50.054, "longitude": 19.9354 },
-  "accessibility": {
-    "wheelchair": "full | partial | none",
-    "stepFree": true,
-    "accessibleToilet": true,
-    "audioGuide": true,
-    "hearingSupport": false,
-    "notes": "Free text"
-  },
-  "facts": [{ "icon": "🕘", "label": "Opening hours", "value": "9:00 – 17:00" }],
-  "model": "castle",
-  "color": "#58CC02",
-  "suggestedQuestions": ["Who is buried in the cathedral?"]
-}
+{ "duration_minutes": 60, "max_intermediate_stops": 2, "tolerance_percent": 15 }
 ```
 
-`model` can be one of: `barbican`, `basilica`, `clothhall`, `tower`, `castle`, `dragon`, `synagogue`, `bridge`, `generic`.
-Any missing field gets a default value in `toLandmark()`, and snake_case names are accepted too.
+- **Start point:** "My location" adds `start_location` (from the phone's GPS). "Main Square" leaves it out.
+- **Accessibility:** wheelchair and no-stairs choices are **not sent**, because the planner doesn't support them yet and they would cause a 422. The app warns the user instead.
+- **Trip length:** limited to 5–360 minutes (up to 6 hours).
 
-### `GET /landmarks/:id` → `Landmark`
+The response is converted by `planResponseToTrip()` in `route-finder.ts`:
 
-### `POST /trips/plan`
-
-Request: `{ "durationMinutes": 120, "needs": { "wheelchair": true, "reducedMobility": false, "lowVision": false, "hearing": false } }`
-
-Response: `{ "stopIds": ["barbican", "st-marys"], "totalMinutes": 110, "skippedForAccessibility": ["town-hall-tower"] }`
-
-If your backend has no trip planner, return `planTripLocally(landmarks, prefs)` in `client.ts` instead.
-
-### `POST /landmarks/:id/ask` (AI guide)
-
-Request: `{ "question": "Is it good for kids?", "history": [{ "role": "user", "text": "…" }, { "role": "assistant", "text": "…" }] }`
-
-Response: `{ "answer": "Yes! …" }`
-
-### `POST /route` (walking directions on the 3D map)
-
-Request: `{ "from": LatLng, "to": LatLng, "needs": AccessibilityNeeds }`
-
-Response: `{ "path": LatLng[], "distanceMeters": 420, "durationMinutes": 6 }`
-
-Use the accessibility reports below to avoid street sections that people marked as not accessible for these `needs`.
-
-### `POST /points` (experience points)
-
-Called when a visitor reaches a landmark (`reason: "visit"`) and when they answer an accessibility question (`reason: "report"`).
-
-Request: `{ "landmarkId": "wawel-castle", "reason": "visit" }`
-
-Response: `{ "awarded": 50, "total": 150 }`
-
-Identify the user with an auth header (add it in `request()` in `client.ts`).
-
-### `POST /reports` (accessibility reports)
-
-After arriving at a stop, there is a 50% chance (`REPORT_QUESTION_CHANCE` in `config.ts`) that the visitor gets one yes/no question about the way they just walked:
-
-| category | question |
+| Response | In the app |
 | --- | --- |
-| `wheelchair` | Could a wheelchair get along the way here? |
-| `stepFree` | Was the way here free of stairs and steps? |
-| `smoothSurface` | Was the pavement smooth (no rough cobblestones)? |
-| `lowVision` | Was the way safe for a blind or low-vision person? |
+| `start_poi`, `intermediate_pois`, `end_poi` | Roadmap stops, kept in this exact order |
+| POI `tags` (`name:pl` / `name:en`, address, `wheelchair`, `opening_hours`, `heritage`, `wikipedia`…) | Place page: name, description, facts, wheelchair info |
+| Known landmarks (Sukiennice, Mariacki, Barbakan, Wawel…) | Their 3D model; other places get a pin |
+| `geometry` | Thin route line on the 3D map |
+| `legs` + `snapped_waypoints` | Line cut into one walk per stop, and the walking time shown on each roadmap card |
+| `duration_s`, `distance_m`, `matches_target`, `warnings`, `attribution` | Route summary on the roadmap, with a "Fix the map" link |
 
-The visitor's own need is asked first. Visitors without needs get a random general question, so everyone contributes.
+Errors (`detail.code`) are shown as friendly messages on the setup screen:
+
+| Code | Message shown |
+| --- | --- |
+| `no_start_poi` | Choose the Main Square instead |
+| `no_candidate_pois`, `no_route_within_budget` | Try a different trip length |
+| `*_busy`, `*_timeout`, `osrm_*` | Busy, try again in `retry_after_s` |
+| `422` validation errors | The validation message |
+| Network or timeout | Check the server address and Wi-Fi |
+
+The request timeout is 50 s (`PLAN_TIMEOUT_MS` in `config.ts`).
+
+### `GET /pois/{id}`
+
+Refreshes a place's details when its page opens.
+
+## Not in Route Finder yet (local fallbacks)
+
+Set these in `ENDPOINTS` in `config.ts` once your other services exist:
+
+| Endpoint | Fallback until it exists |
+| --- | --- |
+| `ask: (id) => '/landmarks/' + id + '/ask'`: AI guide, `{ question, history } → { answer }` | Sample answers |
+| `reports: '/reports'`: yes/no accessibility answers (`AccessibilityReport` in `types.ts`, includes the walked path) | Kept on the phone |
+
+Walking directions to a stop when the visitor is away from the planned line (for example, walking to the start) come from free OpenStreetMap foot routing.
+
+## Accounts, XP, coins, ranking and rewards
+
+Set the account server in `frontend/.env`. It can be the same server as the route planner:
+
+```
+EXPO_PUBLIC_ACCOUNT_API_URL=https://your-server.example
+```
+
+Without it, the app uses a sample backend that keeps accounts on the phone (`mock-accounts.ts`). Its discount codes start with `DEMO-` and are not real tickets.
+
+Paths are in `ACCOUNT_ENDPOINTS` in `config.ts`; types are in `types.ts`. After sign-in, every request sends `Authorization: Bearer <token>`.
+
+| Request | Body | Response |
+| --- | --- | --- |
+| `POST /auth/register` | `{ username, email, password }` | `{ token, user }` |
+| `POST /auth/login` | `{ email, password }` | `{ token, user }` |
+| `GET /users/me` | | `user` |
+| `POST /users/me/xp-events` | `XpEvent` (below) | `{ awarded, coinsAwarded, xp, coins }` |
+| `GET /ranking?limit=50` | | `{ entries: [{ rank, userId, username, xp }], me? }` |
+| `GET /rewards` | | `[{ id, title, description, cost, icon? }]` (texts in the `Accept-Language` language) |
+| `POST /rewards/{id}/redeem` | | `{ redemption: { id, rewardId, title, code, createdAt, expiresAt? }, coins }` |
+| `GET /users/me/redemptions` | | `[redemption]` |
+
+`user` is `{ id, username, email, xp, coins }`. `coins` can end in `.5`.
+
+**Errors:** send `{ "detail": { "code": "...", "message": "..." } }`. The app understands these codes:
+
+| Code | When | Status |
+| --- | --- | --- |
+| `invalid_credentials` | Wrong email or password | 401 |
+| `email_taken`, `username_taken` | Register with a used email or name | 409 |
+| `not_enough_coins` | Redeem without enough coins | 402 |
+| `unauthorized` | Missing or expired token (the app signs out) | 401 |
+
+### XP events
+
+The app sends one event per action. **The backend calculates the points** with the rules below (the same rules are in `src/game/progression.ts`). It must ignore an event `id` it has already counted, because the app re-sends events that failed on a bad connection.
 
 ```json
-{
-  "category": "wheelchair",
-  "accessible": false,
-  "segment": {
-    "fromStopId": "cloth-hall",
-    "toStopId": "wawel-castle",
-    "path": [{ "latitude": 50.0617, "longitude": 19.9373 }, { "latitude": 50.054, "longitude": 19.9354 }]
-  },
-  "needs": { "wheelchair": true, "reducedMobility": false, "lowVision": false, "hearing": false },
-  "createdAt": "2026-10-03T13:00:00.000Z"
-}
+{ "id": "lx3k9a-4f8e2c1b", "type": "visit", "landmarkId": "node/123", "distanceMeters": 620, "createdAt": "2026-10-03T17:40:00Z" }
+{ "id": "…", "type": "report", "landmarkId": "node/123", "category": "wheelchair", "createdAt": "…" }
+{ "id": "…", "type": "route_complete", "distanceMeters": 2400, "stops": 4, "createdAt": "…" }
 ```
 
-Suggested backend logic: snap `path` to street segments (for example OSM way ids), keep a yes/no count per segment and category, and give a segment a high cost in `/route` and `/trips/plan` once enough answers say "no" for a visitor's needs.
+| Type | XP |
+| --- | --- |
+| `report` (accessibility answer) | 50 |
+| `visit` (reached a landmark) | 5 + 1 per 100 m walked to it |
+| `route_complete` (last stop reached) | 20 + 10 per km of the route |
+
+- **Coins:** 0.5 per XP, rounded to 0.1. Redeeming takes away the reward's `cost`.
+- **Level:** worked out on the phone from XP. Level 2 is at 100 XP, and each next level needs 50 XP more than the one before: 100, 250, 450, 700, 1000…
+- **No connection:** the app counts the XP on the phone straight away and sends the event later. Events waiting to be sent are kept in the phone's files, so they survive a restart.

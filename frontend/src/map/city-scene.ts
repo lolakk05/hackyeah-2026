@@ -46,6 +46,8 @@ export interface CityScene {
   /** (Re)build parks, water, buildings and landmarks. Can be called again when data arrives. */
   setCity: (data: MapData, placements: Placement[], buildings: OsmBuilding[]) => void;
   setRoute: (path: P[] | null) => void;
+  /** Whole planned route as a thin, dim line. */
+  setFullRoute: (path: P[] | null) => void;
   setUser: (p: P | null) => void;
   setStops: (stops: { id: string; position: P; height: number; color: string; state: 'done' | 'next' | 'later' }[]) => void;
   /** Animate markers; call every frame. */
@@ -128,6 +130,18 @@ export function createCityScene(pal: CityPalette): CityScene {
     routeGroup.add(new THREE.Mesh(ribbon(path, 4.5, 0.7), routeMat));
   };
 
+  // Whole planned route (thin, under the current leg)
+  const fullRouteGroup = new THREE.Group();
+  scene.add(fullRouteGroup);
+  const fullRouteMat = new THREE.MeshBasicMaterial({ color: '#7A6A4F' });
+  disposables.push(fullRouteMat);
+  const setFullRoute = (path: P[] | null) => {
+    fullRouteGroup.children.forEach((c) => (c as THREE.Mesh).geometry?.dispose());
+    fullRouteGroup.clear();
+    if (!path || path.length < 2) return;
+    fullRouteGroup.add(new THREE.Mesh(ribbon(path, 3, 0.4), fullRouteMat));
+  };
+
   // User marker: a dot with a pulsing ring
   const user = new THREE.Group();
   const userDot = new THREE.Mesh(new THREE.SphereGeometry(4, 16, 12), new THREE.MeshLambertMaterial({ color: pal.user }));
@@ -181,9 +195,10 @@ export function createCityScene(pal: CityPalette): CityScene {
     disposeModel(user);
     disposeModel(pins);
     routeGroup.children.forEach((c) => (c as THREE.Mesh).geometry?.dispose());
+    fullRouteGroup.children.forEach((c) => (c as THREE.Mesh).geometry?.dispose());
   };
 
-  return { scene, landmarkObjects, setCity, setRoute, setUser, setStops, tick, dispose };
+  return { scene, landmarkObjects, setCity, setRoute, setFullRoute, setUser, setStops, tick, dispose };
 }
 
 // ─── Landmarks ──────────────────────────────────────────────

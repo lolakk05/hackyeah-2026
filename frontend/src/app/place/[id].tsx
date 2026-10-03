@@ -16,22 +16,23 @@ import { PhotoCarousel } from '@/components/place/photo-carousel';
 import { pickReportCategory, ReportQuestion } from '@/components/place/report-question';
 import { SectionCard } from '@/components/place/section-card';
 import { Brand, formatDuration } from '@/constants/duo-theme';
+import { formatCoins } from '@/game/progression';
 import { useLandmark } from '@/hooks/use-landmark';
 import { useI18n } from '@/i18n/language-context';
-import { useJourney } from '@/state/journey-context';
+import { useJourney, type StopReward } from '@/state/journey-context';
 import { themedStyles, useDuo } from '@/state/theme-context';
 
 /** Landmark page: 3D model, photos, text, accessibility info, facts and the AI guide. */
 export default function PlaceScreen() {
   const t = useDuo();
   const styles = useStyles();
-  const { s, fmt } = useI18n();
+  const { s, fmt, lang } = useI18n();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { landmark, loading, error } = useLandmark(id);
   const j = useJourney();
 
   const [completing, setCompleting] = useState(false);
-  const [earned, setEarned] = useState<number | null>(null);
+  const [earned, setEarned] = useState<StopReward | null>(null);
   const [report, setReport] = useState<ReportCategory | null>(null);
 
   const close = () => (router.canGoBack() ? router.back() : router.replace('/roadmap'));
@@ -54,18 +55,19 @@ export default function PlaceScreen() {
   const status = j.plan ? j.statusOf(landmark.id) : null;
   const stopNumber = j.plan ? j.plan.stopIds.indexOf(landmark.id) + 1 : 0;
 
-  // Arrived: award XP through the API, then (sometimes) ask one yes/no
-  // accessibility question about the way here.
+  // Arrived: earn XP (and the route bonus after the last stop), then
+  // (sometimes) ask one yes/no accessibility question about the way here.
   const markVisited = async () => {
     setCompleting(true);
-    const points = await j.completeStop(landmark.id);
+    const reward = await j.completeStop(landmark.id);
     successFeedback();
     setCompleting(false);
-    setEarned(points);
+    setEarned(reward);
+    const showFor = reward.route ? 2200 : 1200;
     if (Math.random() < REPORT_QUESTION_CHANCE) {
-      setReport(pickReportCategory(j.preferences.needs));
+      setTimeout(() => setReport(pickReportCategory(j.preferences.needs)), showFor);
     } else {
-      setTimeout(close, 1000);
+      setTimeout(close, showFor);
     }
   };
 
@@ -137,8 +139,18 @@ export default function PlaceScreen() {
         {earned !== null && !report ? (
           <View style={styles.earned} accessibilityLiveRegion="polite">
             <DuoText variant="title" color={Brand.primary}>
-              ⭐ {fmt(s.place.pointsEarned, { n: earned })}
+              ⭐ {fmt(s.place.pointsEarned, { n: earned.visit.xp, coins: formatCoins(earned.visit.coins, lang) })}
             </DuoText>
+            {earned.route ? (
+              <DuoText variant="heading" color={Brand.success}>
+                {fmt(s.place.routeBonus, { n: earned.route.xp, coins: formatCoins(earned.route.coins, lang) })}
+              </DuoText>
+            ) : null}
+            {earned.visit.offline ? (
+              <DuoText variant="caption" color={t.textMuted}>
+                {s.place.offline}
+              </DuoText>
+            ) : null}
           </View>
         ) : status === 'current' ? (
           <DuoButton title={s.place.markVisited} onPress={markVisited} loading={completing} />
@@ -203,5 +215,5 @@ const useStyles = themedStyles((t) => ({
     backgroundColor: t.card,
   },
   footer: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, backgroundColor: t.background },
-  earned: { minHeight: 60, alignItems: 'center', justifyContent: 'center' },
+  earned: { minHeight: 60, alignItems: 'center', justifyContent: 'center', gap: 4 },
 }));

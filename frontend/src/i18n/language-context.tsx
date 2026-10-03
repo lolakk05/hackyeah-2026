@@ -1,5 +1,6 @@
 import { createContext, use, useState, type ReactNode } from 'react';
 
+import { setAccountLanguage } from '@/api/account';
 import { setApiLanguage } from '@/api/client';
 
 import { STRINGS, fmt, type Lang, type Strings } from './strings';
@@ -20,6 +21,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const setLang = (next: Lang) => {
     setApiLanguage(next); // API calls now ask for texts in this language
+    setAccountLanguage(next);
     setLangState(next);
   };
 

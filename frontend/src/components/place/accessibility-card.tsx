@@ -12,6 +12,7 @@ const WHEELCHAIR = {
   full: { color: Brand.success, icon: '✅' },
   partial: { color: Brand.primary, icon: '⚠️' },
   none: { color: Brand.danger, icon: '⛔' },
+  unknown: { color: '#93A2B8', icon: '❔' },
 } as const;
 
 /** Accessibility details, with the visitor's own needs highlighted. */

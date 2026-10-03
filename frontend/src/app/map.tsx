@@ -4,7 +4,7 @@ import { Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { fetchWalkingRoute } from '@/api/client';
-import type { WalkingRoute } from '@/api/types';
+import type { LatLng, WalkingRoute } from '@/api/types';
 import { DuoButton } from '@/components/duo/duo-button';
 import { DuoText } from '@/components/duo/duo-text';
 import { tapFeedback } from '@/components/duo/haptics';
@@ -36,12 +36,26 @@ export default function MapScreen() {
   const location = useUserLocation(previous);
   const me = location.position;
 
+  // The planner's walking path into the next stop (Route Finder legs), if any.
+  const plannedLeg = j.plan?.route?.legs.find((l) => l.toId === nextStop?.id && l.path.length > 1);
+
   // ── Walking route from me to the next stop ──
   const [route, setRoute] = useState<WalkingRoute | null>(null);
   const routeFrom = useRef<typeof me>(null);
   useEffect(() => {
     if (!me || !nextStop) {
       setRoute(null);
+      return;
+    }
+    // Follow the planned route line when we're on it (or have no real GPS).
+    if (plannedLeg && (location.source !== 'gps' || distanceToPath(me, plannedLeg.path) < 80)) {
+      setRoute({
+        path: plannedLeg.path,
+        distanceMeters: plannedLeg.distanceMeters,
+        durationMinutes: plannedLeg.durationMinutes,
+        source: 'api',
+      });
+      routeFrom.current = null;
       return;
     }
     // Only re-route when we moved more than 25 m (or the stop changed).
@@ -65,7 +79,7 @@ export default function MapScreen() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [me?.latitude, me?.longitude, nextStop?.id]);
+  }, [me?.latitude, me?.longitude, nextStop?.id, plannedLeg?.toId]);
 
   // ── Camera: show me + the next stop when the leg starts ──
   useEffect(() => {
@@ -93,7 +107,12 @@ export default function MapScreen() {
   );
 
   const straight = me && nextStop ? distanceMeters(me, nextStop.coordinates) : null;
-  const remaining = route?.distanceMeters ?? straight ?? 0;
+  // Distance still to walk along the route line (falls back to the straight line).
+  const remaining = me && route && route.path.length > 1 ? remainingAlong(route.path, me) : (straight ?? 0);
+  const remainingMinutes =
+    route && route.distanceMeters > 0
+      ? Math.max(1, Math.round((route.durationMinutes * remaining) / route.distanceMeters))
+      : route?.durationMinutes;
   const arrived = straight !== null && straight < ARRIVED_METERS;
   const bearing = me && nextStop ? bearingDegrees(me, nextStop.coordinates) : 0;
   const direction = s.map.directions[Math.round(bearing / 45) % 8];
@@ -101,7 +120,7 @@ export default function MapScreen() {
   const openStop = (id: string) => router.push({ pathname: '/place/[id]', params: { id } });
   const navLine = arrived
     ? s.map.arrived
-    : fmt(s.map.nav, { dist: formatDistance(remaining), min: route?.durationMinutes ?? '…', dir: direction });
+    : fmt(s.map.nav, { dist: formatDistance(remaining), min: remainingMinutes ?? '…', dir: direction });
 
   return (
     <View style={styles.root}>
@@ -111,6 +130,7 @@ export default function MapScreen() {
         stops={mapStops}
         user={me}
         route={route?.path ?? null}
+        fullRoute={j.plan?.route?.path ?? null}
         onPressLandmark={openStop}
       />
 
@@ -163,9 +183,9 @@ export default function MapScreen() {
       <SafeAreaView edges={['bottom']} style={styles.bottom}>
         {nextStop ? (
           <DuoButton
-            title={fmt(arrived ? s.map.imHereOpen : s.map.imAt, { name: nextStop.name })}
-            subtitle={arrived ? s.map.imHereOpenSub : s.map.imAtSub}
+            title={s.map.arrivedButton}
             variant={arrived ? 'primary' : 'secondary'}
+            accessibilityHint={nextStop.name}
             onPress={() => openStop(nextStop.id)}
           />
         ) : (
@@ -174,6 +194,29 @@ export default function MapScreen() {
       </SafeAreaView>
     </View>
   );
+}
+
+/** Shortest distance (m) from a point to a polyline's vertices. */
+function distanceToPath(p: LatLng, path: LatLng[]): number {
+  let best = Infinity;
+  for (const q of path) best = Math.min(best, distanceMeters(p, q));
+  return best;
+}
+
+/** Metres left along `path` from the vertex nearest to `p`. */
+function remainingAlong(path: LatLng[], p: LatLng): number {
+  let nearest = 0;
+  let best = Infinity;
+  path.forEach((q, i) => {
+    const d = distanceMeters(p, q);
+    if (d < best) {
+      best = d;
+      nearest = i;
+    }
+  });
+  let total = best;
+  for (let i = nearest; i + 1 < path.length; i++) total += distanceMeters(path[i], path[i + 1]);
+  return total;
 }
 
 function RoundButton({ label, onPress, a11y }: { label: string; onPress: () => void; a11y: string }) {

@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { theme } from '@/constants/duo-theme';
 import { LanguageProvider } from '@/i18n/language-context';
+import { AccountProvider } from '@/state/account-context';
 import { JourneyProvider } from '@/state/journey-context';
 
 SplashScreen.preventAutoHideAsync();
@@ -31,21 +32,28 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={styles.root}>
       <LanguageProvider>
-        <JourneyProvider>
-          <ThemeProvider value={navTheme}>
-            <StatusBar style="light" />
-            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.background } }}>
-              {/* language → welcome → setup → roadmap → 3D map (→ place pages) */}
-              <Stack.Screen name="index" />
-              <Stack.Screen name="welcome" />
-              <Stack.Screen name="setup" />
-              <Stack.Screen name="roadmap" />
-              {/* no swipe-back on the map: one-finger drags rotate the camera */}
-              <Stack.Screen name="map" options={{ gestureEnabled: false, animation: 'fade' }} />
-              <Stack.Screen name="place/[id]" options={{ animation: 'slide_from_bottom' }} />
-            </Stack>
-          </ThemeProvider>
-        </JourneyProvider>
+        <AccountProvider>
+          <JourneyProvider>
+            <ThemeProvider value={navTheme}>
+              <StatusBar style="light" />
+              <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.background } }}>
+                {/* language → sign in → welcome → setup → roadmap → 3D map (→ place pages) */}
+                <Stack.Screen name="index" />
+                <Stack.Screen name="login" options={{ animation: 'fade' }} />
+                <Stack.Screen name="register" />
+                <Stack.Screen name="welcome" options={{ animation: 'fade' }} />
+                <Stack.Screen name="profile" />
+                <Stack.Screen name="ranking" />
+                <Stack.Screen name="rewards" />
+                <Stack.Screen name="setup" />
+                <Stack.Screen name="roadmap" />
+                {/* no swipe-back on the map: one-finger drags rotate the camera */}
+                <Stack.Screen name="map" options={{ gestureEnabled: false, animation: 'fade' }} />
+                <Stack.Screen name="place/[id]" options={{ animation: 'slide_from_bottom' }} />
+              </Stack>
+            </ThemeProvider>
+          </JourneyProvider>
+        </AccountProvider>
       </LanguageProvider>
     </GestureHandlerRootView>
   );

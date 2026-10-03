@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { ActivityIndicator, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { Landmark } from '@/api/types';
@@ -33,15 +33,19 @@ export default function RoadmapScreen() {
     plan ? j.statusOf(id) : id === landmarks[0]?.id ? 'current' : 'locked';
   const current = roadmap.find((l) => l.id === currentId);
   const skipped = plan?.skippedForAccessibility.length ?? 0;
+  const route = plan?.route;
+  const walkMinutesTo = route ? Object.fromEntries(route.legs.map((l) => [l.toId, l.durationMinutes])) : undefined;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <TopBar progress={plan ? `${completedIds.length}/${plan.stopIds.length}` : undefined} xp={j.xp} />
+      <TopBar progress={plan ? `${completedIds.length}/${plan.stopIds.length}` : undefined} />
 
       <ScrollView contentContainerStyle={styles.content}>
         <UnitBanner
           overline={
-            plan ? fmt(s.roadmap.overline, { time: formatDuration(plan.totalMinutes) }) : s.roadmap.previewOverline
+            plan
+              ? fmt(s.roadmap.overline, { time: formatDuration(route?.walkMinutes ?? plan.totalMinutes) })
+              : s.roadmap.previewOverline
           }
           title={plan ? fmt(s.roadmap.title, { n: plan.stopIds.length }) : s.roadmap.previewTitle}
           actionLabel={plan ? `⚙️ ${s.roadmap.edit}` : undefined}
@@ -54,6 +58,45 @@ export default function RoadmapScreen() {
             <DuoText variant="caption" color={t.textMuted} style={styles.noticeText}>
               {fmt(s.roadmap.skipped, { n: skipped })}
             </DuoText>
+          </View>
+        ) : null}
+
+        {route ? (
+          <View style={styles.routeCard} accessibilityRole="summary">
+            <DuoText variant="heading">
+              {fmt(s.roadmap.walkSummary, {
+                km: (route.distanceMeters / 1000).toFixed(1),
+                min: route.walkMinutes,
+              })}
+            </DuoText>
+            <DuoText variant="caption" color={t.textMuted}>
+              {s.setup.walkOnlyNote}
+            </DuoText>
+            {!route.matchesTarget ? (
+              <DuoText variant="caption" color={Brand.primary}>
+                {s.roadmap.shorter}
+              </DuoText>
+            ) : null}
+            {route.warnings.map((w) => (
+              <DuoText key={w} variant="caption" color={t.textMuted}>
+                ⓘ {w}
+              </DuoText>
+            ))}
+            {route.attribution ? (
+              <View style={styles.attribution}>
+                <DuoText variant="caption" color={t.lockedText} style={styles.flex}>
+                  {route.attribution}
+                </DuoText>
+                <Pressable
+                  onPress={() => Linking.openURL('https://www.openstreetmap.org/fixthemap')}
+                  accessibilityRole="link"
+                  hitSlop={8}>
+                  <DuoText variant="caption" color={Brand.primary}>
+                    {s.roadmap.fixMap}
+                  </DuoText>
+                </Pressable>
+              </View>
+            ) : null}
           </View>
         ) : null}
 
@@ -76,6 +119,7 @@ export default function RoadmapScreen() {
           <Roadmap
             landmarks={roadmap}
             statusOf={statusOf}
+            walkMinutesTo={walkMinutesTo}
             onPressStop={(lm) => (!plan && statusOf(lm.id) === 'current' ? openSetup() : openPlace(lm))}
           />
         )}
@@ -87,7 +131,7 @@ export default function RoadmapScreen() {
               {s.roadmap.complete}
             </DuoText>
             <DuoText variant="body" color={t.textMuted} style={styles.errorText}>
-              {fmt(s.roadmap.completeText, { n: completedIds.length, xp: j.xp })}
+              {fmt(s.roadmap.completeText, { n: completedIds.length, xp: j.tripXp })}
             </DuoText>
           </View>
         ) : null}
@@ -128,6 +172,9 @@ const useStyles = themedStyles((t) => ({
   },
   noticeIcon: { fontSize: 20, lineHeight: 26 },
   noticeText: { flex: 1 },
+  routeCard: { padding: 16, gap: 6, borderRadius: t.radius.lg, backgroundColor: t.surface },
+  attribution: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
+  flex: { flex: 1 },
   center: { alignItems: 'center', gap: 12, paddingVertical: 60 },
   errorText: { textAlign: 'center' },
   finish: { alignItems: 'center', gap: 6, marginTop: 24 },
