@@ -1,21 +1,17 @@
-export class CreatePlaceDto {
-  name: string;
-  shortDescription: string;
-  timeToVisit: number;
-  photos: string[];
-  descriptionPL: string;
-  descriptionEN: string;
+import { IsString, IsInt, IsBoolean, IsOptional } from 'class-validator';
+export class CreatePlaceOpeningHoursDto {
+  @IsInt()
+  dayOfWeek: number;
 
-  hasStairs: boolean;
-  wheelchairAccessible: boolean;
-  hasAccessibleToilet: boolean;
+  @IsString()
+  @IsOptional()
+  openTime?: string;
 
-  openingHours: string;
-  price: string;
-  address: string;
+  @IsString()
+  @IsOptional()
+  closeTime?: string;
 
-  latitude: number;
-  longitude: number;
-
-  sampleAiQuestions: string[];
+  @IsBoolean()
+  @IsOptional()
+  isClosed?: boolean;
 }

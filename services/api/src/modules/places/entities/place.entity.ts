@@ -19,7 +19,5 @@ export class Place {
   latitude: number;
   longitude: number;
 
-  sampleAiQuestions: string[];
-
- openingHours?: PlaceOpeningHour[];
+  openingHours?: PlaceOpeningHour[];
 }
