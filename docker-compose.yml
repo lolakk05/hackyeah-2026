@@ -1,0 +1,111 @@
+services:
+  # ── Main Backend (NestJS) ───────────────────────────────
+  api:
+    build:
+      context: ./services/api
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://postgres:hackyeah@db:5432/hackyeah
+      REDIS_URL: redis://redis:6379
+      ML_SERVICE_URL: http://ai-service:8000
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: "9000"
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_BUCKET: uploads
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    volumes:
+      - ./services/api:/app
+      - /app/node_modules
+    command: npm run start:dev
+
+  # ── AI Service (FastAPI) ────────────────────────────────
+  ai-service:
+    build:
+      context: ./services/ai-service
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      REDIS_URL: redis://redis:6379
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_BUCKET: uploads
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./services/ai-service:/app
+    command: uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  # ── PostgreSQL ──────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: hackyeah
+      POSTGRES_DB: hackyeah
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis (kolejki / cache) ─────────────────────────────
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── MinIO (S3-compatible storage na zdjęcia) ────────────
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+
+  # ── MinIO: auto-tworzenie bucketu "uploads" ─────────────
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+        sleep 3;
+        mc alias set local http://minio:9000 minioadmin minioadmin;
+        mc mb local/uploads --ignore-existing;
+        mc anonymous set public local/uploads;
+        echo 'Bucket uploads created!';
+      "
+
+volumes:
+  db_data:
+  redis_data:
+  minio_data:
