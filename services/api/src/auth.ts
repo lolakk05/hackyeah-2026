@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "@better-auth/prisma-adapter";
 import { PrismaPg } from "@prisma/adapter-pg";
@@ -18,6 +19,7 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
+    requireEmailVerification: true,
   },
 
   trustedOrigins: ["http://localhost:8081"],
