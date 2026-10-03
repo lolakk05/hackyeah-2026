@@ -178,11 +178,13 @@ export async function askAboutLandmark(
  */
 export async function fetchWalkingRoute(from: LatLng, to: LatLng, needs: AccessibilityNeeds): Promise<WalkingRoute> {
   const slow = needs.wheelchair || needs.reducedMobility;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10_000);
   try {
     const url =
       `https://routing.openstreetmap.de/routed-foot/route/v1/foot/` +
       `${from.longitude},${from.latitude};${to.longitude},${to.latitude}?overview=full&geometries=geojson`;
-    const res = await fetch(url);
+    const res = await fetch(url, { signal: controller.signal });
     if (!res.ok) throw new Error(`routing ${res.status}`);
     const json = (await res.json()) as {
       routes?: { distance: number; duration: number; geometry: { coordinates: [number, number][] } }[];
@@ -201,6 +203,8 @@ export async function fetchWalkingRoute(from: LatLng, to: LatLng, needs: Accessi
     const minutes = walkMinutes(from, to, slow);
     const meters = (minutes * (slow ? 50 : 75)) / 1.3;
     return { path: [from, to], distanceMeters: meters, durationMinutes: minutes, source: 'straight' };
+  } finally {
+    clearTimeout(timer);
   }
 }
 

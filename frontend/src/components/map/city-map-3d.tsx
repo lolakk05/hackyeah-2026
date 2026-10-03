@@ -1,4 +1,5 @@
 import { GLView, type ExpoWebGLRenderingContext } from 'expo-gl';
+import { useIsFocused } from 'expo-router';
 import { useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -13,11 +14,18 @@ import { Brand, theme } from '@/constants/duo-theme';
 import { useI18n } from '@/i18n/language-context';
 import { CameraRig } from '@/map/camera-rig';
 import { CITY_PALETTE, createCityScene, type CityScene } from '@/map/city-scene';
-import { toLocal, type LatLng } from '@/map/geo';
+import { MAP_EXTENT, toLocal, type LatLng } from '@/map/geo';
 import { allLandmarkNamePatterns, placeLandmarks, type Placement } from '@/map/landmark-placement';
 import { EMPTY_MAP_DATA, loadMapData, type MapData, type OsmBuilding } from '@/map/osm';
 
 export type StopState = 'done' | 'next' | 'later';
+
+/** A reported problem shown on the map. */
+export interface MapIssue {
+  id: string;
+  coordinates: LatLng;
+  severity: 'info' | 'hard' | 'blocked';
+}
 
 export interface CityMapHandle {
   /** Glide the camera to a point. distance in metres from the camera to the point. */
@@ -37,7 +45,10 @@ interface Props {
   route: LatLng[] | null;
   /** Whole planned route, drawn as a thin line under the current leg. */
   fullRoute?: LatLng[] | null;
+  /** Reported problems (warning signs). */
+  issues?: MapIssue[];
   onPressLandmark?: (id: string) => void;
+  onPressIssue?: (id: string) => void;
   ref?: Ref<CityMapHandle>;
 }
 
@@ -62,7 +73,17 @@ interface CityContent {
  * The map shows immediately with the landmarks; ordinary buildings appear as
  * soon as they're loaded (usually already prefetched / saved on the phone).
  */
-export function CityMap3D({ landmarks, stops, user, route, fullRoute = null, onPressLandmark, ref }: Props) {
+export function CityMap3D({
+  landmarks,
+  stops,
+  user,
+  route,
+  fullRoute = null,
+  issues = NO_ISSUES,
+  onPressLandmark,
+  onPressIssue,
+  ref,
+}: Props) {
   const { s, fmt } = useI18n();
   const [buildingsState, setBuildingsState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [reloadKey, setReloadKey] = useState(0);
@@ -74,9 +95,9 @@ export function CityMap3D({ landmarks, stops, user, route, fullRoute = null, onP
   const camera = useRef<THREE.PerspectiveCamera | null>(null);
   const running = useRef(false);
   const content = useRef<CityContent | null>(null);
-  const latest = useRef({ stops, user, route, fullRoute });
+  const latest = useRef({ stops, user, route, fullRoute, issues });
   useEffect(() => {
-    latest.current = { stops, user, route, fullRoute };
+    latest.current = { stops, user, route, fullRoute, issues };
   });
 
   // Landmarks placed without OSM data, so they can be shown right away.
@@ -107,6 +128,10 @@ export function CityMap3D({ landmarks, stops, user, route, fullRoute = null, onP
   const applyUser = () => city.current?.setUser(latest.current.user ? toLocal(latest.current.user) : null);
   const applyRoute = () => city.current?.setRoute(latest.current.route?.map(toLocal) ?? null);
   const applyFullRoute = () => city.current?.setFullRoute(latest.current.fullRoute?.map(toLocal) ?? null);
+  const applyIssues = () =>
+    city.current?.setIssues(
+      latest.current.issues.map((i) => ({ id: i.id, position: toLocal(i.coordinates), severity: i.severity })),
+    );
 
   // ── Load buildings (usually already prefetched) ──
   const landmarkKey = landmarks.map((l) => l.id).join();
@@ -135,17 +160,28 @@ export function CityMap3D({ landmarks, stops, user, route, fullRoute = null, onP
   useEffect(applyUser, [user]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(applyRoute, [route]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(applyFullRoute, [fullRoute]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(applyIssues, [issues]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useImperativeHandle(ref, () => ({
     flyTo: (p, distance) => rig.flyTo(toLocal(p), distance),
     lookAlong: (b) => rig.headingTo(b),
-    overview: () => rig.flyTo({ x: 0, z: 250 }, 1700, 0.35, THREE.MathUtils.degToRad(55)),
+    overview: () => rig.flyTo(MAP_EXTENT.center, 2500, 0.35, THREE.MathUtils.degToRad(55)),
   }));
+
+  // Stop drawing while a place page covers the map; start again when it's back.
+  const paused = useRef(false);
+  const resume = useRef<() => void>(() => {});
+  const focused = useIsFocused();
+  useEffect(() => {
+    paused.current = !focused;
+    if (focused) resume.current();
+  }, [focused]);
 
   useEffect(() => {
     running.current = true;
     return () => {
       running.current = false;
+      resume.current(); // a paused loop runs once more to free the renderer
       city.current?.dispose();
       city.current = null;
     };
@@ -166,20 +202,33 @@ export function CityMap3D({ landmarks, stops, user, route, fullRoute = null, onP
       applyUser();
       applyRoute();
       applyFullRoute();
+      applyIssues();
 
       const start = Date.now();
       let lastLabels = 0;
+      let frame = 0;
+      let idle = false;
       const projected = new THREE.Vector3();
       const loop = () => {
         if (!running.current || city.current !== scene) {
           renderer.dispose();
           return;
         }
+        if (paused.current) {
+          idle = true; // resume() starts the loop again
+          return;
+        }
         const now = Date.now();
+        frame += 1;
+        // While the camera is still, only small markers move: draw every other
+        // frame (30 fps) to save battery and keep the phone cool.
+        const settled = rig.isSettled();
         rig.update(cam);
-        scene.tick((now - start) / 1000);
-        renderer.render(scene.scene, cam);
-        gl.endFrameEXP?.();
+        if (!settled || frame % 2 === 0) {
+          scene.tick((now - start) / 1000);
+          renderer.render(scene.scene, cam);
+          gl.endFrameEXP?.();
+        }
 
         // Update the floating name labels ~8 times per second
         if (now - lastLabels > 120) {
@@ -202,6 +251,12 @@ export function CityMap3D({ landmarks, stops, user, route, fullRoute = null, onP
         }
         requestAnimationFrame(loop);
       };
+      resume.current = () => {
+        if (idle) {
+          idle = false;
+          requestAnimationFrame(loop);
+        }
+      };
       loop();
     } catch (e) {
       console.warn('[map] 3D failed', e);
@@ -213,7 +268,23 @@ export function CityMap3D({ landmarks, stops, user, route, fullRoute = null, onP
   const pick = (x: number, y: number) => {
     const cam = camera.current;
     const c = city.current;
-    if (!cam || !c || !onPressLandmark) return;
+    if (!cam || !c) return;
+    // Warning signs are small: pick the nearest one on screen within a finger's reach.
+    if (onPressIssue && latest.current.issues.length) {
+      let best: { id: string; d: number } | null = null;
+      const v = new THREE.Vector3();
+      for (const issue of latest.current.issues) {
+        const p = toLocal(issue.coordinates);
+        v.set(p.x, 26, p.z).project(cam);
+        if (v.z > 1) continue;
+        const sx = ((v.x + 1) / 2) * size.current.w;
+        const sy = ((1 - v.y) / 2) * size.current.h;
+        const d = Math.hypot(sx - x, sy - y);
+        if (d < 34 && (!best || d < best.d)) best = { id: issue.id, d };
+      }
+      if (best) return onPressIssue(best.id);
+    }
+    if (!onPressLandmark) return;
     const ray = new THREE.Raycaster();
     ray.setFromCamera(new THREE.Vector2((x / size.current.w) * 2 - 1, -(y / size.current.h) * 2 + 1), cam);
     const hits = ray.intersectObjects([...c.landmarkObjects.values()], true);
@@ -251,7 +322,7 @@ export function CityMap3D({ landmarks, stops, user, route, fullRoute = null, onP
     <View style={styles.fill} onLayout={onLayout}>
       <GestureDetector gesture={gestures}>
         <View style={styles.fill} accessibilityLabel={s.map.a11y} accessible>
-          <GLView style={styles.fill} onContextCreate={onContextCreate} />
+          <GLView style={styles.fill} onContextCreate={onContextCreate} msaaSamples={2} />
         </View>
       </GestureDetector>
 
@@ -306,6 +377,8 @@ export function CityMap3D({ landmarks, stops, user, route, fullRoute = null, onP
     </View>
   );
 }
+
+const NO_ISSUES: MapIssue[] = [];
 
 function sameLabels(a: Label[], b: Label[]) {
   if (a.length !== b.length) return false;

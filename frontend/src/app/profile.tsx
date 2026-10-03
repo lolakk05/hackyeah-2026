@@ -7,8 +7,10 @@ import { LevelCard } from '@/components/account/level-card';
 import { ScreenHeader } from '@/components/account/screen-header';
 import { DuoButton } from '@/components/duo/duo-button';
 import { DuoText } from '@/components/duo/duo-text';
+import { StatueShelfModel } from '@/components/models/statue-views';
+import { STATUE_TIERS, TIER_MIN_LEVEL, tierForLevel } from '@/components/models/statues';
 import { Brand } from '@/constants/duo-theme';
-import { COINS_PER_XP, formatCoins, XP_RULES } from '@/game/progression';
+import { COINS_PER_XP, formatCoins, XP_RULES, xpToReachLevel } from '@/game/progression';
 import { useI18n } from '@/i18n/language-context';
 import { useAccount } from '@/state/account-context';
 import { useJourney } from '@/state/journey-context';
@@ -36,6 +38,17 @@ export default function ProfileScreen() {
     if (router.canDismiss()) router.dismissAll();
     router.replace('/login');
   };
+
+  // Statues: unlocked by level (bronze → silver → gold → crystal)
+  const tier = tierForLevel(account.level.level);
+  const nextTier = STATUE_TIERS[STATUE_TIERS.indexOf(tier) + 1];
+  const statueLine = nextTier
+    ? fmt(s.statues.next, {
+        name: s.statues.tiers[nextTier],
+        level: TIER_MIN_LEVEL[nextTier],
+        n: Math.max(0, xpToReachLevel(TIER_MIN_LEVEL[nextTier]) - (user?.xp ?? 0)),
+      })
+    : s.statues.all;
 
   const rules = [
     { icon: '♿', label: s.profile.howReport, value: fmt(s.profile.howReportValue, { n: XP_RULES.report }), highlight: true },
@@ -78,6 +91,15 @@ export default function ProfileScreen() {
           {fmt(s.profile.xpTotal, { n: user?.xp ?? 0 })}
         </DuoText>
 
+        <View style={styles.card}>
+          <DuoText variant="heading">{s.statues.title}</DuoText>
+          <StatueShelfModel current={tier} backgroundColor={t.surface} style={styles.shelf} />
+          <DuoText variant="body">{fmt(s.statues.current, { name: s.statues.tiers[tier] })}</DuoText>
+          <DuoText variant="caption" color={nextTier ? t.textMuted : Brand.primary}>
+            {statueLine}
+          </DuoText>
+        </View>
+
         <View style={styles.buttonRow}>
           <DuoButton
             title={`🏆 ${s.profile.ranking}`}
@@ -113,6 +135,13 @@ export default function ProfileScreen() {
           </DuoText>
         </View>
 
+        <DuoButton
+          title={`⚠️ ${s.issues.title}`}
+          variant="secondary"
+          size="md"
+          onPress={() => router.push('/reports')}
+        />
+
         {account.pendingCount > 0 ? (
           <DuoText variant="caption" color={t.textMuted} style={styles.center}>
             ⏳ {fmt(s.profile.pending, { n: account.pendingCount })}
@@ -143,4 +172,5 @@ const useStyles = themedStyles((t) => ({
   card: { padding: 16, gap: 14, borderRadius: t.radius.xl, backgroundColor: t.surface },
   ruleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   ruleIcon: { fontSize: 24, lineHeight: 30, width: 32, textAlign: 'center' },
+  shelf: { height: 170, borderRadius: t.radius.lg },
 }));

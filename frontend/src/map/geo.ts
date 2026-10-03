@@ -12,8 +12,27 @@ export interface LatLng {
 /** Centre of the Main Square (Rynek Główny). */
 export const MAP_ORIGIN: LatLng = { latitude: 50.0617, longitude: 19.9373 };
 
-/** Area loaded for the 3D map: Old Town, Wawel, Kazimierz and the river. */
-export const MAP_BOUNDS = { south: 50.0455, west: 19.926, north: 50.0675, east: 19.9525 };
+/** Core area: Old Town, Wawel, Kazimierz and the river. */
+const CORE_BOUNDS = { south: 50.0455, west: 19.926, north: 50.0675, east: 19.9525 };
+/**
+ * How much bigger than the core area the 3D map is (1.4 = 40% longer on each
+ * side, about twice the area). More area = longer first download and more to draw.
+ */
+export const MAP_SCALE = 1.4;
+
+const coreLat = (CORE_BOUNDS.south + CORE_BOUNDS.north) / 2;
+const coreLon = (CORE_BOUNDS.west + CORE_BOUNDS.east) / 2;
+const halfLat = ((CORE_BOUNDS.north - CORE_BOUNDS.south) / 2) * MAP_SCALE;
+const halfLon = ((CORE_BOUNDS.east - CORE_BOUNDS.west) / 2) * MAP_SCALE;
+const round5 = (n: number) => Math.round(n * 1e5) / 1e5;
+
+/** Area loaded for the 3D map. */
+export const MAP_BOUNDS = {
+  south: round5(coreLat - halfLat),
+  west: round5(coreLon - halfLon),
+  north: round5(coreLat + halfLat),
+  east: round5(coreLon + halfLon),
+};
 
 const M_PER_DEG_LAT = 110_574;
 const M_PER_DEG_LON = 111_320 * Math.cos((MAP_ORIGIN.latitude * Math.PI) / 180);
@@ -79,3 +98,18 @@ export function isInMapArea(p: LatLng, margin = 0.01): boolean {
     p.longitude < MAP_BOUNDS.east + margin
   );
 }
+
+/** The loaded area in local metres (for camera limits and the overview). */
+export const MAP_EXTENT = (() => {
+  const sw = toLocal({ latitude: MAP_BOUNDS.south, longitude: MAP_BOUNDS.west });
+  const ne = toLocal({ latitude: MAP_BOUNDS.north, longitude: MAP_BOUNDS.east });
+  return {
+    minX: sw.x,
+    maxX: ne.x,
+    minZ: ne.z,
+    maxZ: sw.z,
+    center: { x: (sw.x + ne.x) / 2, z: (sw.z + ne.z) / 2 },
+    width: ne.x - sw.x,
+    depth: sw.z - ne.z,
+  };
+})();

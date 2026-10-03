@@ -183,7 +183,7 @@ export interface AuthSession {
   user: AccountUser;
 }
 
-export type XpEventType = 'visit' | 'report' | 'route_complete';
+export type XpEventType = 'visit' | 'report' | 'route_complete' | 'issue_report';
 
 /**
  * Something the visitor did that earns XP. The backend calculates the points
@@ -202,6 +202,8 @@ export interface XpEvent {
   stops?: number;
   /** report: which question was answered. */
   category?: ReportCategory;
+  /** issue_report: id of the problem report. */
+  reportId?: string;
   /** ISO time. */
   createdAt: string;
 }
@@ -248,4 +250,60 @@ export interface Redemption {
   createdAt: string;
   /** ISO time after which the code stops working. */
   expiresAt?: string;
+}
+
+// ─── Problem reports ────────────────────────────────────────
+
+/** Kinds of problems visitors can report (all but `other` have a ready-made message). */
+export type IssueType =
+  | 'blocked'
+  | 'construction'
+  | 'surface'
+  | 'stairs'
+  | 'kerb'
+  | 'lift'
+  | 'crossing'
+  | 'crowded'
+  | 'other';
+
+export type IssueSeverity = 'info' | 'hard' | 'blocked';
+
+/** Who a problem affects. */
+export type IssueGroup = 'wheelchair' | 'stepFree' | 'lowVision' | 'everyone';
+
+/** What the app sends when someone reports a problem. */
+export interface IssueReportInput {
+  /** Unique id made on the phone (re-sending the same report is safe). */
+  id: string;
+  type: IssueType;
+  /** The ready-made message (in the reporter's language) or, for `other`, the reporter's own words. */
+  message: string;
+  /** Optional extra details from the reporter. */
+  comment?: string;
+  severity: IssueSeverity;
+  affects: IssueGroup[];
+  location: LatLng;
+  /** gps = phone position · landmark = reported from a place page · map = no GPS, map centre used. */
+  locationSource: 'gps' | 'landmark' | 'map';
+  accuracyMeters?: number;
+  /** Nearest stop / landmark, when known. */
+  landmarkId?: string;
+  landmarkName?: string;
+  /** The route section the visitor was walking, when on a trip. */
+  segment?: { fromStopId: string | null; toStopId: string };
+  /** The reporter's accessibility needs (from the trip settings). */
+  needs: AccessibilityNeeds;
+  lang: 'pl' | 'en';
+  /** e.g. "ios 18.2" */
+  platform: string;
+  createdAt: string;
+}
+
+/** A report as stored by the backend and shown on the map. */
+export interface IssueReport extends IssueReportInput {
+  userId?: string;
+  username?: string;
+  /** How many other people confirmed the problem is still there. */
+  confirmations: number;
+  status: 'open' | 'resolved';
 }

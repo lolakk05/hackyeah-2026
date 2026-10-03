@@ -73,4 +73,6 @@ export const ACCOUNT_ENDPOINTS = {
   ranking: '/ranking', // GET ?limit=50 → Ranking
   rewards: '/rewards', // GET → Reward[]
   redeem: (rewardId: string) => `/rewards/${encodeURIComponent(rewardId)}/redeem`, // POST → { redemption, coins }
+  issues: '/reports/issues', // GET ?south&west&north&east → IssueReport[] · POST IssueReportInput → IssueReport
+  confirmIssue: (id: string) => `/reports/issues/${encodeURIComponent(id)}/confirm`, // POST → { confirmations }
 };

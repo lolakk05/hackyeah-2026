@@ -13,7 +13,9 @@ import { AccessibilityCard } from '@/components/place/accessibility-card';
 import { AskAiChat } from '@/components/place/ask-ai-chat';
 import { FactsList } from '@/components/place/facts-list';
 import { PhotoCarousel } from '@/components/place/photo-carousel';
+import { RewardBurst } from '@/components/account/reward-burst';
 import { pickReportCategory, ReportQuestion } from '@/components/place/report-question';
+import { ReportSheet } from '@/components/reports/report-sheet';
 import { SectionCard } from '@/components/place/section-card';
 import { Brand, formatDuration } from '@/constants/duo-theme';
 import { formatCoins } from '@/game/progression';
@@ -34,6 +36,8 @@ export default function PlaceScreen() {
   const [completing, setCompleting] = useState(false);
   const [earned, setEarned] = useState<StopReward | null>(null);
   const [report, setReport] = useState<ReportCategory | null>(null);
+  const [burst, setBurst] = useState<StopReward | null>(null);
+  const [reporting, setReporting] = useState(false);
 
   const close = () => (router.canGoBack() ? router.back() : router.replace('/roadmap'));
 
@@ -63,13 +67,18 @@ export default function PlaceScreen() {
     successFeedback();
     setCompleting(false);
     setEarned(reward);
-    const showFor = reward.route ? 2200 : 1200;
-    if (Math.random() < REPORT_QUESTION_CHANCE) {
-      setTimeout(() => setReport(pickReportCategory(j.preferences.needs)), showFor);
-    } else {
-      setTimeout(close, showFor);
-    }
+    setBurst(reward); // 3D trophy with the points
   };
+
+  // After the celebration: sometimes one yes/no accessibility question, else back to the map.
+  const afterBurst = () => {
+    setBurst(null);
+    // iOS can't open a new modal while the previous one is still closing: wait a moment.
+    if (Math.random() < REPORT_QUESTION_CHANCE) setTimeout(() => setReport(pickReportCategory(j.preferences.needs)), 450);
+    else close();
+  };
+
+  const stopIndex = j.plan ? j.plan.stopIds.indexOf(landmark.id) : -1;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -132,6 +141,13 @@ export default function PlaceScreen() {
           <FactsList facts={landmark.facts} />
 
           <AskAiChat landmark={landmark} />
+
+          <DuoButton
+            title={`⚠️ ${s.issues.reportHere}`}
+            variant="secondary"
+            size="md"
+            onPress={() => setReporting(true)}
+          />
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -162,6 +178,35 @@ export default function PlaceScreen() {
           <DuoButton title={s.place.planTrip} onPress={() => router.replace('/setup')} />
         )}
       </View>
+
+      {burst ? (
+        <RewardBurst
+          awards={burst.route ? [burst.visit, burst.route] : [burst.visit]}
+          bonusLabel={
+            burst.route
+              ? fmt(s.place.routeBonus, { n: burst.route.xp, coins: formatCoins(burst.route.coins, lang) })
+              : undefined
+          }
+          onClose={afterBurst}
+        />
+      ) : null}
+
+      {reporting ? (
+        <ReportSheet
+          place={{
+            location: landmark.coordinates,
+            locationSource: 'landmark',
+            landmarkId: landmark.id,
+            landmarkName: landmark.name,
+            segment:
+              j.plan && stopIndex >= 0
+                ? { fromStopId: stopIndex > 0 ? j.plan.stopIds[stopIndex - 1] : null, toStopId: landmark.id }
+                : undefined,
+            label: landmark.name,
+          }}
+          onClose={() => setReporting(false)}
+        />
+      ) : null}
 
       {report ? (
         <ReportQuestion

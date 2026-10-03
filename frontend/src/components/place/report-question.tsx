@@ -5,6 +5,7 @@ import type { AccessibilityNeeds, ReportCategory } from '@/api/types';
 import { DuoButton } from '@/components/duo/duo-button';
 import { DuoText } from '@/components/duo/duo-text';
 import { successFeedback } from '@/components/duo/haptics';
+import { TrophyModel } from '@/components/models/statue-views';
 import { Brand } from '@/constants/duo-theme';
 import { formatCoins } from '@/game/progression';
 import type { XpAward } from '@/state/account-context';
@@ -49,7 +50,7 @@ export function ReportQuestion({
     successFeedback();
     setSending(null);
     setThanks(earned);
-    setTimeout(onDone, 1100);
+    setTimeout(onDone, 1800);
   };
 
   return (
@@ -58,7 +59,7 @@ export function ReportQuestion({
         <View style={styles.sheet} accessibilityViewIsModal>
           {thanks !== null ? (
             <View style={styles.thanks}>
-              <DuoText style={styles.bigIcon}>🙌</DuoText>
+              <TrophyModel backgroundColor={t.card} style={styles.trophy} />
               <DuoText variant="title" style={styles.center}>
                 {fmt(s.report.thanks, { n: thanks.xp, coins: formatCoins(thanks.coins, lang) })}
               </DuoText>
@@ -141,5 +142,6 @@ const useStyles = themedStyles((t) => ({
   buttons: { flexDirection: 'row', gap: 12, marginTop: 8 },
   flex: { flex: 1 },
   skip: { alignSelf: 'center', paddingVertical: 8 },
-  thanks: { alignItems: 'center', gap: 8, paddingVertical: 24 },
+  thanks: { alignItems: 'center', gap: 8, paddingVertical: 16 },
+  trophy: { width: 120, height: 120, borderRadius: 24 },
 }));

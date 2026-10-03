@@ -8,6 +8,7 @@ The app reads all of its data through **`client.ts`**. No screen calls `fetch` d
 | `client.ts` | Route planning and places, plus local fallbacks for features the backend doesn't have yet |
 | `account.ts` | Sign-in, XP, coins, ranking and rewards |
 | `mock-accounts.ts` | Sample account backend kept on the phone, used when no account server is set |
+| `issues.ts`, `mock-issues.ts` | Problem reports ("path blocked", "lift not working"…), and their sample backend |
 | `route-finder.ts` | Route Finder types, converting its JSON to the app's types, and its error codes |
 | `types.ts` | The data shapes the screens use |
 | `mock-data.ts`, `mock-data-pl.ts`, `mock-ai.ts` | Sample data used when no backend is set |
@@ -98,6 +99,9 @@ Paths are in `ACCOUNT_ENDPOINTS` in `config.ts`; types are in `types.ts`. After 
 | `GET /rewards` | | `[{ id, title, description, cost, icon? }]` (texts in the `Accept-Language` language) |
 | `POST /rewards/{id}/redeem` | | `{ redemption: { id, rewardId, title, code, createdAt, expiresAt? }, coins }` |
 | `GET /users/me/redemptions` | | `[redemption]` |
+| `GET /reports/issues?south=&west=&north=&east=` | | `[IssueReport]`, open reports in the map area |
+| `POST /reports/issues` | `IssueReportInput` (below) | the stored `IssueReport` |
+| `POST /reports/issues/{id}/confirm` | | `{ confirmations }` ("still there"; count once per user) |
 
 `user` is `{ id, username, email, xp, coins }`. `coins` can end in `.5`.
 
@@ -125,7 +129,42 @@ The app sends one event per action. **The backend calculates the points** with t
 | `report` (accessibility answer) | 50 |
 | `visit` (reached a landmark) | 5 + 1 per 100 m walked to it |
 | `route_complete` (last stop reached) | 20 + 10 per km of the route |
+| `issue_report` (reported a problem, has `reportId`) | 20 |
 
+- **Limit farming:** the app sends the same kinds of events again on a new trip. Count `visit` once per landmark per user per day, `route_complete` once per planned route, and `issue_report` only for a report that exists (for example at most 10 a day).
 - **Coins:** 0.5 per XP, rounded to 0.1. Redeeming takes away the reward's `cost`.
 - **Level:** worked out on the phone from XP. Level 2 is at 100 XP, and each next level needs 50 XP more than the one before: 100, 250, 450, 700, 1000…
 - **No connection:** the app counts the XP on the phone straight away and sends the event later. Events waiting to be sent are kept in the phone's files, so they survive a restart.
+
+### Problem reports
+
+Visitors report problems from the map (⚠️ button), from a place page, or from the Reports screen. They pick a ready-made message, or choose **Something else** to write their own and set who it affects and how serious it is. Reports show on the 3D map as warning signs (red = impassable, orange = hard to pass, blue = good to know) and in the Reports list, where others can confirm them ("still there").
+
+`POST /reports/issues` body (`IssueReportInput` in `types.ts`):
+
+```json
+{
+  "id": "r-lx3k9a-4f8e2c",
+  "type": "lift",
+  "message": "Winda lub podnośnik nie działa.",
+  "comment": "Przy wejściu od ul. Grodzkiej",
+  "severity": "blocked",
+  "affects": ["wheelchair", "stepFree"],
+  "location": { "latitude": 50.0549, "longitude": 19.9352 },
+  "locationSource": "gps",
+  "landmarkId": "wawel-castle",
+  "landmarkName": "Wawel Royal Castle",
+  "segment": { "fromStopId": "cloth-hall", "toStopId": "wawel-castle" },
+  "needs": { "wheelchair": true, "reducedMobility": false, "lowVision": false, "hearing": false },
+  "lang": "pl",
+  "platform": "ios 18.2",
+  "createdAt": "2026-10-03T19:40:00Z"
+}
+```
+
+- `type`: `blocked`, `construction`, `surface`, `stairs`, `kerb`, `lift`, `crossing`, `crowded` or `other`. For all but `other`, `message` is the ready-made text in the reporter's language; the app shows its own translation of the `type` to other users. For `other`, `message` is the reporter's own words.
+- `severity`: `info`, `hard` or `blocked`. `affects`: `wheelchair`, `stepFree`, `lowVision`, `everyone`.
+- `locationSource`: `gps` (phone position), `landmark` (sent from a place page) or `map` (no GPS: the Main Square or the previous stop is used).
+- `id` is made on the phone: if the same id arrives twice, return the stored report. Reports made offline are sent later.
+- The backend adds `userId`, `username`, `confirmations` (start at 0) and `status` (`open` / `resolved`). Only `open` reports are listed.
+- **Use them for routing:** when a section has `blocked` reports (and confirmations) for a group, routes for people in that group should avoid it.

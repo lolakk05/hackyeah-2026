@@ -26,6 +26,13 @@ export function useUserLocation(fallback: LatLng | null): UserLocation {
   useEffect(() => {
     let cancelled = false;
     const subs: { remove: () => void }[] = [];
+    // A watcher that starts after the screen closed must be stopped at once
+    // (otherwise GPS keeps running in the background).
+    const keep = (sub: { remove: () => void }) => {
+      if (cancelled) sub.remove();
+      else subs.push(sub);
+    };
+    let lastHeading = -999;
     (async () => {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
@@ -34,14 +41,23 @@ export function useUserLocation(fallback: LatLng | null): UserLocation {
           setPermissionDenied(true);
           return;
         }
-        subs.push(
+        keep(
           await Location.watchPositionAsync(
             { accuracy: Location.Accuracy.High, distanceInterval: 3, timeInterval: 2000 },
             (loc) => setGps({ latitude: loc.coords.latitude, longitude: loc.coords.longitude }),
           ),
         );
         try {
-          subs.push(await Location.watchHeadingAsync((h) => setHeading(h.trueHeading >= 0 ? h.trueHeading : h.magHeading)));
+          keep(
+            await Location.watchHeadingAsync((h) => {
+              const value = h.trueHeading >= 0 ? h.trueHeading : h.magHeading;
+              // The compass reports many times a second: only re-render for a real turn.
+              const diff = Math.abs(((value - lastHeading + 540) % 360) - 180);
+              if (diff < 4) return;
+              lastHeading = value;
+              setHeading(value);
+            }),
+          );
         } catch {
           // compass not available (web, simulators)
         }

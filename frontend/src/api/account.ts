@@ -24,7 +24,8 @@ export function setAccountLanguage(next: Lang) {
   lang = next;
 }
 
-async function call<T>(path: string, init: RequestInit & { token?: string } = {}): Promise<T> {
+/** Request to the account backend (also used by issues.ts). */
+export async function call<T>(path: string, init: RequestInit & { token?: string } = {}): Promise<T> {
   const { token, ...rest } = init;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 15_000);
