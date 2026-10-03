@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AchievementsCard } from '@/components/account/achievements-card';
 import { LevelCard } from '@/components/account/level-card';
 import { ScreenHeader } from '@/components/account/screen-header';
 import { DuoButton } from '@/components/duo/duo-button';
@@ -90,6 +91,8 @@ export default function ProfileScreen() {
         <DuoText variant="caption" color={t.textMuted} style={styles.center}>
           {fmt(s.profile.xpTotal, { n: user?.xp ?? 0 })}
         </DuoText>
+
+        <AchievementsCard />
 
         <View style={styles.card}>
           <DuoText variant="heading">{s.statues.title}</DuoText>

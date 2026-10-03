@@ -3,6 +3,7 @@ import { createContext, use, useCallback, useEffect, useRef, useState, type Reac
 import * as api from '@/api/account';
 import { AccountError, isOffline } from '@/api/account';
 import type { AccountUser, AuthSession, XpEvent } from '@/api/types';
+import { applyEvent, EMPTY_STATS, unlockedIds, type AchievementId, type PlayerStats } from '@/game/achievements';
 import { coinsForXp, levelInfo, xpForEvent, type LevelInfo } from '@/game/progression';
 import { readJson, removeJson, writeJson } from '@/storage/json-file';
 
@@ -12,6 +13,8 @@ const SESSION_FILE = 'session-v1.json';
  * expired), per user; sent on the next chance.
  */
 const PENDING_FILE = 'pending-xp-v2.json';
+/** Achievement stats per user id. */
+const STATS_FILE = 'stats-v1.json';
 
 export type AccountStatus = 'loading' | 'signedOut' | 'signedIn';
 
@@ -48,6 +51,11 @@ interface AccountState {
   award: (event: XpEventInput) => Promise<XpAward>;
   /** Update the coin balance after spending coins (from the backend's answer). */
   setCoins: (coins: number) => void;
+  /** Counters for achievements (trips, km, places…). */
+  stats: PlayerStats;
+  /** Achievements unlocked just now, waiting to be shown. */
+  newAchievements: AchievementId[];
+  dismissAchievement: () => void;
 }
 
 const AccountContext = createContext<AccountState | null>(null);
@@ -61,6 +69,29 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AccountUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
+  const [allStats, setAllStats] = useState<Record<string, PlayerStats>>({});
+  const [newAchievements, setNewAchievements] = useState<AchievementId[]>([]);
+  const statsRef = useRef<Record<string, PlayerStats>>({});
+  useEffect(() => {
+    readJson<Record<string, PlayerStats>>(STATS_FILE).then((saved) => {
+      if (saved) {
+        statsRef.current = { ...saved, ...statsRef.current };
+        setAllStats(statsRef.current);
+      }
+    });
+  }, []);
+
+  /** Count an action for the achievements and queue any newly unlocked ones. */
+  const recordStats = (userId: string, event: XpEvent, xpBefore: number, xpAfter: number) => {
+    const before = statsRef.current[userId] ?? EMPTY_STATS;
+    const after = applyEvent(before, event);
+    statsRef.current = { ...statsRef.current, [userId]: after };
+    setAllStats(statsRef.current);
+    writeJson(STATS_FILE, statsRef.current);
+    const had = unlockedIds(before, levelInfo(xpBefore).level);
+    const fresh = unlockedIds(after, levelInfo(xpAfter).level).filter((id) => !had.includes(id));
+    if (fresh.length) setNewAchievements((q) => [...q, ...fresh]);
+  };
 
   // Refs, so async work always sees the latest values.
   const tokenRef = useRef<string | null>(null);
@@ -109,6 +140,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
 
   /** Sign out. Unsent XP stays saved for this account and is sent after the next sign-in. */
   const logout = useCallback(() => {
+    if (tokenRef.current) api.signOut(tokenRef.current); // tell the server (no need to wait)
     tokenRef.current = null;
     userRef.current = null;
     setToken(null);
@@ -207,11 +239,14 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       const u = userRef.current;
       if (!t || !u) return { xp: 0, coins: 0 };
       const event: XpEvent = { ...input, id: newEventId(), createdAt: new Date().toISOString() };
+      const xpBefore = u.xp;
       try {
         const res = await api.sendXpEvent(t, event);
         if (tokenRef.current === t && userRef.current) applyTotals({ ...userRef.current, xp: res.xp, coins: res.coins });
         flushPending();
-        return { xp: res.awarded, coins: res.coinsAwarded, totalXp: userRef.current?.xp ?? res.xp };
+        const totalXp = userRef.current?.xp ?? res.xp;
+        recordStats(u.id, event, xpBefore, totalXp);
+        return { xp: res.awarded, coins: res.coinsAwarded, totalXp };
       } catch (e) {
         if (!shouldRetry(e)) {
           console.warn('[xp] could not award XP', e);
@@ -223,6 +258,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
         const cur = userRef.current ?? u;
         saveUser({ ...cur, xp: cur.xp + xp, coins: round1(cur.coins + coins) });
         setPending([...pendingRef.current, { userId: u.id, event }]);
+        recordStats(u.id, event, xpBefore, cur.xp + xp);
         return { xp, coins, offline: true, totalXp: cur.xp + xp };
       }
     },
@@ -248,6 +284,9 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     refresh,
     award,
     setCoins,
+    stats: (user && allStats[user.id]) || EMPTY_STATS,
+    newAchievements,
+    dismissAchievement: () => setNewAchievements((q) => q.slice(1)),
   };
 
   return <AccountContext value={value}>{children}</AccountContext>;

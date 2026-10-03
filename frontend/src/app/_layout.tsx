@@ -6,6 +6,7 @@ import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { theme } from '@/constants/duo-theme';
+import { AchievementToast } from '@/components/account/achievement-toast';
 import { LanguageProvider } from '@/i18n/language-context';
 import { AccountProvider } from '@/state/account-context';
 import { JourneyProvider } from '@/state/journey-context';
@@ -54,6 +55,7 @@ export default function RootLayout() {
                   <Stack.Screen name="map" options={{ gestureEnabled: false, animation: 'fade' }} />
                   <Stack.Screen name="place/[id]" options={{ animation: 'slide_from_bottom' }} />
                 </Stack>
+                <AchievementToast />
               </ThemeProvider>
             </ReportsProvider>
           </JourneyProvider>

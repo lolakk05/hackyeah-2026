@@ -1,9 +1,11 @@
 import { router } from 'expo-router';
+
+import { AccountError } from '@/api/account';
 import { useState } from 'react';
 
 import { AuthLayout, authErrorMessage, EMAIL_RE, MIN_PASSWORD, USERNAME_RE } from '@/components/account/auth-layout';
 import { DuoInput } from '@/components/duo/duo-input';
-import { successFeedback } from '@/components/duo/haptics';
+import { errorFeedback, successFeedback } from '@/components/duo/haptics';
 import { useI18n } from '@/i18n/language-context';
 import { useAccount } from '@/state/account-context';
 
@@ -16,6 +18,7 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ username?: string; email?: string; password?: string }>({});
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const submit = async () => {
@@ -34,17 +37,25 @@ export default function RegisterScreen() {
       if (router.canDismiss()) router.dismissAll();
       router.replace('/welcome');
     } catch (e) {
-      setError(authErrorMessage(e, s, fmt));
       setLoading(false);
+      if (e instanceof AccountError && e.code === 'check_email') {
+        // Account created; the server wants the email confirmed before signing in.
+        setInfo(s.auth.errors.check_email);
+        setTimeout(() => (router.canGoBack() ? router.back() : router.replace('/login')), 3500);
+        return;
+      }
+      errorFeedback();
+      setError(authErrorMessage(e, s, fmt));
     }
   };
 
   return (
     <AuthLayout
-      icon="✨"
+      pose="cheer"
       title={s.auth.registerTitle}
       text={s.auth.registerText}
       error={error}
+      info={info}
       submitLabel={s.auth.register}
       onSubmit={submit}
       loading={loading}
@@ -57,11 +68,11 @@ export default function RegisterScreen() {
         onChangeText={setUsername}
         error={errors.username}
         placeholder={s.auth.usernamePlaceholder}
-        autoCapitalize="none"
         autoCorrect={false}
-        autoComplete="username"
+        autoComplete="name"
         textContentType="username"
-        maxLength={20}
+        maxLength={40}
+        autoCapitalize="words"
       />
       <DuoInput
         label={s.auth.email}

@@ -5,8 +5,8 @@
  * Contract: FRONTEND_INTEGRATION.md / example-plan.json from the backend repo.
  */
 import type { Lang } from '@/i18n/strings';
-import { KIND_CONFIG } from '@/map/landmark-placement';
 
+import { chooseModel, diversifyModels } from './model-choice';
 import type { Landmark, LatLng, ModelKind, PlannedRoute, TripPlan, WheelchairAccess } from './types';
 
 // ─── Backend types ──────────────────────────────────────────
@@ -99,6 +99,9 @@ export async function toRouteFinderError(res: Response): Promise<RouteFinderErro
 const CATEGORY_LABEL: Record<string, { pl: string; en: string; icon: string }> = {
   attraction: { pl: 'Atrakcja', en: 'Attraction', icon: '⭐' },
   museum: { pl: 'Muzeum', en: 'Museum', icon: '🏛️' },
+  historic: { pl: 'Zabytek', en: 'Historic site', icon: '🏰' },
+  theatre: { pl: 'Teatr', en: 'Theatre', icon: '🎭' },
+  cave_entrance: { pl: 'Jaskinia', en: 'Cave', icon: '🐉' },
   gallery: { pl: 'Galeria', en: 'Gallery', icon: '🖼️' },
   artwork: { pl: 'Sztuka w przestrzeni miejskiej', en: 'Public art', icon: '🎨' },
   viewpoint: { pl: 'Punkt widokowy', en: 'Viewpoint', icon: '🔭' },
@@ -116,6 +119,9 @@ const CATEGORY_LABEL: Record<string, { pl: string; en: string; icon: string }> =
 /** Typical visiting time per category, in minutes (the backend only plans walking). */
 const VISIT_MINUTES: Record<string, number> = {
   museum: 45,
+  historic: 10,
+  theatre: 15,
+  cave_entrance: 15,
   castle: 45,
   gallery: 20,
   attraction: 20,
@@ -130,6 +136,9 @@ const VISIT_MINUTES: Record<string, number> = {
 const CATEGORY_COLORS: Record<string, string> = {
   attraction: '#E9A23B',
   museum: '#4C9EEB',
+  historic: '#D9B44A',
+  theatre: '#C0567A',
+  cave_entrance: '#6E8A5A',
   gallery: '#9B7BEA',
   artwork: '#E46FA8',
   viewpoint: '#2BB5A3',
@@ -147,16 +156,9 @@ function categoryLabel(category: string, lang: Lang) {
   return pretty.charAt(0).toUpperCase() + pretty.slice(1);
 }
 
-/** Pick one of the 3D mini-models when the POI is a known Kraków landmark. */
+/** The 3D mini-model for a POI: its own model for famous landmarks, else a variant for its kind. */
 export function modelKindForPoi(poi: RfPoi): ModelKind {
-  const names = [poi.name, poi.tags?.name, poi.tags?.['name:en'], poi.tags?.['name:pl']]
-    .filter(Boolean)
-    .map((n) => n!.toLowerCase());
-  for (const [kind, cfg] of Object.entries(KIND_CONFIG) as [ModelKind, (typeof KIND_CONFIG)[ModelKind]][]) {
-    if (kind === 'generic') continue;
-    if (cfg.names.some((pattern) => names.some((n) => n.includes(pattern.toLowerCase())))) return kind;
-  }
-  return 'generic';
+  return chooseModel([poi.name, poi.tags?.name, poi.tags?.['name:pl'], poi.tags?.['name:en']], poi.category);
 }
 
 function wheelchairFromTag(v?: string): WheelchairAccess {
@@ -241,7 +243,8 @@ export function splitIntoLegs(res: RfPlanResponse): LatLng[][] {
 
 export function planResponseToTrip(res: RfPlanResponse, lang: Lang): { plan: TripPlan; landmarks: Landmark[] } {
   const pois = [res.start_poi, ...(res.intermediate_pois ?? []), res.end_poi];
-  const landmarks = pois.map((p) => poiToLandmark(p, lang));
+  // Different models for neighbouring stops of the same kind (e.g. two churches in a row).
+  const landmarks = diversifyModels(pois.map((p) => poiToLandmark(p, lang)));
   const legPaths = splitIntoLegs(res);
 
   const route: PlannedRoute = {

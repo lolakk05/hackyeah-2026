@@ -4,7 +4,7 @@ import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput
 import type { IssueGroup, IssueSeverity, IssueType, LatLng } from '@/api/types';
 import { DuoButton } from '@/components/duo/duo-button';
 import { DuoText } from '@/components/duo/duo-text';
-import { successFeedback, tapFeedback } from '@/components/duo/haptics';
+import { celebrateFeedback, errorFeedback, selectionFeedback } from '@/components/duo/haptics';
 import { TrophyModel } from '@/components/models/statue-views';
 import { Brand } from '@/constants/duo-theme';
 import { formatCoins } from '@/game/progression';
@@ -65,19 +65,19 @@ export function ReportSheet({ place, onClose }: { place: ReportPlace; onClose: (
   }, [done]);
 
   const choosePreset = (p: (typeof ISSUE_PRESETS)[number]) => {
-    tapFeedback();
+    selectionFeedback();
     setType(p.type);
     setAffects(p.affects);
     setSeverity(p.severity);
   };
   const chooseOther = () => {
-    tapFeedback();
+    selectionFeedback();
     setType('other');
     setAffects(['everyone']);
     setSeverity('hard');
   };
   const toggleGroup = (g: IssueGroup) => {
-    tapFeedback();
+    selectionFeedback();
     setAffects((prev) => {
       if (g === 'everyone') return ['everyone'];
       const rest = prev.filter((x) => x !== 'everyone');
@@ -104,9 +104,10 @@ export function ReportSheet({ place, onClose }: { place: ReportPlace; onClose: (
         segment: place.segment,
         needs: preferences.needs,
       });
-      successFeedback();
+      celebrateFeedback();
       setDone({ earned: res.earned, offline: res.offline });
     } catch (e) {
+      errorFeedback();
       setError(fmt(s.issues.error, { msg: e instanceof Error ? e.message : String(e) }));
     } finally {
       setSending(false);
@@ -231,7 +232,7 @@ export function ReportSheet({ place, onClose }: { place: ReportPlace; onClose: (
                           selected={severity === v}
                           color={SEVERITY_COLOR[v]}
                           onPress={() => {
-                            tapFeedback();
+                            selectionFeedback();
                             setSeverity(v);
                           }}
                         />

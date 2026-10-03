@@ -45,7 +45,8 @@ The response is converted by `planResponseToTrip()` in `route-finder.ts`:
 | --- | --- |
 | `start_poi`, `intermediate_pois`, `end_poi` | Roadmap stops, kept in this exact order |
 | POI `tags` (`name:pl` / `name:en`, address, `wheelchair`, `opening_hours`, `heritage`, `wikipedia`…) | Place page: name, description, facts, wheelchair info |
-| Known landmarks (Sukiennice, Mariacki, Barbakan, Wawel…) | Their 3D model; other places get a pin |
+| Name and `category` | The 3D model: famous landmarks (Sukiennice, Mariacki, Barbakan, Wawel…) have their own; every other place gets a variant for its kind (church, synagogue, museum, palace, gate, monument, theatre, cave). Neighbouring stops of the same kind get different variants (`model-choice.ts`) |
+| POI `id` (`way-123`) | The model replaces exactly that OpenStreetMap building on the 3D map |
 | `geometry` | Thin route line on the 3D map |
 | `legs` + `snapped_waypoints` | Line cut into one walk per stop, and the walking time shown on each roadmap card |
 | `duration_s`, `distance_m`, `matches_target`, `warnings`, `attribution` | Route summary on the roadmap, with a "Fix the map" link |
@@ -76,6 +77,23 @@ Set these in `ENDPOINTS` in `config.ts` once your other services exist:
 | `reports: '/reports'`: yes/no accessibility answers (`AccessibilityReport` in `types.ts`, includes the walked path) | Kept on the phone |
 
 Walking directions to a stop when the visitor is away from the planned line (for example, walking to the start) come from free OpenStreetMap foot routing.
+
+## Sign-in server (Better Auth)
+
+Set `EXPO_PUBLIC_AUTH_API_URL` in `frontend/.env` (base address only). The app uses:
+
+| Request | Body | Used for |
+| --- | --- | --- |
+| `POST /api/auth/sign-up/email` | `{ name, email, password }` | Register (name = "Imię i nazwisko lub pseudonim", password ≥ 8) |
+| `POST /api/auth/sign-in/email` | `{ email, password }` | Sign in; the returned `token` is saved on the phone |
+| `GET /api/auth/get-session` | | Check the saved session when the app starts |
+| `POST /api/auth/sign-out` | `{}` | Sign out |
+
+- Every request sends `Authorization: Bearer <token>`: enable Better Auth's **bearer plugin** on the server. The session cookie also works on iPhone.
+- If sign-up returns no `token` (email confirmation required), the app tells the user to open the link from the email and then sign in. `EMAIL_NOT_VERIFIED` on sign-in shows the same hint.
+- Errors are read from Better Auth's `{ code, message }` (`INVALID_EMAIL_OR_PASSWORD`, `USER_ALREADY_EXISTS`, `PASSWORD_TOO_SHORT`…).
+- The app sends `Origin: <EXPO_PUBLIC_AUTH_API_URL>` on every auth request (phone apps have no origin of their own), so the server's own address must be in Better Auth's `trustedOrigins`. It is already allowed: `access-control-allow-origin` is that address.
+- XP, coins, ranking, rewards and reports stay on the phone (keyed by the Better Auth user id) until `EXPO_PUBLIC_ACCOUNT_API_URL` points to a backend with the endpoints below; it gets the same Bearer token.
 
 ## Accounts, XP, coins, ranking and rewards
 

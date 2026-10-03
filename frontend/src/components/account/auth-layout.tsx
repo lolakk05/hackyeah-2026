@@ -4,9 +4,10 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AccountError } from '@/api/account';
-import { USE_MOCK_ACCOUNTS } from '@/api/config';
+import { USE_AUTH_SERVER, USE_MOCK_ACCOUNTS } from '@/api/config';
 import { DuoButton } from '@/components/duo/duo-button';
 import { DuoText } from '@/components/duo/duo-text';
+import { Pinek, type PinekPose } from '@/components/pinek';
 import { Brand } from '@/constants/duo-theme';
 import { useI18n } from '@/i18n/language-context';
 import type { Strings } from '@/i18n/strings';
@@ -17,10 +18,14 @@ export function authErrorMessage(e: unknown, s: Strings, fmt: (t: string, p?: Re
   if (e instanceof AccountError) {
     switch (e.code) {
       case 'invalid_credentials':
+      case 'email_not_verified':
+      case 'check_email':
       case 'email_taken':
       case 'username_taken':
       case 'network':
         return s.auth.errors[e.code];
+      case 'validation':
+        return e.message;
       default:
         return fmt(s.auth.errors.generic, { msg: e.message });
     }
@@ -29,16 +34,19 @@ export function authErrorMessage(e: unknown, s: Strings, fmt: (t: string, p?: Re
 }
 
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-export const USERNAME_RE = /^[A-Za-z0-9ąćęłńóśźżĄĆĘŁŃÓŚŹŻ._-]{3,20}$/;
-export const MIN_PASSWORD = 6;
+/** A name like "Jan Kowalski" or a nickname. */
+export const USERNAME_RE = /^[A-Za-z0-9ąćęłńóśźżĄĆĘŁŃÓŚŹŻ ._-]{2,40}$/;
+/** The sign-in server needs at least 8 characters. */
+export const MIN_PASSWORD = 8;
 
 /** Shared layout of the sign-in and register screens. */
 export function AuthLayout({
-  icon,
+  pose,
   title,
   text,
   children,
   error,
+  info,
   submitLabel,
   onSubmit,
   loading,
@@ -46,11 +54,14 @@ export function AuthLayout({
   switchLabel,
   onSwitch,
 }: {
-  icon: string;
+  /** Pinek's pose at the top. */
+  pose: PinekPose;
   title: string;
   text: string;
   children: ReactNode;
   error: string | null;
+  /** Neutral message (e.g. "check your email"). */
+  info?: string | null;
   submitLabel: string;
   onSubmit: () => void;
   loading: boolean;
@@ -78,9 +89,7 @@ export function AuthLayout({
       </View>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <View style={styles.iconTile}>
-            <DuoText style={styles.icon}>{icon}</DuoText>
-          </View>
+          <Pinek pose={pose} size={110} />
           <View style={styles.texts}>
             <DuoText variant="hero" accessibilityRole="header">
               {title}
@@ -100,6 +109,12 @@ export function AuthLayout({
             </View>
           ) : null}
 
+          {info ? (
+            <View style={styles.infoBox} accessibilityLiveRegion="polite">
+              <DuoText variant="body">✉️ {info}</DuoText>
+            </View>
+          ) : null}
+
           <DuoButton title={submitLabel} onPress={onSubmit} loading={loading} />
 
           <View style={styles.switchRow}>
@@ -113,7 +128,7 @@ export function AuthLayout({
             </Pressable>
           </View>
 
-          {USE_MOCK_ACCOUNTS ? (
+          {USE_MOCK_ACCOUNTS && !USE_AUTH_SERVER ? (
             <DuoText variant="caption" color={t.lockedText} style={styles.center}>
               {s.auth.demoNote}
             </DuoText>
@@ -143,6 +158,7 @@ const useStyles = themedStyles((t) => ({
   icon: { fontSize: 38, lineHeight: 46 },
   texts: { gap: 6 },
   fields: { gap: 16 },
+  infoBox: { padding: 12, borderRadius: t.radius.md, backgroundColor: t.soft(Brand.success, 0.8) },
   errorBox: { padding: 12, borderRadius: t.radius.md, backgroundColor: t.soft(Brand.danger, 0.85) },
   switchRow: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', gap: 6 },
   center: { textAlign: 'center' },

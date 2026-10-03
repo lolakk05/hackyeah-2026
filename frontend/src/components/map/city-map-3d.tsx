@@ -1,7 +1,7 @@
 import { GLView, type ExpoWebGLRenderingContext } from 'expo-gl';
 import { useIsFocused } from 'expo-router';
 import { useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import { ActivityIndicator, Animated, Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import * as THREE from 'three';
 
@@ -52,13 +52,6 @@ interface Props {
   ref?: Ref<CityMapHandle>;
 }
 
-interface Label {
-  id: string;
-  x: number;
-  y: number;
-  name: string;
-  state: StopState;
-}
 
 interface CityContent {
   data: MapData;
@@ -87,7 +80,16 @@ export function CityMap3D({
   const { s, fmt } = useI18n();
   const [buildingsState, setBuildingsState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [reloadKey, setReloadKey] = useState(0);
-  const [labels, setLabels] = useState<Label[]>([]);
+  /**
+   * Label positions: moved every rendered frame straight from the render loop
+   * (Animated values, no React re-render), so they stay glued to the 3D map.
+   */
+  const labelPos = useRef(new Map<string, Animated.ValueXY>());
+  const labelXY = (id: string) => {
+    let v = labelPos.current.get(id);
+    if (!v) labelPos.current.set(id, (v = new Animated.ValueXY({ x: -9999, y: -9999 })));
+    return v;
+  };
 
   const [rig] = useState(() => new CameraRig());
   const size = useRef({ w: 1, h: 1 });
@@ -205,7 +207,6 @@ export function CityMap3D({
       applyIssues();
 
       const start = Date.now();
-      let lastLabels = 0;
       let frame = 0;
       let idle = false;
       const projected = new THREE.Vector3();
@@ -228,26 +229,23 @@ export function CityMap3D({
           scene.tick((now - start) / 1000);
           renderer.render(scene.scene, cam);
           gl.endFrameEXP?.();
-        }
 
-        // Update the floating name labels ~8 times per second
-        if (now - lastLabels > 120) {
-          lastLabels = now;
-          const next: Label[] = [];
+          // Move the name labels in the same frame as the 3D picture
           for (const st of latest.current.stops) {
             const pl = placementById(st.landmark.id);
+            const xy = labelXY(st.landmark.id);
             if (!pl) continue;
             projected.set(pl.center.x, pl.heightMeters + 34, pl.center.z).project(cam);
-            if (projected.z > 1 || Math.abs(projected.x) > 1.1 || Math.abs(projected.y) > 1.1) continue;
-            next.push({
-              id: st.landmark.id,
-              x: ((projected.x + 1) / 2) * size.current.w,
-              y: ((1 - projected.y) / 2) * size.current.h,
-              name: st.landmark.name,
-              state: st.state,
-            });
+            const off = projected.z > 1 || Math.abs(projected.x) > 1.1 || Math.abs(projected.y) > 1.1;
+            const x = off ? -9999 : ((projected.x + 1) / 2) * size.current.w - 80; // off screen = not tappable
+            const y = off ? -9999 : ((1 - projected.y) / 2) * size.current.h - 22;
+            const last = xy as unknown as { _lx?: number; _ly?: number };
+            // Skip when nothing moved (the camera is still)
+            if (Math.abs((last._lx ?? 1e9) - x) < 0.3 && Math.abs((last._ly ?? 1e9) - y) < 0.3) continue;
+            last._lx = x;
+            last._ly = y;
+            xy.setValue({ x, y });
           }
-          setLabels((prev) => (sameLabels(prev, next) ? prev : next));
         }
         requestAnimationFrame(loop);
       };
@@ -327,11 +325,11 @@ export function CityMap3D({
       </GestureDetector>
 
       {/* Floating name labels above the stops */}
-      {labels.map((l) => (
-        <Pressable
+      {stops.map(({ landmark, state }) => ({ id: landmark.id, name: landmark.name, state })).map((l) => (
+        <AnimatedPressable
           key={l.id}
           onPress={() => onPressLandmark?.(l.id)}
-          style={[styles.label, { left: l.x - 80, top: l.y - 22 }]}
+          style={[styles.label, { transform: labelXY(l.id).getTranslateTransform() }]}
           accessibilityRole="button"
           accessibilityLabel={
             l.state === 'next'
@@ -355,7 +353,7 @@ export function CityMap3D({
               {l.name}
             </DuoText>
           </View>
-        </Pressable>
+        </AnimatedPressable>
       ))}
 
       {/* Small, non-blocking status chip while buildings load */}
@@ -379,19 +377,11 @@ export function CityMap3D({
 }
 
 const NO_ISSUES: MapIssue[] = [];
-
-function sameLabels(a: Label[], b: Label[]) {
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    if (a[i].id !== b[i].id || a[i].state !== b[i].state || a[i].name !== b[i].name) return false;
-    if (Math.abs(a[i].x - b[i].x) > 1.5 || Math.abs(a[i].y - b[i].y) > 1.5) return false;
-  }
-  return true;
-}
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const styles = StyleSheet.create({
   fill: { flex: 1, backgroundColor: CITY_PALETTE.sky },
-  label: { position: 'absolute', width: 160, alignItems: 'center' },
+  label: { position: 'absolute', left: 0, top: 0, width: 160, alignItems: 'center' },
   labelChip: {
     maxWidth: 160,
     paddingHorizontal: 10,

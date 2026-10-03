@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Modal, Pressable, View } from 'react-native';
 
 import { DuoText } from '@/components/duo/duo-text';
+import { celebrateFeedback } from '@/components/duo/haptics';
 import { StatueModel, TrophyModel } from '@/components/models/statue-views';
 import { tierForLevel } from '@/components/models/statues';
 import { Brand } from '@/constants/duo-theme';
@@ -44,6 +45,9 @@ export function RewardBurst({
   useEffect(() => {
     closeRef.current = onClose;
   });
+  useEffect(() => {
+    celebrateFeedback();
+  }, []);
   useEffect(() => {
     const timer = setTimeout(() => closeRef.current(), levelUp ? 4200 : 2600);
     return () => clearTimeout(timer);

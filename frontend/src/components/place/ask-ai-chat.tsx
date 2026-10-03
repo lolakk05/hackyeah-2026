@@ -4,6 +4,7 @@ import { Pressable, TextInput, View } from 'react-native';
 import { askAboutLandmark } from '@/api/client';
 import type { ChatMessage, Landmark } from '@/api/types';
 import { DuoText } from '@/components/duo/duo-text';
+import { Pinek } from '@/components/pinek';
 import { tapFeedback } from '@/components/duo/haptics';
 import { Brand } from '@/constants/duo-theme';
 import { useI18n } from '@/i18n/language-context';
@@ -46,10 +47,13 @@ export function AskAiChat({ landmark }: { landmark: Landmark }) {
   const canSend = !!input.trim() && !thinking;
 
   return (
-    <SectionCard title={s.guide.title} icon="💬">
-      <DuoText variant="body" color={t.textMuted}>
-        {fmt(s.guide.intro, { name: landmark.name })}
-      </DuoText>
+    <SectionCard title={s.guide.title} icon="📍">
+      <View style={styles.introRow}>
+        <Pinek pose="sign" size={64} />
+        <DuoText variant="body" color={t.textMuted} style={styles.introText}>
+          {fmt(s.guide.intro, { name: landmark.name })}
+        </DuoText>
+      </View>
 
       {messages.map((m) => (
         <View key={m.id} style={[styles.msgRow, m.role === 'user' && styles.msgRowUser]}>
@@ -123,6 +127,8 @@ export function AskAiChat({ landmark }: { landmark: Landmark }) {
 }
 
 const useStyles = themedStyles((t) => ({
+  introRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  introText: { flex: 1 },
   msgRow: { flexDirection: 'row' },
   msgRowUser: { justifyContent: 'flex-end' },
   bubble: {

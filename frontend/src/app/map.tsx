@@ -7,7 +7,7 @@ import { fetchWalkingRoute } from '@/api/client';
 import type { LatLng, WalkingRoute } from '@/api/types';
 import { DuoButton } from '@/components/duo/duo-button';
 import { DuoText } from '@/components/duo/duo-text';
-import { tapFeedback } from '@/components/duo/haptics';
+import { arriveFeedback, tapFeedback } from '@/components/duo/haptics';
 import { CityMap3D, type CityMapHandle, type MapIssue, type StopState } from '@/components/map/city-map-3d';
 import { IssueCard } from '@/components/reports/issue-card';
 import { ReportSheet, type ReportPlace } from '@/components/reports/report-sheet';
@@ -161,6 +161,14 @@ export default function MapScreen() {
       ? Math.max(1, Math.round((route.durationMinutes * remaining) / route.distanceMeters))
       : route?.durationMinutes;
   const arrived = straight !== null && straight < ARRIVED_METERS;
+  // Buzz once when you get close to the next stop
+  const buzzedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (arrived && nextStop && buzzedFor.current !== nextStop.id) {
+      buzzedFor.current = nextStop.id;
+      arriveFeedback();
+    }
+  }, [arrived, nextStop]);
   const bearing = me && nextStop ? bearingDegrees(me, nextStop.coordinates) : 0;
   const direction = s.map.directions[Math.round(bearing / 45) % 8];
   const close = () => (router.canGoBack() ? router.back() : router.replace('/roadmap'));

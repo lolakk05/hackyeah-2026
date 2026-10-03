@@ -1,17 +1,19 @@
 import { Redirect, router } from 'expo-router';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Image, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LevelCard } from '@/components/account/level-card';
 import { DuoButton } from '@/components/duo/duo-button';
 import { DuoText } from '@/components/duo/duo-text';
 import { tapFeedback } from '@/components/duo/haptics';
-import { LandmarkModel } from '@/components/models/landmark-model';
+import { WavingPinek } from '@/components/pinek';
 import { Brand } from '@/constants/duo-theme';
 import { useI18n } from '@/i18n/language-context';
 import { useAccount } from '@/state/account-context';
 import { useJourney } from '@/state/journey-context';
 import { themedStyles, useDuo } from '@/state/theme-context';
+
+const WORDMARK = require('../../assets/images/spacer-wordmark.png');
 
 /** Start page: level & coins, ranking/rewards, and GET STARTED or CONTINUE. */
 export default function WelcomeScreen() {
@@ -58,12 +60,14 @@ export default function WelcomeScreen() {
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
-          <View style={styles.modelTile}>
-            <LandmarkModel kind="castle" backgroundColor={t.cardRaised} interactive style={styles.model} />
-          </View>
-          <DuoText variant="hero" style={styles.center} accessibilityRole="header">
-            {s.appName}
-          </DuoText>
+          <WavingPinek size={170} />
+          <Image
+            source={WORDMARK}
+            style={styles.wordmark}
+            resizeMode="contain"
+            accessibilityRole="header"
+            accessibilityLabel={s.appName}
+          />
           <DuoText variant="body" color={t.textMuted} style={styles.center}>
             {s.welcome.text}
           </DuoText>
@@ -162,6 +166,7 @@ const useStyles = themedStyles((t) => ({
   bold: { fontWeight: '700' },
   scroll: { flexGrow: 1, justifyContent: 'center', gap: 20, paddingVertical: 16, maxWidth: 520, width: '100%', alignSelf: 'center' },
   hero: { alignItems: 'center', gap: 12 },
+  wordmark: { width: 220, height: 220 * (226 / 866), marginTop: 4 },
   modelTile: {
     width: 180,
     height: 180,

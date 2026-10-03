@@ -233,28 +233,27 @@ export function createCityScene(pal: CityPalette): CityScene {
     if (p) user.position.set(p.x, 0, p.z);
   };
 
-  // Reported problems: a pole with a turning warning sign. Instanced: 4 draw calls for all of them.
+  // Reported problems: a pole with a turning warning sign. Instanced: 3 draw calls for all of them.
   const MAX_ISSUES = 80;
-  const poleGeo = new THREE.CylinderGeometry(0.8, 0.8, 24, 6).translate(0, 12, 0);
-  const signGeo = new THREE.CylinderGeometry(9, 9, 1.6, 3).rotateX(Math.PI / 2).rotateZ(Math.PI / 2);
-  const markGeo = new THREE.BoxGeometry(1.6, 5.4, 2.2).translate(0, 0.6, 0);
-  const spotGeo = new THREE.CircleGeometry(10, 20).rotateX(-Math.PI / 2).translate(0, 0.2, 0);
-  const poleMat = new THREE.MeshLambertMaterial({ color: '#C9D3DF' });
-  const signMat = new THREE.MeshLambertMaterial({ color: '#FFFFFF' });
-  const markMat = new THREE.MeshBasicMaterial({ color: '#1A1A1A' });
-  const spotMat = new THREE.MeshBasicMaterial({ color: '#FFFFFF', transparent: true, opacity: 0.35, depthWrite: false });
-  disposables.push(poleGeo, signGeo, markGeo, spotGeo, poleMat, signMat, markMat, spotMat);
+  const poleGeo = new THREE.CylinderGeometry(0.9, 0.9, 28, 6).translate(0, 14, 0);
+  // A diamond reads well from every side (a flat sign disappears when seen edge-on)
+  const signGeo = new THREE.OctahedronGeometry(8).scale(1, 1.35, 1);
+  const spotGeo = new THREE.RingGeometry(9, 16, 28).rotateX(-Math.PI / 2).translate(0, 0.2, 0);
+  const poleMat = new THREE.MeshBasicMaterial({ color: '#E6ECF3' });
+  // Unlit, so the sign keeps its full colour at night
+  const signMat = new THREE.MeshBasicMaterial({ color: '#FFFFFF' });
+  const spotMat = new THREE.MeshBasicMaterial({ color: '#FFFFFF', transparent: true, opacity: 0.55, depthWrite: false });
+  disposables.push(poleGeo, signGeo, spotGeo, poleMat, signMat, spotMat);
   const issuePoles = new THREE.InstancedMesh(poleGeo, poleMat, MAX_ISSUES);
   const issueSigns = new THREE.InstancedMesh(signGeo, signMat, MAX_ISSUES);
-  const issueMarks = new THREE.InstancedMesh(markGeo, markMat, MAX_ISSUES);
   const issueSpots = new THREE.InstancedMesh(spotGeo, spotMat, MAX_ISSUES);
-  const issueMeshes = [issuePoles, issueSigns, issueMarks, issueSpots];
+  const issueMeshes = [issuePoles, issueSigns, issueSpots];
   for (const m of issueMeshes) {
     m.count = 0;
     m.frustumCulled = false; // spread over the map
     scene.add(m);
   }
-  const ISSUE_COLORS = { blocked: '#FF6B6B', hard: '#FF9F43', info: '#5CC8FF' } as const;
+  const ISSUE_COLORS = { blocked: '#FF4D4D', hard: '#FFA126', info: '#3FD0FF' } as const;
   let issuePositions: P[] = [];
   const tmpMatrix = new THREE.Matrix4();
   const tmpQuat = new THREE.Quaternion();
@@ -286,14 +285,12 @@ export function createCityScene(pal: CityPalette): CityScene {
   const turnSigns = (t: number) => {
     issuePositions.forEach((p, i) => {
       tmpQuat.setFromAxisAngle(yAxis, t * 0.8 + i * 0.7);
-      tmpPos.set(p.x, 30, p.z);
+      tmpPos.set(p.x, 38 + Math.sin(t * 1.6 + i) * 1.5, p.z);
       tmpMatrix.compose(tmpPos, tmpQuat, unit);
       issueSigns.setMatrixAt(i, tmpMatrix);
-      issueMarks.setMatrixAt(i, tmpMatrix);
     });
     if (issuePositions.length) {
       issueSigns.instanceMatrix.needsUpdate = true;
-      issueMarks.instanceMatrix.needsUpdate = true;
     }
   };
 
