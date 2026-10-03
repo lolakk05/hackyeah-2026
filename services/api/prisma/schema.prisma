@@ -43,9 +43,25 @@ model Reward {
 }
 
 model Place {
-  placeId      String             @id @default(uuid())
-  photos        String[]
-  openingHours PlaceOpeningHour[]
+  placeId              String   @id @default(uuid())
+  name                 String
+  description     String
+  timeToVisit          Int
+  photos               String[]
+
+  descriptionPL        String
+  descriptionEN        String
+
+  hasStairs            Boolean  @default(false)
+  wheelchairAccessible Boolean  @default(false)
+  hasAccessibleToilet  Boolean  @default(false)
+
+  price                String
+  address              String
+  latitude             Float
+  longitude            Float
+
+  openingHours         PlaceOpeningHour[]
 }
 
 model PlaceOpeningHour {
