@@ -4,6 +4,7 @@ import { Pressable, View } from 'react-native';
 import { DuoText } from '@/components/duo/duo-text';
 import { tapFeedback } from '@/components/duo/haptics';
 import { Brand, formatDuration } from '@/constants/duo-theme';
+import { useI18n } from '@/i18n/language-context';
 import { themedStyles, useDuo } from '@/state/theme-context';
 
 export const MIN_TRIP = 30;
@@ -14,24 +15,23 @@ const STEP = 30;
 export function TripLengthSlider({ value, onChange }: { value: number; onChange: (minutes: number) => void }) {
   const t = useDuo();
   const styles = useStyles();
+  const { s } = useI18n();
   const set = (v: number) => onChange(Math.min(MAX_TRIP, Math.max(MIN_TRIP, v)));
 
   return (
     <View style={styles.card}>
-      <View style={styles.header}>
-        <DuoText variant="label" color={t.textMuted}>
-          ⏱  TRIP LENGTH
-        </DuoText>
-      </View>
+      <DuoText variant="label" color={t.textMuted}>
+        {s.setup.tripLength}
+      </DuoText>
 
       <View style={styles.valueRow}>
-        <RoundButton label="−" onPress={() => set(value - STEP)} disabled={value <= MIN_TRIP} a11y="Shorter trip" />
+        <RoundButton label="−" onPress={() => set(value - STEP)} disabled={value <= MIN_TRIP} a11y={s.setup.shorter} />
         <View style={styles.valueBubble} accessibilityLiveRegion="polite">
-          <DuoText variant="hero" color={Brand.blue}>
+          <DuoText variant="hero" color={Brand.primary}>
             {formatDuration(value)}
           </DuoText>
         </View>
-        <RoundButton label="+" onPress={() => set(value + STEP)} disabled={value >= MAX_TRIP} a11y="Longer trip" />
+        <RoundButton label="+" onPress={() => set(value + STEP)} disabled={value >= MAX_TRIP} a11y={s.setup.longer} />
       </View>
 
       <Slider
@@ -41,10 +41,10 @@ export function TripLengthSlider({ value, onChange }: { value: number; onChange:
         step={STEP}
         value={value}
         onValueChange={(v) => set(Math.round(v))}
-        minimumTrackTintColor={Brand.blue}
+        minimumTrackTintColor={Brand.primary}
         maximumTrackTintColor={t.border}
-        thumbTintColor={Brand.blue}
-        accessibilityLabel="Trip length"
+        thumbTintColor={Brand.primary}
+        accessibilityLabel={s.setup.tripLength}
       />
       <View style={styles.scale}>
         <DuoText variant="caption" color={t.textMuted}>
@@ -82,16 +82,8 @@ function RoundButton({
       accessibilityLabel={a11y}
       hitSlop={8}>
       {({ pressed }) => (
-        <View
-          style={[
-            styles.round,
-            {
-              backgroundColor: disabled ? t.locked : t.card,
-              borderBottomWidth: pressed ? 2 : 5,
-              marginTop: pressed ? 3 : 0,
-            },
-          ]}>
-          <DuoText variant="title" color={disabled ? t.lockedText : Brand.blue}>
+        <View style={[styles.round, pressed && styles.roundPressed, disabled && styles.roundDisabled]}>
+          <DuoText variant="title" color={disabled ? t.lockedText : t.text}>
             {label}
           </DuoText>
         </View>
@@ -102,25 +94,23 @@ function RoundButton({
 
 const useStyles = themedStyles((t) => ({
   card: {
-    borderWidth: 2,
-    borderColor: t.border,
-    borderBottomWidth: 5,
-    borderRadius: t.radius.lg,
-    padding: 18,
+    borderRadius: t.radius.xl,
+    padding: 20,
+    gap: 8,
     backgroundColor: t.card,
   },
-  header: { marginBottom: 8 },
   valueRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   valueBubble: { flex: 1, alignItems: 'center' },
   round: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    borderWidth: 2,
-    borderColor: t.border,
+    backgroundColor: t.cardRaised,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  slider: { width: '100%', height: 48, marginTop: 10 },
+  roundPressed: { backgroundColor: t.border },
+  roundDisabled: { backgroundColor: t.locked },
+  slider: { width: '100%', height: 48, marginTop: 6 },
   scale: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 6 },
 }));

@@ -6,16 +6,16 @@ import * as THREE from 'three';
 
 import { MAP_DATA_URL } from '@/api/config';
 import type { Landmark } from '@/api/types';
-import { DuoButton } from '@/components/duo/duo-button';
 import { DuoText } from '@/components/duo/duo-text';
+import { tapFeedback } from '@/components/duo/haptics';
 import { createThreeRenderer } from '@/components/models/gl-setup';
-import { Brand } from '@/constants/duo-theme';
+import { Brand, theme } from '@/constants/duo-theme';
+import { useI18n } from '@/i18n/language-context';
 import { CameraRig } from '@/map/camera-rig';
-import { createCityScene, DAY_PALETTE, NIGHT_PALETTE, type CityScene } from '@/map/city-scene';
+import { CITY_PALETTE, createCityScene, type CityScene } from '@/map/city-scene';
 import { toLocal, type LatLng } from '@/map/geo';
 import { allLandmarkNamePatterns, placeLandmarks, type Placement } from '@/map/landmark-placement';
-import { loadMapData } from '@/map/osm';
-import { useDuo } from '@/state/theme-context';
+import { EMPTY_MAP_DATA, loadMapData, type MapData, type OsmBuilding } from '@/map/osm';
 
 export type StopState = 'done' | 'next' | 'later';
 
@@ -45,23 +45,25 @@ interface Label {
   y: number;
   name: string;
   state: StopState;
-  color: string;
+}
+
+interface CityContent {
+  data: MapData;
+  placements: Placement[];
+  buildings: OsmBuilding[];
 }
 
 /**
  * Interactive 3D map of Kraków's Old Town.
  * Drag: rotate & tilt · Pinch: zoom · Two fingers: move · Twist: turn · Tap a landmark: open it.
+ *
+ * The map shows immediately with the landmarks; ordinary buildings appear as
+ * soon as they're loaded (usually already prefetched / saved on the phone).
  */
 export function CityMap3D({ landmarks, stops, user, route, onPressLandmark, ref }: Props) {
-  const t = useDuo();
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
-  const [error, setError] = useState<string | null>(null);
+  const { s, fmt } = useI18n();
+  const [buildingsState, setBuildingsState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [reloadKey, setReloadKey] = useState(0);
-  const [placed, setPlaced] = useState<{
-    data: Awaited<ReturnType<typeof loadMapData>>;
-    placements: Placement[];
-    buildings: ReturnType<typeof placeLandmarks>['buildings'];
-  } | null>(null);
   const [labels, setLabels] = useState<Label[]>([]);
 
   const [rig] = useState(() => new CameraRig());
@@ -69,44 +71,33 @@ export function CityMap3D({ landmarks, stops, user, route, onPressLandmark, ref 
   const city = useRef<CityScene | null>(null);
   const camera = useRef<THREE.PerspectiveCamera | null>(null);
   const running = useRef(false);
+  const content = useRef<CityContent | null>(null);
   const latest = useRef({ stops, user, route });
   useEffect(() => {
     latest.current = { stops, user, route };
   });
 
-  // ── Load OSM data and place landmarks ──
-  useEffect(() => {
-    let cancelled = false;
-    setStatus('loading');
-    setError(null);
-    loadMapData(allLandmarkNamePatterns(), MAP_DATA_URL)
-      .then((data) => {
-        if (cancelled) return;
-        const { placements, buildings } = placeLandmarks(landmarks, data);
-        setPlaced({ data, placements, buildings });
-        setStatus('ready');
-      })
-      .catch((e: unknown) => {
-        if (cancelled) return;
-        setError(e instanceof Error ? e.message : String(e));
-        setStatus('error');
-      });
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reloadKey, landmarks.map((l) => l.id).join()]);
+  // Landmarks placed without OSM data, so they can be shown right away.
+  const contentFor = (data: MapData): CityContent => {
+    const { placements, buildings } = placeLandmarks(landmarks, data);
+    return { data, placements, buildings };
+  };
+  const placementById = (id: string) => content.current?.placements.find((p) => p.landmark.id === id);
 
-  // ── Push prop changes into the live scene ──
-  const placementById = (id: string) => placed?.placements.find((p) => p.landmark.id === id);
+  const applyContent = () => {
+    if (city.current && content.current) {
+      const c = content.current;
+      city.current.setCity(c.data, c.placements, c.buildings);
+    }
+  };
   const applyStops = () => {
     const c = city.current;
-    if (!c || !placed) return;
+    if (!c) return;
     c.setStops(
-      latest.current.stops.flatMap((s) => {
-        const pl = placementById(s.landmark.id);
+      latest.current.stops.flatMap((st) => {
+        const pl = placementById(st.landmark.id);
         return pl
-          ? [{ id: s.landmark.id, position: pl.center, height: pl.heightMeters, color: s.landmark.color, state: s.state }]
+          ? [{ id: st.landmark.id, position: pl.center, height: pl.heightMeters, color: st.landmark.color, state: st.state }]
           : [];
       }),
     );
@@ -114,7 +105,30 @@ export function CityMap3D({ landmarks, stops, user, route, onPressLandmark, ref 
   const applyUser = () => city.current?.setUser(latest.current.user ? toLocal(latest.current.user) : null);
   const applyRoute = () => city.current?.setRoute(latest.current.route?.map(toLocal) ?? null);
 
-  useEffect(applyStops, [stops, placed]); // eslint-disable-line react-hooks/exhaustive-deps
+  // ── Load buildings (usually already prefetched) ──
+  const landmarkKey = landmarks.map((l) => l.id).join();
+  useEffect(() => {
+    let cancelled = false;
+    if (!content.current) content.current = contentFor(EMPTY_MAP_DATA);
+    applyContent();
+    applyStops();
+    setBuildingsState('loading');
+    loadMapData(allLandmarkNamePatterns(), MAP_DATA_URL)
+      .then((data) => {
+        if (cancelled) return;
+        content.current = contentFor(data);
+        applyContent();
+        applyStops();
+        setBuildingsState('ready');
+      })
+      .catch(() => !cancelled && setBuildingsState('error'));
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reloadKey, landmarkKey]);
+
+  useEffect(applyStops, [stops]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(applyUser, [user]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(applyRoute, [route]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -124,7 +138,6 @@ export function CityMap3D({ landmarks, stops, user, route, onPressLandmark, ref 
     overview: () => rig.flyTo({ x: 0, z: 250 }, 1700, 0.35, THREE.MathUtils.degToRad(55)),
   }));
 
-  // Stop the render loop when unmounted
   useEffect(() => {
     running.current = true;
     return () => {
@@ -136,19 +149,15 @@ export function CityMap3D({ landmarks, stops, user, route, onPressLandmark, ref 
 
   // ── GL setup + render loop ──
   const onContextCreate = (gl: ExpoWebGLRenderingContext) => {
-    if (!placed) return;
     try {
-      const { renderer, width, height } = createThreeRenderer(gl, t.dark ? NIGHT_PALETTE.sky : DAY_PALETTE.sky);
-      const scene = createCityScene(
-        placed.data,
-        placed.placements,
-        placed.buildings,
-        t.dark ? NIGHT_PALETTE : DAY_PALETTE,
-      );
+      const { renderer, width, height } = createThreeRenderer(gl, CITY_PALETTE.sky);
+      const scene = createCityScene(CITY_PALETTE);
       city.current?.dispose();
       city.current = scene;
       const cam = new THREE.PerspectiveCamera(45, width / height, 2, 6000);
       camera.current = cam;
+      if (!content.current) content.current = contentFor(EMPTY_MAP_DATA);
+      applyContent();
       applyStops();
       applyUser();
       applyRoute();
@@ -167,22 +176,21 @@ export function CityMap3D({ landmarks, stops, user, route, onPressLandmark, ref 
         renderer.render(scene.scene, cam);
         gl.endFrameEXP?.();
 
-        // Update the name labels ~8 times per second
+        // Update the floating name labels ~8 times per second
         if (now - lastLabels > 120) {
           lastLabels = now;
           const next: Label[] = [];
-          for (const s of latest.current.stops) {
-            const pl = placementById(s.landmark.id);
+          for (const st of latest.current.stops) {
+            const pl = placementById(st.landmark.id);
             if (!pl) continue;
             projected.set(pl.center.x, pl.heightMeters + 34, pl.center.z).project(cam);
             if (projected.z > 1 || Math.abs(projected.x) > 1.1 || Math.abs(projected.y) > 1.1) continue;
             next.push({
-              id: s.landmark.id,
+              id: st.landmark.id,
               x: ((projected.x + 1) / 2) * size.current.w,
               y: ((1 - projected.y) / 2) * size.current.h,
-              name: s.landmark.name,
-              state: s.state,
-              color: s.landmark.color,
+              name: st.landmark.name,
+              state: st.state,
             });
           }
           setLabels((prev) => (sameLabels(prev, next) ? prev : next));
@@ -191,8 +199,8 @@ export function CityMap3D({ landmarks, stops, user, route, onPressLandmark, ref 
       };
       loop();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-      setStatus('error');
+      console.warn('[map] 3D failed', e);
+      setBuildingsState('error');
     }
   };
 
@@ -235,14 +243,12 @@ export function CityMap3D({ landmarks, stops, user, route, onPressLandmark, ref 
   };
 
   return (
-    <View style={[styles.fill, { backgroundColor: t.dark ? NIGHT_PALETTE.sky : DAY_PALETTE.sky }]} onLayout={onLayout}>
-      {status === 'ready' && placed ? (
-        <GestureDetector gesture={gestures}>
-          <View style={styles.fill} accessibilityLabel="3D map of Kraków Old Town" accessible>
-            <GLView key={`${reloadKey}-${t.dark}`} style={styles.fill} onContextCreate={onContextCreate} />
-          </View>
-        </GestureDetector>
-      ) : null}
+    <View style={styles.fill} onLayout={onLayout}>
+      <GestureDetector gesture={gestures}>
+        <View style={styles.fill} accessibilityLabel={s.map.a11y} accessible>
+          <GLView style={styles.fill} onContextCreate={onContextCreate} />
+        </View>
+      </GestureDetector>
 
       {/* Floating name labels above the stops */}
       {labels.map((l) => (
@@ -251,19 +257,24 @@ export function CityMap3D({ landmarks, stops, user, route, onPressLandmark, ref 
           onPress={() => onPressLandmark?.(l.id)}
           style={[styles.label, { left: l.x - 80, top: l.y - 22 }]}
           accessibilityRole="button"
-          accessibilityLabel={`${l.name}${l.state === 'next' ? ', next stop' : l.state === 'done' ? ', visited' : ''}`}>
+          accessibilityLabel={
+            l.state === 'next'
+              ? fmt(s.map.nextStopLabel, { name: l.name })
+              : l.state === 'done'
+                ? fmt(s.map.visitedLabel, { name: l.name })
+                : l.name
+          }>
           <View
             style={[
               styles.labelChip,
-              {
-                backgroundColor: l.state === 'next' ? l.color : t.card,
-                borderColor: l.state === 'next' ? l.color : t.border,
-              },
+              l.state === 'next' && styles.labelNext,
+              l.state === 'done' && styles.labelDone,
             ]}>
             <DuoText
               variant="caption"
               numberOfLines={1}
-              color={l.state === 'next' ? Brand.onColor : l.state === 'done' ? t.textMuted : t.text}>
+              color={l.state === 'next' ? Brand.onPrimary : l.state === 'done' ? theme.textMuted : theme.text}
+              style={styles.labelText}>
               {l.state === 'done' ? '✓ ' : ''}
               {l.name}
             </DuoText>
@@ -271,22 +282,21 @@ export function CityMap3D({ landmarks, stops, user, route, onPressLandmark, ref 
         </Pressable>
       ))}
 
-      {status === 'loading' ? (
-        <View style={[styles.center, StyleSheet.absoluteFill]}>
-          <ActivityIndicator size="large" color={Brand.green} />
-          <DuoText variant="body" color={t.textMuted}>
-            Building Kraków in 3D…
+      {/* Small, non-blocking status chip while buildings load */}
+      {buildingsState !== 'ready' ? (
+        <Pressable
+          style={styles.status}
+          disabled={buildingsState !== 'error'}
+          onPress={() => {
+            tapFeedback();
+            setReloadKey((k) => k + 1);
+          }}
+          accessibilityRole={buildingsState === 'error' ? 'button' : 'text'}>
+          {buildingsState === 'loading' ? <ActivityIndicator size="small" color={Brand.primary} /> : null}
+          <DuoText variant="caption" color={theme.text}>
+            {buildingsState === 'loading' ? s.map.loadingBuildings : `${s.map.buildingsError} · ${s.common.tryAgain}`}
           </DuoText>
-        </View>
-      ) : null}
-      {status === 'error' ? (
-        <View style={[styles.center, StyleSheet.absoluteFill]}>
-          <DuoText variant="heading">😕 Couldn’t load the 3D map</DuoText>
-          <DuoText variant="caption" color={t.textMuted} style={styles.errorText}>
-            {error}
-          </DuoText>
-          <DuoButton title="Try again" variant="blue" size="md" onPress={() => setReloadKey((k) => k + 1)} />
-        </View>
+        </Pressable>
       ) : null}
     </View>
   );
@@ -295,22 +305,39 @@ export function CityMap3D({ landmarks, stops, user, route, onPressLandmark, ref 
 function sameLabels(a: Label[], b: Label[]) {
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i++) {
-    if (a[i].id !== b[i].id || a[i].state !== b[i].state) return false;
+    if (a[i].id !== b[i].id || a[i].state !== b[i].state || a[i].name !== b[i].name) return false;
     if (Math.abs(a[i].x - b[i].x) > 1.5 || Math.abs(a[i].y - b[i].y) > 1.5) return false;
   }
   return true;
 }
 
 const styles = StyleSheet.create({
-  fill: { flex: 1 },
-  center: { alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 },
-  errorText: { textAlign: 'center' },
+  fill: { flex: 1, backgroundColor: CITY_PALETTE.sky },
   label: { position: 'absolute', width: 160, alignItems: 'center' },
   labelChip: {
     maxWidth: 160,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 2,
+    borderRadius: 999,
+    backgroundColor: theme.card,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  labelNext: { backgroundColor: Brand.primary, borderColor: Brand.primary },
+  labelDone: { opacity: 0.85 },
+  labelText: { fontWeight: '700' },
+  status: {
+    position: 'absolute',
+    alignSelf: 'center',
+    bottom: 150,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: theme.card,
+    borderWidth: 1,
+    borderColor: theme.border,
   },
 });

@@ -1,90 +1,62 @@
-/** Bright, chunky, Duolingo-inspired design tokens, with light and night palettes. */
+/**
+ * Design tokens: one calm dark theme ("Kraków at night"): deep navy surfaces,
+ * a warm Kraków-gold accent and soft rounded cards. Uses the phone's own font.
+ */
 
-/** Brand colours stay the same in both modes. Each has a darker "edge" shade for 3D buttons. */
 export const Brand = {
-  green: '#58CC02',
-  greenDark: '#58A700',
-  blue: '#1CB0F6',
-  blueDark: '#1899D6',
-  orange: '#FF9600',
-  orangeDark: '#CD7900',
-  red: '#FF4B4B',
-  redDark: '#EA2B2B',
-  yellow: '#FFC800',
-  yellowDark: '#E5A400',
-  purple: '#CE82FF',
-  purpleDark: '#A568CC',
-  /** Text/icons drawn on top of a brand colour. */
+  /** Main accent (buttons, current stop). */
+  primary: '#FFB547',
+  primaryPressed: '#E89E2E',
+  /** Text on the gold accent. */
+  onPrimary: '#241703',
+  sky: '#5CC8FF',
+  success: '#3DDC97',
+  danger: '#FF6B6B',
+  violet: '#B79CFF',
+  /** Text/icons drawn on top of a saturated colour. */
   onColor: '#FFFFFF',
 } as const;
 
-export const Radius = { sm: 12, md: 16, lg: 20, xl: 28 } as const;
+export const Radius = { sm: 10, md: 14, lg: 18, xl: 26 } as const;
 
 export interface DuoTheme {
-  dark: boolean;
-  // Neutrals
   background: string;
-  /** Cards, chips, white buttons. */
-  card: string;
   surface: string;
+  card: string;
+  cardRaised: string;
   border: string;
   text: string;
   textMuted: string;
   locked: string;
   lockedDark: string;
   lockedText: string;
-  /** Readable accent text on soft (tinted) backgrounds. */
-  blueText: string;
-  greenText: string;
-  /** Brand colours + radius, so components only need the theme object. */
   brand: typeof Brand;
   radius: typeof Radius;
-  /** A soft background version of a colour (pastel in light mode, deep tone at night). */
+  /** A soft background version of a colour (mixed into the background). */
   soft: (hex: string, amount?: number) => string;
 }
 
-export const lightTheme: DuoTheme = {
-  dark: false,
-  background: '#FFFFFF',
-  card: '#FFFFFF',
-  surface: '#F7F7F7',
-  border: '#E5E5E5',
-  text: '#3C3C3C',
-  textMuted: '#777777',
-  locked: '#E5E5E5',
-  lockedDark: '#CECECE',
-  lockedText: '#AFAFAF',
-  blueText: Brand.blueDark,
-  greenText: Brand.greenDark,
+export const theme: DuoTheme = {
+  background: '#0F1724',
+  surface: '#141E2D',
+  card: '#1A2537',
+  cardRaised: '#223049',
+  border: '#2A3850',
+  text: '#F2F5FA',
+  textMuted: '#93A2B8',
+  locked: '#26334A',
+  lockedDark: '#1D293C',
+  lockedText: '#5F6E86',
   brand: Brand,
   radius: Radius,
-  soft: (hex, amount = 0.86) => mix(hex, '#FFFFFF', amount),
+  soft: (hex, amount = 0.78) => mix(hex, '#0F1724', amount),
 };
 
-/** Night palette inspired by Duolingo's dark mode. */
-export const darkTheme: DuoTheme = {
-  dark: true,
-  background: '#131F24',
-  card: '#131F24',
-  surface: '#202F36',
-  border: '#37464F',
-  text: '#F1F7FB',
-  textMuted: '#A1B1B9',
-  locked: '#37464F',
-  lockedDark: '#26343B',
-  lockedText: '#6B7F88',
-  blueText: '#49C0F8',
-  greenText: '#79D634',
-  brand: Brand,
-  radius: Radius,
-  soft: (hex, amount = 0.8) => mix(hex, '#131F24', amount),
-};
-
-/** Font families loaded in src/app/_layout.tsx (Nunito ≈ Duolingo's rounded look). */
-export const DuoFonts = {
-  bold: 'Nunito_700Bold',
-  extraBold: 'Nunito_800ExtraBold',
-  black: 'Nunito_900Black',
+/** Text styles use the system font (SF Pro on iPhone, Roboto on Android). */
+export const FontWeights = {
+  regular: '500',
+  bold: '700',
+  heavy: '800',
 } as const;
 
 function toRgb(hex: string): [number, number, number] {
@@ -103,7 +75,7 @@ export function mix(hex: string, target: string, amount: number): string {
   return toHex(r1 + (r2 - r1) * amount, g1 + (g2 - g1) * amount, b1 + (b2 - b1) * amount);
 }
 
-/** Darken a hex colour, used to build the 3D bottom edge of buttons and nodes. */
+/** Darken a hex colour. */
 export function shade(hex: string, amount = 0.18): string {
   return mix(hex, '#000000', amount);
 }

@@ -3,12 +3,14 @@ import { useState } from 'react';
 import { ScrollView, View, useWindowDimensions } from 'react-native';
 
 import { DuoText } from '@/components/duo/duo-text';
+import { useI18n } from '@/i18n/language-context';
 import { themedStyles, useDuo } from '@/state/theme-context';
 
 /** Swipeable photo strip with page dots. */
 export function PhotoCarousel({ photos, name, color }: { photos: string[]; name: string; color: string }) {
   const t = useDuo();
   const styles = useStyles();
+  const { s, fmt } = useI18n();
   const { width: screenWidth } = useWindowDimensions();
   const width = Math.min(screenWidth, 600) - 40;
   const [page, setPage] = useState(0);
@@ -17,7 +19,7 @@ export function PhotoCarousel({ photos, name, color }: { photos: string[]; name:
     return (
       <View style={[styles.empty, { width, backgroundColor: t.soft(color) }]}>
         <DuoText variant="body" color={t.textMuted}>
-          📷 No photos yet
+          {s.place.noPhotos}
         </DuoText>
       </View>
     );
@@ -40,7 +42,7 @@ export function PhotoCarousel({ photos, name, color }: { photos: string[]; name:
             style={[styles.photo, { width, backgroundColor: t.soft(color) }]}
             contentFit="cover"
             transition={200}
-            accessibilityLabel={`Photo ${i + 1} of ${photos.length}: ${name}`}
+            accessibilityLabel={fmt(s.place.photo, { n: i + 1, total: photos.length, name })}
           />
         ))}
       </ScrollView>
@@ -56,9 +58,9 @@ export function PhotoCarousel({ photos, name, color }: { photos: string[]; name:
 }
 
 const useStyles = themedStyles((t) => ({
-  scroller: { borderRadius: t.radius.lg },
+  scroller: { borderRadius: t.radius.xl },
   photo: { height: 220 },
-  empty: { height: 140, borderRadius: t.radius.lg, alignItems: 'center', justifyContent: 'center' },
+  empty: { height: 140, borderRadius: t.radius.xl, alignItems: 'center', justifyContent: 'center' },
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 10 },
-  dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: t.border },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: t.border },
 }));

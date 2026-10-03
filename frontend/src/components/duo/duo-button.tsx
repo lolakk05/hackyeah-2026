@@ -1,42 +1,27 @@
 import type { ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { Brand, type DuoTheme } from '@/constants/duo-theme';
-import { useDuo } from '@/state/theme-context';
+import { Brand, theme } from '@/constants/duo-theme';
 
 import { DuoText } from './duo-text';
 import { tapFeedback } from './haptics';
 
-type Variant = 'green' | 'blue' | 'orange' | 'red' | 'white' | 'locked';
+export type ButtonVariant = 'primary' | 'secondary' | 'success' | 'danger';
 
-function palette(t: DuoTheme, variant: Variant): { face: string; edge: string; text: string; border?: string } {
-  switch (variant) {
-    case 'green':
-      return { face: Brand.green, edge: Brand.greenDark, text: Brand.onColor };
-    case 'blue':
-      return { face: Brand.blue, edge: Brand.blueDark, text: Brand.onColor };
-    case 'orange':
-      return { face: Brand.orange, edge: Brand.orangeDark, text: Brand.onColor };
-    case 'red':
-      return { face: Brand.red, edge: Brand.redDark, text: Brand.onColor };
-    case 'white':
-      return { face: t.card, edge: t.border, text: t.blueText, border: t.border };
-    case 'locked':
-      return { face: t.locked, edge: t.lockedDark, text: t.lockedText };
-  }
-}
+const PALETTE: Record<ButtonVariant | 'disabled', { bg: string; pressed: string; text: string; border?: string }> = {
+  primary: { bg: Brand.primary, pressed: Brand.primaryPressed, text: Brand.onPrimary },
+  secondary: { bg: theme.cardRaised, pressed: theme.card, text: theme.text, border: theme.border },
+  success: { bg: Brand.success, pressed: '#2FBF80', text: '#06281A' },
+  danger: { bg: Brand.danger, pressed: '#E85A5A', text: '#2B0707' },
+  disabled: { bg: theme.locked, pressed: theme.locked, text: theme.lockedText },
+};
 
-const EDGE = 5;
-
-/**
- * Big chunky "3D" button, like Duolingo's CONTINUE.
- * The darker bottom edge disappears while pressed so the button "sinks".
- */
+/** Large, flat, rounded button. Big touch target (min 56 pt). */
 export function DuoButton({
   title,
   subtitle,
   onPress,
-  variant = 'green',
+  variant = 'primary',
   size = 'lg',
   icon,
   loading,
@@ -47,7 +32,7 @@ export function DuoButton({
   title: string;
   subtitle?: string;
   onPress?: () => void;
-  variant?: Variant;
+  variant?: ButtonVariant;
   size?: 'lg' | 'md';
   icon?: ReactNode;
   loading?: boolean;
@@ -55,10 +40,8 @@ export function DuoButton({
   style?: StyleProp<ViewStyle>;
   accessibilityHint?: string;
 }) {
-  const t = useDuo();
   const isDisabled = disabled || loading;
-  const colors = palette(t, isDisabled && !loading ? 'locked' : variant);
-  const height = size === 'lg' ? 64 : 52;
+  const colors = PALETTE[isDisabled && !loading ? 'disabled' : variant];
 
   return (
     <Pressable
@@ -71,20 +54,16 @@ export function DuoButton({
       accessibilityLabel={subtitle ? `${title}. ${subtitle}` : title}
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: !!isDisabled, busy: !!loading }}
-      style={[{ minHeight: height + EDGE }, style]}>
+      style={style}>
       {({ pressed }) => (
         <View
           style={[
             styles.face,
+            size === 'lg' ? styles.lg : styles.md,
             {
-              borderRadius: t.radius.lg,
-              minHeight: height + (pressed ? 0 : EDGE),
-              marginTop: pressed ? EDGE : 0,
-              backgroundColor: colors.face,
-              borderBottomWidth: pressed ? (colors.border ? 2 : 0) : EDGE,
-              borderBottomColor: colors.edge,
-              borderColor: colors.border ?? colors.face,
-              borderWidth: colors.border ? 2 : 0,
+              backgroundColor: pressed ? colors.pressed : colors.bg,
+              borderColor: colors.border ?? 'transparent',
+              transform: [{ scale: pressed ? 0.98 : 1 }],
             },
           ]}>
           {loading ? (
@@ -93,12 +72,8 @@ export function DuoButton({
             <View style={styles.row}>
               {icon}
               <View style={styles.textCol}>
-                <DuoText
-                  variant={size === 'lg' ? 'heading' : 'label'}
-                  color={colors.text}
-                  style={styles.title}
-                  numberOfLines={1}>
-                  {title.toUpperCase()}
+                <DuoText variant="heading" color={colors.text} style={styles.title} numberOfLines={1}>
+                  {title}
                 </DuoText>
                 {subtitle ? (
                   <DuoText variant="caption" color={colors.text} style={styles.subtitle} numberOfLines={1}>
@@ -118,11 +93,14 @@ const styles = StyleSheet.create({
   face: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
+    paddingHorizontal: 22,
+    borderRadius: 999,
+    borderWidth: 1.5,
   },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  lg: { minHeight: 60, paddingVertical: 10 },
+  md: { minHeight: 52, paddingVertical: 8 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   textCol: { alignItems: 'center' },
-  title: { letterSpacing: 1, textAlign: 'center' },
-  subtitle: { opacity: 0.9, textAlign: 'center' },
+  title: { textAlign: 'center' },
+  subtitle: { opacity: 0.8, textAlign: 'center' },
 });

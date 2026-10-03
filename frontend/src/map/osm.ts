@@ -1,10 +1,15 @@
 /**
  * Real building footprints for the 3D map, from OpenStreetMap.
  *
- * The phone downloads them once per app session from the public Overpass API
- * (about 1–3 MB). If your backend serves the same data, set MAP_DATA_URL in
- * src/api/config.ts and it is used instead (same Overpass JSON format).
+ * Loading strategy (fastest first):
+ *   1. parsed data saved on the phone from an earlier launch (instant)
+ *   2. your backend, if MAP_DATA_URL is set in src/api/config.ts
+ *   3. the public Overpass API: all mirrors are asked at once and the first
+ *      answer wins. The result is then saved on the phone.
+ * The download starts when the app opens (see journey-context), not when the
+ * map opens.
  */
+import { readMapCache, writeMapCache } from './map-cache';
 import { MAP_BOUNDS, toLocal } from './geo';
 
 export interface P {
@@ -32,85 +37,96 @@ export interface MapData {
   named: { name: string; points: P[] }[];
 }
 
+export const EMPTY_MAP_DATA: MapData = { buildings: [], water: [], green: [], named: [] };
+
 const OVERPASS_SERVERS = [
   'https://overpass-api.de/api/interpreter',
   'https://overpass.kumi.systems/api/interpreter',
   'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter',
 ];
 
 function overpassQuery(namePatterns: string[]): string {
   const b = `${MAP_BOUNDS.south},${MAP_BOUNDS.west},${MAP_BOUNDS.north},${MAP_BOUNDS.east}`;
   const names = namePatterns.join('|');
-  return `[out:json][timeout:60];
+  // Only ways (plus the river relation): relations are slow to assemble on the server.
+  return `[out:json][timeout:30];
 (
   way["building"](${b});
-  relation["building"](${b});
   way["natural"="water"](${b});
   relation["natural"="water"](${b});
   way["waterway"="riverbank"](${b});
   way["leisure"="park"](${b});
-  relation["leisure"="park"](${b});
   way["landuse"="grass"](${b});
   node["name"~"${names}",i](${b});
   way["name"~"${names}",i](${b});
 );
-out geom(${b});`;
+out geom(${b}) qt;`;
 }
 
 let cache: Promise<MapData> | null = null;
 
 /**
- * Load (and cache) the map data.
+ * Load (and cache) the map data. Safe to call many times: one download only.
  * @param namePatterns landmark names to look up (statues, bridges…)
  * @param customUrl    optional backend URL returning Overpass JSON
  */
 export function loadMapData(namePatterns: string[], customUrl?: string): Promise<MapData> {
   if (!cache) {
-    cache = fetchRaw(namePatterns, customUrl)
-      .then(parseOverpass)
-      .catch((e) => {
-        cache = null; // allow retry
-        throw e;
-      });
+    cache = (async () => {
+      const saved = await readMapCache();
+      if (saved) return saved;
+      const data = parseOverpass(await fetchRaw(namePatterns, customUrl));
+      if (data.buildings.length > 0) writeMapCache(data);
+      return data;
+    })().catch((e) => {
+      cache = null; // allow retry
+      throw e;
+    });
   }
   return cache;
 }
 
-async function fetchWithTimeout(url: string, init: RequestInit, ms: number) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), ms);
-  try {
-    return await fetch(url, { ...init, signal: controller.signal });
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
 async function fetchRaw(namePatterns: string[], customUrl?: string): Promise<OverpassResponse> {
   if (customUrl) {
-    const res = await fetchWithTimeout(customUrl, {}, 30_000);
+    const res = await fetch(customUrl);
     if (!res.ok) throw new Error(`Map data ${res.status}`);
     return res.json();
   }
-  let lastError: unknown;
-  for (const server of OVERPASS_SERVERS) {
-    try {
-      const res = await fetchWithTimeout(
-        server,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: `data=${encodeURIComponent(overpassQuery(namePatterns))}`,
-        },
-        40_000,
-      );
-      if (!res.ok) throw new Error(`Overpass ${res.status}`);
-      return (await res.json()) as OverpassResponse;
-    } catch (e) {
-      lastError = e;
-    }
-  }
-  throw lastError instanceof Error ? lastError : new Error('Could not download map data');
+  const body = `data=${encodeURIComponent(overpassQuery(namePatterns))}`;
+  const controllers = OVERPASS_SERVERS.map(() => new AbortController());
+  const timer = setTimeout(() => controllers.forEach((c) => c.abort()), 45_000);
+
+  // Ask every mirror at once; the first good answer wins, the rest are cancelled.
+  return new Promise<OverpassResponse>((resolve, reject) => {
+    let failures = 0;
+    let done = false;
+    OVERPASS_SERVERS.forEach((server, i) => {
+      fetch(server, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body,
+        signal: controllers[i].signal,
+      })
+        .then(async (res) => {
+          if (!res.ok) throw new Error(`Overpass ${res.status}`);
+          const json = (await res.json()) as OverpassResponse;
+          if (!json.elements?.length) throw new Error('Overpass returned no data');
+          if (done) return;
+          done = true;
+          clearTimeout(timer);
+          controllers.forEach((c, j) => j !== i && c.abort());
+          resolve(json);
+        })
+        .catch((e) => {
+          failures += 1;
+          if (failures === OVERPASS_SERVERS.length && !done) {
+            clearTimeout(timer);
+            reject(e instanceof Error ? e : new Error('Could not download map data'));
+          }
+        });
+    });
+  });
 }
 
 // ─── Parsing ────────────────────────────────────────────────

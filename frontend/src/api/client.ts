@@ -11,14 +11,19 @@
  * adapt it in `toLandmark()` below; the UI will keep working.
  */
 import { API_BASE_URL, ENDPOINTS, MOCK_DELAY_MS, USE_MOCK_API } from './config';
+import type { Lang } from '@/i18n/strings';
+
 import { mockAnswer } from './mock-ai';
 import { MOCK_LANDMARKS } from './mock-data';
+import { localizeToPolish } from './mock-data-pl';
 import { planTripLocally, walkMinutes } from './trip-planner';
 import type {
   AccessibilityNeeds,
+  AccessibilityReport,
   ChatMessage,
   Landmark,
   LatLng,
+  PointsResult,
   TripPlan,
   TripPreferences,
   WalkingRoute,
@@ -26,12 +31,20 @@ import type {
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** Language for texts returned by the API (set from the language screen). */
+let apiLang: Lang = 'en';
+export function setApiLanguage(lang: Lang) {
+  apiLang = lang;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
+  const sep = path.includes('?') ? '&' : '?';
+  const res = await fetch(`${API_BASE_URL}${path}${sep}lang=${apiLang}`, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json',
+      'Accept-Language': apiLang,
       // TODO(API): add auth here if needed, e.g. Authorization: `Bearer ${token}`
       ...init?.headers,
     },
@@ -73,11 +86,13 @@ export function toLandmark(raw: any): Landmark {
   };
 }
 
+const mockLandmarks = () => (apiLang === 'pl' ? localizeToPolish(MOCK_LANDMARKS) : MOCK_LANDMARKS);
+
 /** All landmarks, in route order. */
 export async function fetchLandmarks(): Promise<Landmark[]> {
   if (USE_MOCK_API) {
     await wait(MOCK_DELAY_MS);
-    return MOCK_LANDMARKS;
+    return mockLandmarks();
   }
   // TODO(API): GET /landmarks
   const raw = await request<unknown[]>(ENDPOINTS.landmarks);
@@ -88,7 +103,7 @@ export async function fetchLandmarks(): Promise<Landmark[]> {
 export async function fetchLandmark(id: string): Promise<Landmark> {
   if (USE_MOCK_API) {
     await wait(MOCK_DELAY_MS);
-    const lm = MOCK_LANDMARKS.find((l) => l.id === id);
+    const lm = mockLandmarks().find((l) => l.id === id);
     if (!lm) throw new Error(`Landmark "${id}" not found`);
     return lm;
   }
@@ -118,7 +133,7 @@ export async function askAboutLandmark(
 ): Promise<string> {
   if (USE_MOCK_API) {
     await wait(MOCK_DELAY_MS * 2);
-    return mockAnswer(landmark, question);
+    return mockAnswer(landmark, question, apiLang);
   }
   // TODO(API): POST /landmarks/:id/ask → { answer }
   const res = await request<{ answer: string }>(ENDPOINTS.ask(landmark.id), {
@@ -173,4 +188,50 @@ export async function fetchWalkingRoute(from: LatLng, to: LatLng, needs: Accessi
     const meters = (minutes * (slow ? 50 : 75)) / 1.3;
     return { path: [from, to], distanceMeters: meters, durationMinutes: minutes, source: 'straight' };
   }
+}
+
+// ─── Experience points ──────────────────────────────────────
+
+let mockTotal = 0;
+export const POINTS = { visit: 50, report: 10 } as const;
+
+/**
+ * Award XP. Called when the visitor reaches a landmark ("visit") and when they
+ * answer an accessibility question ("report").
+ *
+ * Real API: POST /points { landmarkId, reason } → { awarded, total }
+ */
+export async function awardPoints(landmarkId: string, reason: 'visit' | 'report'): Promise<PointsResult> {
+  if (USE_MOCK_API) {
+    await wait(150);
+    mockTotal += POINTS[reason];
+    return { awarded: POINTS[reason], total: mockTotal };
+  }
+  // TODO(API): identify the user (auth header in request()) so points add up per person.
+  return request<PointsResult>(ENDPOINTS.points, {
+    method: 'POST',
+    body: JSON.stringify({ landmarkId, reason }),
+  });
+}
+
+// ─── Accessibility reports ──────────────────────────────────
+
+/** Answers collected while in mock mode (handy to inspect while developing). */
+export const mockReports: AccessibilityReport[] = [];
+
+/**
+ * Send a yes/no accessibility answer about the route section just walked.
+ *
+ * Real API: POST /reports AccessibilityReport → 201
+ * The backend should aggregate answers per street segment and let /route and
+ * /trips/plan avoid segments that many people marked as not accessible.
+ */
+export async function submitAccessibilityReport(report: AccessibilityReport): Promise<void> {
+  if (USE_MOCK_API) {
+    await wait(150);
+    mockReports.push(report);
+    console.log('[mock] accessibility report', report.category, report.accessible, report.segment.toStopId);
+    return;
+  }
+  await request<unknown>(ENDPOINTS.reports, { method: 'POST', body: JSON.stringify(report) });
 }

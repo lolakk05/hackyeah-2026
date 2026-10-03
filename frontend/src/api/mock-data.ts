@@ -38,7 +38,7 @@ export const MOCK_LANDMARKS: Landmark[] = [
       { icon: '📍', label: 'Address', value: 'ul. Basztowa, Kraków' },
     ],
     model: 'barbican',
-    color: '#FF4B4B',
+    color: '#E2683C',
     suggestedQuestions: [
       'Why was the Barbican built?',
       'Is it good for kids?',
@@ -70,7 +70,7 @@ export const MOCK_LANDMARKS: Landmark[] = [
       { icon: '📍', label: 'Address', value: 'Plac Mariacki 5, Kraków' },
     ],
     model: 'basilica',
-    color: '#1CB0F6',
+    color: '#4C9EEB',
     suggestedQuestions: [
       'Why does the bugle call stop suddenly?',
       'Tell me about the altarpiece',
@@ -102,7 +102,7 @@ export const MOCK_LANDMARKS: Landmark[] = [
       { icon: '📍', label: 'Address', value: 'Rynek Główny 1/3, Kraków' },
     ],
     model: 'clothhall',
-    color: '#FF9600',
+    color: '#E9A23B',
     suggestedQuestions: [
       'What can I buy here?',
       'What is under the square?',
@@ -133,7 +133,7 @@ export const MOCK_LANDMARKS: Landmark[] = [
       { icon: '📍', label: 'Address', value: 'Rynek Główny 1, Kraków' },
     ],
     model: 'tower',
-    color: '#CE82FF',
+    color: '#9B7BEA',
     suggestedQuestions: ['Why does the tower lean?', 'What happened to the town hall?', 'Is the view worth it?'],
   },
   {
@@ -161,7 +161,7 @@ export const MOCK_LANDMARKS: Landmark[] = [
       { icon: '📍', label: 'Address', value: 'Wawel 5, Kraków' },
     ],
     model: 'castle',
-    color: '#58CC02',
+    color: '#3DBE8B',
     suggestedQuestions: [
       'Which exhibition should I pick?',
       'Who is buried in the cathedral?',
@@ -193,7 +193,7 @@ export const MOCK_LANDMARKS: Landmark[] = [
       { icon: '📍', label: 'Location', value: 'Bulwar Czerwieński, by the Vistula' },
     ],
     model: 'dragon',
-    color: '#2BDCB0',
+    color: '#2BB5A3',
     suggestedQuestions: ['Tell me the dragon legend', 'When does it breathe fire?', 'Is the cave scary for kids?'],
   },
   {
@@ -220,7 +220,7 @@ export const MOCK_LANDMARKS: Landmark[] = [
       { icon: '📍', label: 'Address', value: 'ul. Szeroka 24, Kraków' },
     ],
     model: 'synagogue',
-    color: '#FFC800',
+    color: '#D9B44A',
     suggestedQuestions: [
       'What else is there to see in Kazimierz?',
       'Where can I eat nearby?',
@@ -251,7 +251,7 @@ export const MOCK_LANDMARKS: Landmark[] = [
       { icon: '📍', label: 'Connects', value: 'Kazimierz ↔ Podgórze' },
     ],
     model: 'bridge',
-    color: '#FF86D0',
+    color: '#E46FA8',
     suggestedQuestions: ['Who are the acrobats?', 'What is in Podgórze?', 'Best photo spot?'],
   },
 ];

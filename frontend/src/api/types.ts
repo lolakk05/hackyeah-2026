@@ -110,3 +110,35 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   text: string;
 }
+
+/** Kinds of yes/no accessibility questions asked after reaching a stop. */
+export type ReportCategory = 'wheelchair' | 'stepFree' | 'smoothSurface' | 'lowVision';
+
+/**
+ * A visitor's yes/no answer about the walk they just made between two stops.
+ * The backend collects these per route section; when enough people say a
+ * section is NOT accessible for a need, routes for that need avoid it.
+ */
+export interface AccessibilityReport {
+  category: ReportCategory;
+  /** true = "yes, it was accessible" */
+  accessible: boolean;
+  /** The route section the answer is about. */
+  segment: {
+    fromStopId: string | null;
+    toStopId: string;
+    /** Walked path (from the routing service), so the backend can match it to streets. */
+    path: LatLng[];
+  };
+  needs: AccessibilityNeeds;
+  /** ISO time of the answer. */
+  createdAt: string;
+}
+
+/** Result of an XP award from the API. */
+export interface PointsResult {
+  /** Points added by this action. */
+  awarded: number;
+  /** The visitor's new total. */
+  total: number;
+}

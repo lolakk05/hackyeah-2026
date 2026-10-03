@@ -25,36 +25,26 @@ export interface CityPalette {
   light: number;
 }
 
-export const DAY_PALETTE: CityPalette = {
-  sky: '#DDF4FF',
-  ground: '#EFE9DD',
-  green: '#A8DD7C',
-  water: '#7FD3FA',
-  walls: ['#F4E6CC', '#EED9B6', '#F7EFE2', '#E9CFA6', '#F1DDC4', '#E5D3BC'],
-  roofs: ['#C8643C', '#B8573A', '#D07450', '#A94F37'],
-  church: '#C9694A',
-  route: '#1CB0F6',
-  user: '#1CB0F6',
+/** Night-time city colours matching the app theme. */
+export const CITY_PALETTE: CityPalette = {
+  sky: '#0F1724',
+  ground: '#182338',
+  green: '#1E3B33',
+  water: '#16466A',
+  walls: ['#46566F', '#3F4E66', '#4C5D78', '#3A4860', '#52627C'],
+  roofs: ['#8A4E3A', '#7C4636', '#93573F', '#6F4033'],
+  church: '#8C5A44',
+  route: '#FFB547',
+  user: '#5CC8FF',
   light: 1,
-};
-
-export const NIGHT_PALETTE: CityPalette = {
-  sky: '#0B1418',
-  ground: '#17252B',
-  green: '#1F3A2A',
-  water: '#123A4D',
-  walls: ['#3B4D57', '#34454F', '#415560', '#2F3F48'],
-  roofs: ['#4C3A3A', '#56413B', '#463638'],
-  church: '#5A4038',
-  route: '#49C0F8',
-  user: '#49C0F8',
-  light: 0.75,
 };
 
 export interface CityScene {
   scene: THREE.Scene;
   /** Landmark pivots by landmark id (for tap picking and labels). */
   landmarkObjects: Map<string, THREE.Object3D>;
+  /** (Re)build parks, water, buildings and landmarks. Can be called again when data arrives. */
+  setCity: (data: MapData, placements: Placement[], buildings: OsmBuilding[]) => void;
   setRoute: (path: P[] | null) => void;
   setUser: (p: P | null) => void;
   setStops: (stops: { id: string; position: P; height: number; color: string; state: 'done' | 'next' | 'later' }[]) => void;
@@ -63,13 +53,17 @@ export interface CityScene {
   dispose: () => void;
 }
 
-export function createCityScene(data: MapData, placements: Placement[], buildings: OsmBuilding[], pal: CityPalette): CityScene {
+/**
+ * The scene starts with just the ground and markers so it can be shown
+ * immediately; call `setCity` once the buildings are loaded.
+ */
+export function createCityScene(pal: CityPalette): CityScene {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(pal.sky);
   scene.fog = new THREE.Fog(pal.sky, 1400, 3200);
 
-  scene.add(new THREE.HemisphereLight(0xffffff, 0xb8ab95, 2.0 * pal.light));
-  const sun = new THREE.DirectionalLight(0xfff4e0, 1.5 * pal.light);
+  scene.add(new THREE.HemisphereLight(0xdfe8ff, 0x50586a, 2.2 * pal.light));
+  const sun = new THREE.DirectionalLight(0xffe2b8, 1.6 * pal.light);
   sun.position.set(-300, 600, 400);
   scene.add(sun);
 
@@ -85,39 +79,45 @@ export function createCityScene(data: MapData, placements: Placement[], building
   disposables.push(groundGeo);
   scene.add(new THREE.Mesh(groundGeo, flat(pal.ground)));
 
-  // Parks and water as flat shapes slightly above the ground
-  const greenGeo = flatShapes(data.green, 0.15);
-  const waterGeo = flatShapes(data.water, 0.3);
-  if (greenGeo) {
-    disposables.push(greenGeo);
-    scene.add(new THREE.Mesh(greenGeo, flat(pal.green)));
-  }
-  if (waterGeo) {
-    disposables.push(waterGeo);
-    scene.add(new THREE.Mesh(waterGeo, flat(pal.water)));
-  }
-
-  // All ordinary buildings in one mesh
-  const buildingGeo = extrudeBuildings(buildings, pal);
-  disposables.push(buildingGeo);
+  // City content (rebuilt by setCity)
+  const cityGroup = new THREE.Group();
+  scene.add(cityGroup);
+  const greenMat = flat(pal.green);
+  const waterMat = flat(pal.water);
   const buildingMat = new THREE.MeshLambertMaterial({ vertexColors: true });
   disposables.push(buildingMat);
-  scene.add(new THREE.Mesh(buildingGeo, buildingMat));
-
-  // Landmarks, fitted into their real footprints
   const landmarkObjects = new Map<string, THREE.Object3D>();
-  for (const pl of placements) {
-    const pivot = fitLandmark(pl);
-    pivot.userData.landmarkId = pl.landmark.id;
-    landmarkObjects.set(pl.landmark.id, pivot);
-    scene.add(pivot);
-  }
+
+  const clearCity = () => {
+    // Pivots of landmarks are Groups (disposeModel); parks/water/buildings are Meshes.
+    cityGroup.children.forEach((c) => (c instanceof THREE.Mesh ? c.geometry.dispose() : disposeModel(c)));
+    landmarkObjects.clear();
+    cityGroup.clear();
+  };
+
+  const setCity: CityScene['setCity'] = (data, placements, buildings) => {
+    clearCity();
+    // Parks and water as flat shapes slightly above the ground
+    const greenGeo = flatShapes(data.green, 0.15);
+    const waterGeo = flatShapes(data.water, 0.3);
+    if (greenGeo) cityGroup.add(new THREE.Mesh(greenGeo, greenMat));
+    if (waterGeo) cityGroup.add(new THREE.Mesh(waterGeo, waterMat));
+    // All ordinary buildings in one mesh
+    if (buildings.length) cityGroup.add(new THREE.Mesh(extrudeBuildings(buildings, pal), buildingMat));
+    // Landmarks, fitted into their real footprints
+    for (const pl of placements) {
+      const pivot = fitLandmark(pl);
+      pivot.userData.landmarkId = pl.landmark.id;
+      landmarkObjects.set(pl.landmark.id, pivot);
+      cityGroup.add(pivot);
+    }
+  };
 
   // Route ribbon
   const routeGroup = new THREE.Group();
   scene.add(routeGroup);
   const routeMat = new THREE.MeshBasicMaterial({ color: pal.route });
-  const routeEdgeMat = new THREE.MeshBasicMaterial({ color: '#FFFFFF' });
+  const routeEdgeMat = new THREE.MeshBasicMaterial({ color: '#241703' });
   disposables.push(routeMat, routeEdgeMat);
 
   const setRoute = (path: P[] | null) => {
@@ -128,7 +128,7 @@ export function createCityScene(data: MapData, placements: Placement[], building
     routeGroup.add(new THREE.Mesh(ribbon(path, 4.5, 0.7), routeMat));
   };
 
-  // User marker: a blue dot with a pulsing ring
+  // User marker: a dot with a pulsing ring
   const user = new THREE.Group();
   const userDot = new THREE.Mesh(new THREE.SphereGeometry(4, 16, 12), new THREE.MeshLambertMaterial({ color: pal.user }));
   userDot.position.y = 4;
@@ -155,7 +155,7 @@ export function createCityScene(data: MapData, placements: Placement[], building
     pins.clear();
     nextPin = null;
     for (const s of stops) {
-      const color = s.state === 'done' ? '#FFC800' : s.state === 'next' ? s.color : '#AFAFAF';
+      const color = s.state === 'done' ? '#3DDC97' : s.state === 'next' ? '#FFB547' : '#6B7A93';
       const size = s.state === 'next' ? 2.2 : 1.2;
       const pin = makePin(color, size);
       pin.position.set(s.position.x, s.height + 10, s.position.z);
@@ -176,14 +176,14 @@ export function createCityScene(data: MapData, placements: Placement[], building
   };
 
   const dispose = () => {
+    clearCity();
     disposables.forEach((d) => d.dispose());
-    landmarkObjects.forEach((o) => disposeModel(o));
     disposeModel(user);
     disposeModel(pins);
     routeGroup.children.forEach((c) => (c as THREE.Mesh).geometry?.dispose());
   };
 
-  return { scene, landmarkObjects, setRoute, setUser, setStops, tick, dispose };
+  return { scene, landmarkObjects, setCity, setRoute, setUser, setStops, tick, dispose };
 }
 
 // ─── Landmarks ──────────────────────────────────────────────

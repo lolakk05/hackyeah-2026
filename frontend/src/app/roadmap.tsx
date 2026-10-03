@@ -9,16 +9,18 @@ import { TopBar } from '@/components/home/top-bar';
 import { Roadmap } from '@/components/roadmap/roadmap';
 import { UnitBanner } from '@/components/roadmap/unit-banner';
 import { Brand, formatDuration } from '@/constants/duo-theme';
-import { themedStyles, useDuo } from '@/state/theme-context';
+import { useI18n } from '@/i18n/language-context';
 import { useJourney, type StopStatus } from '@/state/journey-context';
+import { themedStyles, useDuo } from '@/state/theme-context';
 
 /**
- * Roadmap: the Duolingo-style path of stops the API picked for this trip
- * (based on trip length + accessibility). START ROUTE opens the 3D map.
+ * Roadmap: the stops the API picked for this trip (based on trip length and
+ * accessibility), as a timeline. START ROUTE opens the 3D map.
  */
 export default function RoadmapScreen() {
   const t = useDuo();
   const styles = useStyles();
+  const { s, fmt } = useI18n();
   const j = useJourney();
   const { plan, landmarks, roadmap, currentId, completedIds } = j;
 
@@ -26,76 +28,54 @@ export default function RoadmapScreen() {
   const openSetup = () => router.push('/setup');
   const openMap = () => router.push('/map');
 
-  // Before a trip is planned, the first stop is "current" so the map invites you to start.
+  // Before a trip is planned, the first stop is "current" so the list invites you to start.
   const statusOf = (id: string): StopStatus =>
     plan ? j.statusOf(id) : id === landmarks[0]?.id ? 'current' : 'locked';
-  const bubbleFor = (lm: Landmark) => {
-    if (statusOf(lm.id) !== 'current') return undefined;
-    return !plan || completedIds.length === 0 ? 'START' : 'NEXT STOP';
-  };
   const current = roadmap.find((l) => l.id === currentId);
   const skipped = plan?.skippedForAccessibility.length ?? 0;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <TopBar
-        city="Kraków"
-        stats={[
-          {
-            icon: '⏱',
-            value: plan ? formatDuration(j.preferences.durationMinutes) : '—',
-            color: Brand.blue,
-            a11y: 'Trip length',
-          },
-          {
-            icon: '📍',
-            value: plan ? `${completedIds.length}/${plan.stopIds.length}` : `${landmarks.length}`,
-            color: Brand.red,
-            a11y: 'Stops visited',
-          },
-          { icon: '⚡', value: `${j.xp}`, color: Brand.orange, a11y: 'Experience points' },
-        ]}
-      />
+      <TopBar progress={plan ? `${completedIds.length}/${plan.stopIds.length}` : undefined} xp={j.xp} />
 
       <ScrollView contentContainerStyle={styles.content}>
         <UnitBanner
-          overline={plan ? `Best route for you · ${formatDuration(plan.totalMinutes)}` : 'Kraków · Old Town & Kazimierz'}
-          title={plan ? `${plan.stopIds.length} stops to explore` : 'Plan your sightseeing trip'}
-          color={Brand.green}
-          actionLabel={plan ? '⚙️ EDIT' : undefined}
+          overline={
+            plan ? fmt(s.roadmap.overline, { time: formatDuration(plan.totalMinutes) }) : s.roadmap.previewOverline
+          }
+          title={plan ? fmt(s.roadmap.title, { n: plan.stopIds.length }) : s.roadmap.previewTitle}
+          actionLabel={plan ? `⚙️ ${s.roadmap.edit}` : undefined}
           onAction={openSetup}
         />
 
         {skipped > 0 ? (
           <View style={styles.notice} accessibilityRole="text">
             <DuoText style={styles.noticeIcon}>♿</DuoText>
-            <DuoText variant="caption" color={t.blueText} style={styles.noticeText}>
-              We skipped {skipped} {skipped === 1 ? 'place that doesn’t' : 'places that don’t'} match your
-              accessibility needs.
+            <DuoText variant="caption" color={t.textMuted} style={styles.noticeText}>
+              {fmt(s.roadmap.skipped, { n: skipped })}
             </DuoText>
           </View>
         ) : null}
 
         {j.loading ? (
           <View style={styles.center}>
-            <ActivityIndicator size="large" color={Brand.green} />
+            <ActivityIndicator size="large" color={Brand.primary} />
             <DuoText variant="body" color={t.textMuted}>
-              Loading Kraków…
+              {s.roadmap.loading}
             </DuoText>
           </View>
         ) : j.error ? (
           <View style={styles.center}>
-            <DuoText variant="heading">😕 Couldn’t load places</DuoText>
+            <DuoText variant="heading">😕 {s.roadmap.loadError}</DuoText>
             <DuoText variant="caption" color={t.textMuted} style={styles.errorText}>
               {j.error}
             </DuoText>
-            <DuoButton title="Try again" variant="blue" size="md" onPress={j.reload} />
+            <DuoButton title={s.common.tryAgain} variant="secondary" size="md" onPress={j.reload} />
           </View>
         ) : (
           <Roadmap
             landmarks={roadmap}
             statusOf={statusOf}
-            bubbleFor={bubbleFor}
             onPressStop={(lm) => (!plan && statusOf(lm.id) === 'current' ? openSetup() : openPlace(lm))}
           />
         )}
@@ -103,11 +83,11 @@ export default function RoadmapScreen() {
         {j.isFinished ? (
           <View style={styles.finish}>
             <DuoText style={styles.trophy}>🏆</DuoText>
-            <DuoText variant="title" color={Brand.yellowDark}>
-              Trip complete!
+            <DuoText variant="title" color={Brand.primary}>
+              {s.roadmap.complete}
             </DuoText>
-            <DuoText variant="body" color={t.textMuted}>
-              You visited {completedIds.length} places and earned {j.xp} XP.
+            <DuoText variant="body" color={t.textMuted} style={styles.errorText}>
+              {fmt(s.roadmap.completeText, { n: completedIds.length, xp: j.xp })}
             </DuoText>
           </View>
         ) : null}
@@ -115,16 +95,10 @@ export default function RoadmapScreen() {
 
       <SafeAreaView edges={['bottom']} style={styles.footer}>
         {!plan ? (
-          <DuoButton
-            title="Start your journey"
-            subtitle="Pick trip length & accessibility"
-            onPress={openSetup}
-            accessibilityHint="Opens trip settings"
-          />
+          <DuoButton title={s.roadmap.planTrip} onPress={openSetup} />
         ) : j.isFinished ? (
           <DuoButton
-            title="Plan another trip"
-            variant="orange"
+            title={s.roadmap.planAnother}
             onPress={() => {
               j.resetTrip();
               openSetup();
@@ -132,10 +106,8 @@ export default function RoadmapScreen() {
           />
         ) : current ? (
           <DuoButton
-            title={completedIds.length === 0 ? 'Start route' : 'Continue route'}
-            subtitle={`🧭 Navigate to ${current.name}`}
+            title={completedIds.length === 0 ? s.roadmap.startRoute : s.roadmap.continueRoute}
             onPress={openMap}
-            accessibilityHint="Opens the 3D map with directions"
           />
         ) : null}
       </SafeAreaView>
@@ -145,28 +117,20 @@ export default function RoadmapScreen() {
 
 const useStyles = themedStyles((t) => ({
   safe: { flex: 1, backgroundColor: t.background },
-  content: { padding: 16, paddingBottom: 48, maxWidth: 600, width: '100%', alignSelf: 'center' },
+  content: { paddingHorizontal: 16, paddingBottom: 48, gap: 12, maxWidth: 600, width: '100%', alignSelf: 'center' },
   notice: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginTop: 12,
     padding: 12,
     borderRadius: t.radius.md,
-    backgroundColor: t.soft(Brand.blue),
+    backgroundColor: t.surface,
   },
-  noticeIcon: { fontSize: 22, lineHeight: 28 },
+  noticeIcon: { fontSize: 20, lineHeight: 26 },
   noticeText: { flex: 1 },
   center: { alignItems: 'center', gap: 12, paddingVertical: 60 },
   errorText: { textAlign: 'center' },
-  finish: { alignItems: 'center', gap: 6, marginTop: 32 },
+  finish: { alignItems: 'center', gap: 6, marginTop: 24 },
   trophy: { fontSize: 64, lineHeight: 76 },
-  footer: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
-    borderTopWidth: 2,
-    borderTopColor: t.border,
-    backgroundColor: t.card,
-  },
+  footer: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, backgroundColor: t.background },
 }));

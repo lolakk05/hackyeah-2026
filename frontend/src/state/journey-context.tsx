@@ -1,9 +1,11 @@
 import { createContext, use, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 
-import { fetchLandmarks, planTrip } from '@/api/client';
-import type { Landmark, TripPlan, TripPreferences } from '@/api/types';
-
-export const XP_PER_STOP = 50;
+import { awardPoints, fetchLandmarks, planTrip, submitAccessibilityReport } from '@/api/client';
+import { MAP_DATA_URL } from '@/api/config';
+import type { AccessibilityReport, Landmark, LatLng, ReportCategory, TripPlan, TripPreferences } from '@/api/types';
+import { useI18n } from '@/i18n/language-context';
+import { allLandmarkNamePatterns } from '@/map/landmark-placement';
+import { loadMapData } from '@/map/osm';
 
 export const DEFAULT_PREFERENCES: TripPreferences = {
   durationMinutes: 120,
@@ -23,6 +25,7 @@ interface JourneyState {
   completedIds: string[];
   /** Id of the next stop to visit, or null when no trip / trip finished. */
   currentId: string | null;
+  /** Experience points (total from the API). */
   xp: number;
   isFinished: boolean;
 
@@ -31,13 +34,20 @@ interface JourneyState {
   statusOf: (id: string) => StopStatus;
 
   startTrip: (prefs: TripPreferences) => Promise<void>;
-  completeStop: (id: string) => void;
+  /** Mark a stop visited and award XP through the API. Returns the points awarded. */
+  completeStop: (id: string) => Promise<number>;
   resetTrip: () => void;
+
+  /** The walking path of the current leg (set by the map), used for accessibility reports. */
+  setLegPath: (toStopId: string, path: LatLng[]) => void;
+  /** Send a yes/no accessibility answer for the leg that ended at `toStopId`. Returns XP awarded. */
+  reportLeg: (toStopId: string, category: ReportCategory, accessible: boolean) => Promise<number>;
 }
 
 const JourneyContext = createContext<JourneyState | null>(null);
 
 export function JourneyProvider({ children }: { children: ReactNode }) {
+  const { lang } = useI18n();
   const [landmarks, setLandmarks] = useState<Landmark[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -46,8 +56,12 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
   const [preferences, setPreferences] = useState<TripPreferences>(DEFAULT_PREFERENCES);
   const [plan, setPlan] = useState<TripPlan | null>(null);
   const [completedIds, setCompletedIds] = useState<string[]>([]);
+  const [xp, setXp] = useState(0);
+  const [legPaths, setLegPaths] = useState<Record<string, LatLng[]>>({});
 
+  // Landmarks (in the chosen language)
   useEffect(() => {
+    if (!lang) return;
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -58,7 +72,14 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [reloadKey]);
+  }, [reloadKey, lang]);
+
+  // Start downloading the 3D map's buildings early, so the map opens fast later.
+  useEffect(() => {
+    loadMapData(allLandmarkNamePatterns(), MAP_DATA_URL).catch(() => {
+      // the map screen shows its own retry button
+    });
+  }, []);
 
   const roadmap = useMemo(() => {
     if (!plan) return landmarks;
@@ -86,18 +107,58 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
       const newPlan = await planTrip(prefs, landmarks);
       setPlan(newPlan);
       setCompletedIds([]);
+      setLegPaths({});
     },
     [landmarks],
   );
 
-  const completeStop = useCallback((id: string) => {
+  const completeStop = useCallback(async (id: string) => {
     setCompletedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+    try {
+      const res = await awardPoints(id, 'visit');
+      setXp(res.total);
+      return res.awarded;
+    } catch {
+      return 0;
+    }
   }, []);
 
   const resetTrip = useCallback(() => {
     setPlan(null);
     setCompletedIds([]);
+    setLegPaths({});
   }, []);
+
+  const setLegPath = useCallback((toStopId: string, path: LatLng[]) => {
+    setLegPaths((prev) => ({ ...prev, [toStopId]: path }));
+  }, []);
+
+  const reportLeg = useCallback(
+    async (toStopId: string, category: ReportCategory, accessible: boolean) => {
+      const index = plan?.stopIds.indexOf(toStopId) ?? -1;
+      const fromStopId = index > 0 ? plan!.stopIds[index - 1] : null;
+      const byId = (id: string | null) => landmarks.find((l) => l.id === id);
+      const to = byId(toStopId);
+      const from = byId(fromStopId);
+      const path = legPaths[toStopId] ?? [from?.coordinates, to?.coordinates].filter((p): p is LatLng => !!p);
+      const report: AccessibilityReport = {
+        category,
+        accessible,
+        segment: { fromStopId, toStopId, path },
+        needs: preferences.needs,
+        createdAt: new Date().toISOString(),
+      };
+      try {
+        await submitAccessibilityReport(report);
+        const res = await awardPoints(toStopId, 'report');
+        setXp(res.total);
+        return res.awarded;
+      } catch {
+        return 0;
+      }
+    },
+    [plan, landmarks, legPaths, preferences.needs],
+  );
 
   const value: JourneyState = {
     landmarks,
@@ -108,13 +169,15 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
     plan,
     completedIds,
     currentId,
-    xp: completedIds.length * XP_PER_STOP,
+    xp,
     isFinished: !!plan && plan.stopIds.length > 0 && currentId === null,
     roadmap,
     statusOf,
     startTrip,
     completeStop,
     resetTrip,
+    setLegPath,
+    reportLeg,
   };
 
   return <JourneyContext value={value}>{children}</JourneyContext>;

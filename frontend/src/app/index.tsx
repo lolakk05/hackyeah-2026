@@ -2,101 +2,88 @@ import { router } from 'expo-router';
 import { Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { DuoButton } from '@/components/duo/duo-button';
 import { DuoText } from '@/components/duo/duo-text';
 import { tapFeedback } from '@/components/duo/haptics';
-import { LandmarkModel } from '@/components/models/landmark-model';
 import { Brand } from '@/constants/duo-theme';
-import { useJourney } from '@/state/journey-context';
-import { themedStyles, useDuo, useThemeMode } from '@/state/theme-context';
+import { useI18n } from '@/i18n/language-context';
+import type { Lang } from '@/i18n/strings';
+import { themedStyles, useDuo } from '@/state/theme-context';
 
-/** Start page: welcome, then GET STARTED (new trip) or CONTINUE (trip in progress). */
-export default function WelcomeScreen() {
+const LANGUAGES: { lang: Lang; flag: string; name: string; hint: string }[] = [
+  { lang: 'pl', flag: '🇵🇱', name: 'Polski', hint: 'Kontynuuj po polsku' },
+  { lang: 'en', flag: '🇬🇧', name: 'English', hint: 'Continue in English' },
+];
+
+/** First screen: choose the app language. */
+export default function LanguageScreen() {
   const t = useDuo();
   const styles = useStyles();
-  const { toggle } = useThemeMode();
-  const { plan, isFinished, completedIds } = useJourney();
-  const inProgress = !!plan && !isFinished;
+  const { lang, setLang } = useI18n();
+
+  const choose = (l: Lang) => {
+    tapFeedback(true);
+    setLang(l);
+    router.push('/welcome');
+  };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <View style={styles.topRow}>
-        <Pressable
-          onPress={() => {
-            tapFeedback();
-            toggle();
-          }}
-          accessibilityRole="switch"
-          accessibilityState={{ checked: t.dark }}
-          accessibilityLabel="Night mode"
-          hitSlop={10}>
-          <View style={styles.modeButton}>
-            <DuoText style={styles.modeIcon}>{t.dark ? '☀️' : '🌙'}</DuoText>
-          </View>
-        </Pressable>
-      </View>
+      <View style={styles.content}>
+        <DuoText style={styles.globe}>🌍</DuoText>
+        <DuoText variant="title" style={styles.center} accessibilityRole="header">
+          Wybierz język{'\n'}Choose your language
+        </DuoText>
 
-      <View style={styles.hero}>
-        <View style={styles.modelRing}>
-          <LandmarkModel kind="castle" backgroundColor={Brand.green} interactive style={styles.model} />
+        <View style={styles.list}>
+          {LANGUAGES.map((l) => (
+            <Pressable
+              key={l.lang}
+              onPress={() => choose(l.lang)}
+              accessibilityRole="button"
+              accessibilityLabel={l.name}
+              accessibilityHint={l.hint}
+              accessibilityState={{ selected: lang === l.lang }}>
+              {({ pressed }) => (
+                <View style={[styles.option, lang === l.lang && styles.optionSelected, pressed && styles.pressed]}>
+                  <DuoText style={styles.flag}>{l.flag}</DuoText>
+                  <View style={styles.texts}>
+                    <DuoText variant="title">{l.name}</DuoText>
+                    <DuoText variant="caption" color={t.textMuted}>
+                      {l.hint}
+                    </DuoText>
+                  </View>
+                  <DuoText variant="title" color={Brand.primary}>
+                    →
+                  </DuoText>
+                </View>
+              )}
+            </Pressable>
+          ))}
         </View>
-        <DuoText variant="hero" style={styles.center} accessibilityRole="header">
-          Kraków Quest
-        </DuoText>
-        <DuoText variant="body" color={t.textMuted} style={styles.center}>
-          Explore the Old Town one landmark at a time: a route made for your time and your accessibility needs, with a
-          3D map to guide you.
-        </DuoText>
-      </View>
-
-      <View style={styles.buttons}>
-        {inProgress ? (
-          <>
-            <DuoButton
-              title="Continue"
-              subtitle={`${completedIds.length} of ${plan.stopIds.length} stops visited`}
-              onPress={() => router.push('/roadmap')}
-            />
-            <DuoButton title="Plan a new trip" variant="white" size="md" onPress={() => router.push('/setup')} />
-          </>
-        ) : (
-          <DuoButton
-            title="Get started"
-            subtitle="Choose trip length & accessibility"
-            onPress={() => router.push('/setup')}
-          />
-        )}
       </View>
     </SafeAreaView>
   );
 }
 
 const useStyles = themedStyles((t) => ({
-  safe: { flex: 1, backgroundColor: t.background, paddingHorizontal: 24 },
-  topRow: { flexDirection: 'row', justifyContent: 'flex-end', paddingTop: 8 },
-  modeButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 2,
-    borderBottomWidth: 4,
-    borderColor: t.border,
-    backgroundColor: t.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modeIcon: { fontSize: 22, lineHeight: 28 },
-  hero: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, maxWidth: 520, alignSelf: 'center' },
-  modelRing: {
-    width: 240,
-    height: 240,
-    borderRadius: 120,
-    overflow: 'hidden',
-    borderWidth: 8,
-    borderColor: t.soft(Brand.green, 0.5),
-    marginBottom: 8,
-  },
-  model: { flex: 1 },
+  safe: { flex: 1, backgroundColor: t.background },
+  content: { flex: 1, justifyContent: 'center', padding: 24, gap: 20, maxWidth: 520, width: '100%', alignSelf: 'center' },
+  globe: { fontSize: 64, lineHeight: 76, textAlign: 'center' },
   center: { textAlign: 'center' },
-  buttons: { gap: 12, paddingBottom: 16, width: '100%', maxWidth: 520, alignSelf: 'center' },
+  list: { gap: 14, marginTop: 12 },
+  option: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    padding: 20,
+    minHeight: 92,
+    borderRadius: t.radius.xl,
+    backgroundColor: t.card,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+  },
+  optionSelected: { borderColor: Brand.primary },
+  pressed: { backgroundColor: t.cardRaised },
+  flag: { fontSize: 40, lineHeight: 48 },
+  texts: { flex: 1 },
 }));

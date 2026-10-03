@@ -5,7 +5,8 @@ import { askAboutLandmark } from '@/api/client';
 import type { ChatMessage, Landmark } from '@/api/types';
 import { DuoText } from '@/components/duo/duo-text';
 import { tapFeedback } from '@/components/duo/haptics';
-import { Brand, DuoFonts } from '@/constants/duo-theme';
+import { Brand } from '@/constants/duo-theme';
+import { useI18n } from '@/i18n/language-context';
 import { themedStyles, useDuo } from '@/state/theme-context';
 
 import { SectionCard } from './section-card';
@@ -17,6 +18,7 @@ const newId = () => `m${Date.now()}-${nextId++}`;
 export function AskAiChat({ landmark }: { landmark: Landmark }) {
   const t = useDuo();
   const styles = useStyles();
+  const { s, fmt } = useI18n();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [thinking, setThinking] = useState(false);
@@ -34,44 +36,35 @@ export function AskAiChat({ landmark }: { landmark: Landmark }) {
       const answer = await askAboutLandmark(landmark, question, messages);
       setMessages([...history, { id: newId(), role: 'assistant', text: answer }]);
     } catch {
-      setMessages([
-        ...history,
-        { id: newId(), role: 'assistant', text: "Oops, I couldn't reach the guide. Please try again. 🙈" },
-      ]);
+      setMessages([...history, { id: newId(), role: 'assistant', text: s.guide.error }]);
     } finally {
       setThinking(false);
     }
   };
 
   const unused = landmark.suggestedQuestions.filter((q) => !messages.some((m) => m.text === q));
+  const canSend = !!input.trim() && !thinking;
 
   return (
-    <SectionCard title="Ask the guide" icon="🐉">
+    <SectionCard title={s.guide.title} icon="💬">
       <DuoText variant="body" color={t.textMuted}>
-        Ask anything about {landmark.name}: history, tickets, food nearby, accessibility…
+        {fmt(s.guide.intro, { name: landmark.name })}
       </DuoText>
 
       {messages.map((m) => (
         <View key={m.id} style={[styles.msgRow, m.role === 'user' && styles.msgRowUser]}>
-          {m.role === 'assistant' ? <DuoText style={styles.avatar}>🐉</DuoText> : null}
           <View
-            style={[
-              styles.bubble,
-              m.role === 'user'
-                ? { backgroundColor: Brand.blue, borderColor: Brand.blueDark }
-                : { backgroundColor: t.card, borderColor: t.border },
-            ]}
-            accessibilityLabel={`${m.role === 'user' ? 'You' : 'Guide'}: ${m.text}`}>
-            <DuoText variant="body" color={m.role === 'user' ? Brand.onColor : t.text}>
+            style={[styles.bubble, m.role === 'user' ? styles.bubbleUser : styles.bubbleGuide]}
+            accessibilityLabel={`${m.role === 'user' ? s.guide.you : s.guide.guide}: ${m.text}`}>
+            <DuoText variant="body" color={m.role === 'user' ? Brand.onPrimary : t.text}>
               {m.text}
             </DuoText>
           </View>
         </View>
       ))}
       {thinking ? (
-        <View style={styles.msgRow} accessibilityLabel="Guide is typing">
-          <DuoText style={styles.avatar}>🐉</DuoText>
-          <View style={[styles.bubble, { backgroundColor: t.card, borderColor: t.border }]}>
+        <View style={styles.msgRow} accessibilityLabel={s.guide.typing}>
+          <View style={[styles.bubble, styles.bubbleGuide]}>
             <DuoText variant="heading" color={t.textMuted}>
               • • •
             </DuoText>
@@ -82,10 +75,14 @@ export function AskAiChat({ landmark }: { landmark: Landmark }) {
       {unused.length > 0 ? (
         <View style={styles.chips}>
           {unused.map((q) => (
-            <Pressable key={q} onPress={() => send(q)} accessibilityRole="button" accessibilityLabel={`Ask: ${q}`}>
+            <Pressable
+              key={q}
+              onPress={() => send(q)}
+              accessibilityRole="button"
+              accessibilityLabel={fmt(s.guide.ask, { q })}>
               {({ pressed }) => (
-                <View style={[styles.chip, pressed && { borderBottomWidth: 2, marginTop: 2 }]}>
-                  <DuoText variant="caption" color={t.blueText}>
+                <View style={[styles.chip, pressed && styles.chipPressed]}>
+                  <DuoText variant="caption" color={Brand.primary} style={styles.chipText}>
                     {q}
                   </DuoText>
                 </View>
@@ -99,32 +96,23 @@ export function AskAiChat({ landmark }: { landmark: Landmark }) {
         <TextInput
           value={input}
           onChangeText={setInput}
-          placeholder="Type your question…"
+          placeholder={s.guide.placeholder}
           placeholderTextColor={t.lockedText}
           style={styles.input}
           onSubmitEditing={() => send(input)}
           returnKeyType="send"
-          accessibilityLabel="Your question"
+          accessibilityLabel={s.guide.placeholder}
           multiline={false}
         />
-        <Pressable
-          onPress={() => send(input)}
-          disabled={!input.trim() || thinking}
-          accessibilityRole="button"
-          accessibilityLabel="Send question">
+        <Pressable onPress={() => send(input)} disabled={!canSend} accessibilityRole="button" accessibilityLabel={s.guide.send}>
           {({ pressed }) => (
             <View
               style={[
                 styles.send,
-                {
-                  backgroundColor: input.trim() ? Brand.blue : t.locked,
-                  borderBottomColor: input.trim() ? Brand.blueDark : t.lockedDark,
-                  borderBottomWidth: pressed ? 0 : 4,
-                  marginTop: pressed ? 4 : 0,
-                },
+                { backgroundColor: canSend ? (pressed ? Brand.primaryPressed : Brand.primary) : t.locked },
               ]}>
-              <DuoText variant="heading" color={Brand.onColor}>
-                ➤
+              <DuoText variant="heading" color={canSend ? Brand.onPrimary : t.lockedText}>
+                ↑
               </DuoText>
             </View>
           )}
@@ -135,44 +123,40 @@ export function AskAiChat({ landmark }: { landmark: Landmark }) {
 }
 
 const useStyles = themedStyles((t) => ({
-  msgRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
+  msgRow: { flexDirection: 'row' },
   msgRowUser: { justifyContent: 'flex-end' },
-  avatar: { fontSize: 26, lineHeight: 32 },
   bubble: {
-    maxWidth: '82%',
+    maxWidth: '85%',
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 18,
-    borderWidth: 2,
-    borderBottomWidth: 4,
+    borderRadius: 20,
   },
+  bubbleUser: { backgroundColor: Brand.primary, borderBottomRightRadius: 6 },
+  bubbleGuide: { backgroundColor: t.cardRaised, borderBottomLeftRadius: 6 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 14,
-    borderWidth: 2,
-    borderBottomWidth: 4,
-    borderColor: t.soft(Brand.blue, 0.5),
-    backgroundColor: t.soft(Brand.blue),
+    borderRadius: 999,
+    borderWidth: 1.5,
+    borderColor: t.soft(Brand.primary, 0.5),
   },
+  chipPressed: { backgroundColor: t.soft(Brand.primary, 0.85) },
+  chipText: { fontWeight: '600' },
   inputRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   input: {
     flex: 1,
     minHeight: 52,
-    borderRadius: t.radius.md,
-    borderWidth: 2,
-    borderColor: t.border,
+    borderRadius: 999,
     backgroundColor: t.surface,
-    paddingHorizontal: 14,
-    fontFamily: DuoFonts.bold,
+    paddingHorizontal: 18,
     fontSize: 17,
     color: t.text,
   },
   send: {
     width: 52,
     height: 52,
-    borderRadius: 16,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -9,9 +9,10 @@ import { DuoButton } from '@/components/duo/duo-button';
 import { DuoText } from '@/components/duo/duo-text';
 import { tapFeedback } from '@/components/duo/haptics';
 import { CityMap3D, type CityMapHandle, type StopState } from '@/components/map/city-map-3d';
-import { Brand, shade } from '@/constants/duo-theme';
+import { Brand } from '@/constants/duo-theme';
 import { useUserLocation } from '@/hooks/use-user-location';
-import { bearingDegrees, compassWord, distanceMeters, formatDistance } from '@/map/geo';
+import { useI18n } from '@/i18n/language-context';
+import { bearingDegrees, distanceMeters, formatDistance } from '@/map/geo';
 import { useJourney } from '@/state/journey-context';
 import { themedStyles, useDuo } from '@/state/theme-context';
 
@@ -22,13 +23,15 @@ const ARRIVED_METERS = 40;
 export default function MapScreen() {
   const t = useDuo();
   const styles = useStyles();
+  const { s, fmt } = useI18n();
   const j = useJourney();
   const mapRef = useRef<CityMapHandle>(null);
 
   const stops = j.roadmap;
-  const nextStop = stops.find((s) => s.id === j.currentId) ?? null;
+  const nextStop = stops.find((st) => st.id === j.currentId) ?? null;
   const nextIndex = nextStop ? stops.indexOf(nextStop) : -1;
-  // Demo fallback position: the previous stop (or a spot on the Main Square for the first leg).
+  // Fallback position when GPS isn't available or you're not in Kraków:
+  // the previous stop (or a spot on the Main Square for the first leg).
   const previous = nextIndex > 0 ? stops[nextIndex - 1].coordinates : { latitude: 50.0614, longitude: 19.9366 };
   const location = useUserLocation(previous);
   const me = location.position;
@@ -42,12 +45,21 @@ export default function MapScreen() {
       return;
     }
     // Only re-route when we moved more than 25 m (or the stop changed).
-    if (route && routeFrom.current && distanceMeters(routeFrom.current, me) < 25 && route.path.at(-1) === nextStop.coordinates)
+    if (
+      route &&
+      routeFrom.current &&
+      distanceMeters(routeFrom.current, me) < 25 &&
+      route.path.at(-1) === nextStop.coordinates
+    )
       return;
     routeFrom.current = me;
     let cancelled = false;
     fetchWalkingRoute(me, nextStop.coordinates, j.preferences.needs).then((r) => {
-      if (!cancelled) setRoute({ ...r, path: [...r.path.slice(0, -1), nextStop.coordinates] });
+      if (cancelled) return;
+      const path = [...r.path.slice(0, -1), nextStop.coordinates];
+      setRoute({ ...r, path });
+      // Remember the walked section, for the accessibility question on arrival.
+      j.setLegPath(nextStop.id, path);
     });
     return () => {
       cancelled = true;
@@ -66,16 +78,16 @@ export default function MapScreen() {
     const timer = setTimeout(() => {
       mapRef.current?.flyTo(mid, Math.max(260, d * 1.8));
       mapRef.current?.lookAlong(bearingDegrees(me, nextStop.coordinates));
-    }, 600);
+    }, 400);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nextStop?.id, !!me]);
 
   const mapStops = useMemo(
     () =>
-      stops.map((s) => ({
-        landmark: s,
-        state: (j.completedIds.includes(s.id) ? 'done' : s.id === j.currentId ? 'next' : 'later') as StopState,
+      stops.map((st) => ({
+        landmark: st,
+        state: (j.completedIds.includes(st.id) ? 'done' : st.id === j.currentId ? 'next' : 'later') as StopState,
       })),
     [stops, j.completedIds, j.currentId],
   );
@@ -84,8 +96,12 @@ export default function MapScreen() {
   const remaining = route?.distanceMeters ?? straight ?? 0;
   const arrived = straight !== null && straight < ARRIVED_METERS;
   const bearing = me && nextStop ? bearingDegrees(me, nextStop.coordinates) : 0;
+  const direction = s.map.directions[Math.round(bearing / 45) % 8];
   const close = () => (router.canGoBack() ? router.back() : router.replace('/roadmap'));
   const openStop = (id: string) => router.push({ pathname: '/place/[id]', params: { id } });
+  const navLine = arrived
+    ? s.map.arrived
+    : fmt(s.map.nav, { dist: formatDistance(remaining), min: route?.durationMinutes ?? '…', dir: direction });
 
   return (
     <View style={styles.root}>
@@ -101,71 +117,59 @@ export default function MapScreen() {
       {/* Top: navigation card */}
       <SafeAreaView edges={['top']} style={styles.top} pointerEvents="box-none">
         <View style={styles.topRow}>
-          <RoundButton label="✕" onPress={close} a11y="Back to roadmap" />
+          <RoundButton label="←" onPress={close} a11y={s.map.backToRoadmap} />
           {nextStop ? (
             <View
-              style={[styles.navCard, { backgroundColor: nextStop.color, borderBottomColor: shade(nextStop.color, 0.22) }]}
+              style={styles.navCard}
               accessibilityRole="summary"
-              accessibilityLabel={`Next stop ${nextStop.name}, ${formatDistance(remaining)}, about ${route?.durationMinutes ?? '?'} minutes, head ${compassWord(bearing)}`}>
+              accessibilityLabel={`${fmt(s.map.stopOf, { n: nextIndex + 1, total: stops.length })}. ${nextStop.name}. ${navLine}`}>
               <View style={[styles.arrow, { transform: [{ rotate: `${bearing - (location.heading ?? 0)}deg` }] }]}>
-                <DuoText style={styles.arrowIcon} color={Brand.onColor}>
-                  ⬆
+                <DuoText style={styles.arrowIcon} color={Brand.onPrimary}>
+                  ↑
                 </DuoText>
               </View>
               <View style={styles.navTexts}>
-                <DuoText variant="label" color="rgba(255,255,255,0.9)">
-                  STOP {nextIndex + 1} OF {stops.length}
+                <DuoText variant="label" color={Brand.primary}>
+                  {fmt(s.map.stopOf, { n: nextIndex + 1, total: stops.length })}
                 </DuoText>
-                <DuoText variant="heading" color={Brand.onColor} numberOfLines={1}>
+                <DuoText variant="heading" numberOfLines={1}>
                   {nextStop.name}
                 </DuoText>
-                <DuoText variant="caption" color={Brand.onColor}>
-                  {arrived
-                    ? 'You have arrived! 🎉'
-                    : `${formatDistance(remaining)} · ${route?.durationMinutes ?? '…'} min · head ${compassWord(bearing)}`}
+                <DuoText variant="caption" color={t.textMuted}>
+                  {navLine}
                 </DuoText>
               </View>
             </View>
           ) : (
-            <View style={[styles.navCard, { backgroundColor: Brand.yellow, borderBottomColor: Brand.yellowDark }]}>
-              <DuoText variant="heading" color={Brand.onColor}>
-                🏆 Route complete!
-              </DuoText>
+            <View style={styles.navCard}>
+              <DuoText variant="heading">{s.map.routeComplete}</DuoText>
             </View>
           )}
         </View>
-        {location.source === 'simulated' ? (
-          <View style={styles.demoBadge}>
-            <DuoText variant="caption" color={t.text}>
-              {location.permissionDenied ? '📍 Location is off' : '📍 You’re not in Kraków'}: demo position at the
-              previous stop
-            </DuoText>
-          </View>
-        ) : null}
       </SafeAreaView>
 
       {/* Right: camera buttons */}
       <View style={styles.side} pointerEvents="box-none">
-        <RoundButton label="🎯" a11y="Center on me" onPress={() => me && mapRef.current?.flyTo(me, 220)} />
+        <RoundButton label="◎" a11y={s.map.centerMe} onPress={() => me && mapRef.current?.flyTo(me, 220)} />
         <RoundButton
           label="📍"
-          a11y="Show next stop"
+          a11y={s.map.showStop}
           onPress={() => nextStop && mapRef.current?.flyTo(nextStop.coordinates, 260)}
         />
-        <RoundButton label="🗺️" a11y="Show whole route" onPress={() => mapRef.current?.overview()} />
+        <RoundButton label="🗺️" a11y={s.map.showRoute} onPress={() => mapRef.current?.overview()} />
       </View>
 
       {/* Bottom: main action */}
       <SafeAreaView edges={['bottom']} style={styles.bottom}>
         {nextStop ? (
           <DuoButton
-            title={arrived ? `I'm here! Open ${nextStop.name}` : `I'm at ${nextStop.name}`}
-            subtitle={arrived ? 'Read about it and collect your XP' : 'Tap when you get there'}
-            variant={arrived ? 'green' : 'blue'}
+            title={fmt(arrived ? s.map.imHereOpen : s.map.imAt, { name: nextStop.name })}
+            subtitle={arrived ? s.map.imHereOpenSub : s.map.imAtSub}
+            variant={arrived ? 'primary' : 'secondary'}
             onPress={() => openStop(nextStop.id)}
           />
         ) : (
-          <DuoButton title="Back to roadmap" variant="orange" onPress={() => router.replace('/roadmap')} />
+          <DuoButton title={s.map.backToRoadmap} onPress={() => router.replace('/roadmap')} />
         )}
       </SafeAreaView>
     </View>
@@ -194,7 +198,7 @@ function RoundButton({ label, onPress, a11y }: { label: string; onPress: () => v
 
 const useStyles = themedStyles((t) => ({
   root: { flex: 1, backgroundColor: t.background },
-  top: { position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: 12, gap: 8 },
+  top: { position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: 12 },
   topRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingTop: 6 },
   navCard: {
     flex: 1,
@@ -203,42 +207,34 @@ const useStyles = themedStyles((t) => ({
     gap: 12,
     paddingVertical: 12,
     paddingHorizontal: 14,
-    borderRadius: t.radius.lg,
-    borderBottomWidth: 5,
+    borderRadius: t.radius.xl,
+    backgroundColor: t.card,
+    borderWidth: 1,
+    borderColor: t.border,
   },
   arrow: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.22)',
+    backgroundColor: Brand.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  arrowIcon: { fontSize: 26, lineHeight: 32 },
+  arrowIcon: { fontSize: 26, lineHeight: 32, fontWeight: '800' },
   navTexts: { flex: 1 },
-  demoBadge: {
-    alignSelf: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    backgroundColor: t.card,
-    borderWidth: 2,
-    borderColor: t.border,
-  },
-  side: { position: 'absolute', right: 12, top: '38%', gap: 12 },
+  side: { position: 'absolute', right: 12, top: '36%', gap: 12 },
   round: {
     width: 56,
     height: 56,
     borderRadius: 28,
     backgroundColor: t.card,
-    borderWidth: 2,
-    borderBottomWidth: 5,
+    borderWidth: 1,
     borderColor: t.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  roundPressed: { borderBottomWidth: 2, marginTop: 3 },
-  roundIcon: { fontSize: 24, lineHeight: 30 },
+  roundPressed: { backgroundColor: t.cardRaised },
+  roundIcon: { fontSize: 22, lineHeight: 28, color: t.text },
   bottom: {
     position: 'absolute',
     left: 0,
@@ -247,8 +243,8 @@ const useStyles = themedStyles((t) => ({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 12,
-    backgroundColor: t.card,
-    borderTopWidth: 2,
-    borderTopColor: t.border,
+    backgroundColor: t.background,
+    borderTopLeftRadius: t.radius.xl,
+    borderTopRightRadius: t.radius.xl,
   },
 }));

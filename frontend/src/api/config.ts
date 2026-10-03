@@ -18,6 +18,9 @@ export const USE_MOCK_API = !process.env.EXPO_PUBLIC_API_URL;
 /** Fake network delay for mock calls, so loading states are visible. */
 export const MOCK_DELAY_MS = 400;
 
+/** Chance (0–1) of asking a yes/no accessibility question after reaching a stop. */
+export const REPORT_QUESTION_CHANCE = 0.5;
+
 /** Set to false to show emoji instead of 3D models (e.g. on a very slow device). */
 export const ENABLE_3D_MODELS = true;
 
@@ -38,4 +41,8 @@ export const ENDPOINTS = {
   ask: (id: string) => `/landmarks/${encodeURIComponent(id)}/ask`,
   /** POST { from, to, needs } → { path: LatLng[], distanceMeters, durationMinutes } */
   route: '/route',
+  /** POST { landmarkId, reason: 'visit' | 'report' } → { awarded, total } */
+  points: '/points',
+  /** POST AccessibilityReport (see types.ts) */
+  reports: '/reports',
 } as const;

@@ -2,6 +2,7 @@ import { View } from 'react-native';
 
 import type { LandmarkFact } from '@/api/types';
 import { DuoText } from '@/components/duo/duo-text';
+import { useI18n } from '@/i18n/language-context';
 import { themedStyles, useDuo } from '@/state/theme-context';
 
 import { SectionCard } from './section-card';
@@ -9,9 +10,10 @@ import { SectionCard } from './section-card';
 export function FactsList({ facts }: { facts: LandmarkFact[] }) {
   const t = useDuo();
   const styles = useStyles();
+  const { s } = useI18n();
   if (facts.length === 0) return null;
   return (
-    <SectionCard title="Good to know" icon="💡">
+    <SectionCard title={s.place.goodToKnow} icon="💡">
       {facts.map((f) => (
         <View key={f.label} style={styles.row} accessibilityLabel={`${f.label}: ${f.value}`}>
           <View style={styles.iconBubble}>
@@ -34,8 +36,8 @@ const useStyles = themedStyles((t) => ({
   iconBubble: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: t.surface,
+    borderRadius: 14,
+    backgroundColor: t.cardRaised,
     alignItems: 'center',
     justifyContent: 'center',
   },

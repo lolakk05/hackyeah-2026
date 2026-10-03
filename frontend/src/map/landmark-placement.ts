@@ -26,7 +26,8 @@ interface KindConfig {
 }
 
 export const KIND_CONFIG: Record<ModelKind, KindConfig> = {
-  barbican: { names: ['Barbakan', 'Barbican'], heightMeters: 22, fallback: { length: 32, width: 32, axisBearing: 0 }, front: 180 },
+  // The Barbican is a round fortress, about 30 m across.
+  barbican: { names: ['Barbakan', 'Barbican'], heightMeters: 18, fallback: { length: 30, width: 30, axisBearing: 0 }, front: 180 },
   basilica: {
     names: ['Mariack', 'Najświętszej Marii Panny', "St. Mary's", 'Wniebowzięcia'],
     heightMeters: 81,
@@ -101,23 +102,26 @@ export function placeLandmarks(
 
     let points: P[] = [];
     let matched = false;
+    let matchedIds: string[] = [];
 
     if (!cfg.noBuilding) {
       const hits = data.buildings.filter((b) => nameMatches(b.name) && near(centroid(b.ring)));
       if (hits.length) {
-        // keep only the cluster closest to the anchor (avoid same-named buildings elsewhere)
+        // keep only the buildings right next to the one closest to the anchor
         const closest = hits.reduce((a, b) => (dist(centroid(a.ring), anchor) < dist(centroid(b.ring), anchor) ? a : b));
         const c0 = centroid(closest.ring);
-        const cluster = hits.filter((b) => dist(centroid(b.ring), c0) < 120);
-        cluster.forEach((b) => removed.add(b.id));
+        const cluster = hits.filter((b) => dist(centroid(b.ring), c0) < 60);
+        matchedIds = cluster.map((b) => b.id);
         points = cluster.flatMap((b) => b.ring);
         matched = true;
       }
     }
     if (!matched) {
+      // Statues, bridges…: use only the single named feature closest to the anchor.
       const named = (data.named ?? []).filter((n) => nameMatches(n.name) && n.points.some(near));
       if (named.length) {
-        points = named.flatMap((n) => n.points);
+        const nearest = (n: { points: P[] }) => Math.min(...n.points.map((p) => dist(p, anchor)));
+        points = named.reduce((a, b) => (nearest(a) <= nearest(b) ? a : b)).points;
         matched = true;
       }
     }
@@ -126,6 +130,18 @@ export function placeLandmarks(
     if (box && box.length < 4) box = null;
     // Lines (bridges) have almost no width in OSM: use the configured width.
     if (box && cfg.noBuilding) box.width = Math.max(box.width, cfg.fallback.width);
+
+    // Sanity check: if the match is far away or much bigger than the real
+    // landmark (a wrong feature with a similar name), don't trust it.
+    const maxLength = cfg.fallback.length * 1.6;
+    const maxWidth = Math.max(cfg.fallback.width, cfg.fallback.length) * 1.6;
+    if (box && (box.length > maxLength || box.width > maxWidth || dist(box.center, anchor) > 120)) {
+      box = null;
+      points = [];
+      matched = false;
+      matchedIds = [];
+    }
+
     if (!box || points.length < 3) {
       // Fallback: configured size around the anchor (or the matched point/line).
       const center = box?.center ?? (points.length ? centroid(points) : anchor);
@@ -134,10 +150,11 @@ export function placeLandmarks(
       box = {
         center,
         axis,
-        length: Math.max(box?.length ?? 0, cfg.fallback.length),
+        length: Math.min(Math.max(box?.length ?? 0, cfg.fallback.length), maxLength),
         width: cfg.fallback.width,
       };
     }
+    matchedIds.forEach((id) => removed.add(id));
 
     const outline = boxOutline(box.center, box.axis, box.length, box.width);
     placements.push({ landmark: lm, ...box, heightMeters: cfg.heightMeters, front: cfg.front, matched, outline });
