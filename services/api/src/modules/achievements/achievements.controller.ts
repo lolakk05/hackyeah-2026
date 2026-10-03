@@ -8,27 +8,27 @@ export class AchievementsController {
   constructor(private readonly achievementsService: AchievementsService) {}
 
   @Post()
-  create(@Body() createAchievementDto: CreateAchievementDto) {
+  async create(@Body() createAchievementDto: CreateAchievementDto) {
     return this.achievementsService.create(createAchievementDto);
   }
 
   @Get()
-  findAll() {
+  async findAll() {
     return this.achievementsService.findAll();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.achievementsService.findOne(+id);
+  async findOne(@Param('id') id: string) {
+    return this.achievementsService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAchievementDto: UpdateAchievementDto) {
-    return this.achievementsService.update(+id, updateAchievementDto);
+  async update(@Param('id') id: string, @Body() updateAchievementDto: UpdateAchievementDto) {
+    return this.achievementsService.update(id, updateAchievementDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.achievementsService.remove(+id);
+  async remove(@Param('id') id: string) {
+    return this.achievementsService.remove(id);
   }
 }
