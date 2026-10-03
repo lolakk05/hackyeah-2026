@@ -194,6 +194,19 @@ export class AppService {
     if ('tagline' in changes) updated.tagline = this.stringValue(changes.tagline, 'tagline', 200);
     if ('description' in changes) updated.description = this.stringValue(changes.description, 'description', 4000);
 
+    if ('photos' in changes) {
+      if (!Array.isArray(changes.photos) || changes.photos.length > 12) {
+        throw new BadRequestException('photos musi być tablicą co najwyżej 12 adresów URL.');
+      }
+      updated.photos = changes.photos.map((url: unknown) => {
+        const value = this.stringValue(url, 'photos', 2048).trim();
+        if (!/^https:\/\//i.test(value)) {
+          throw new BadRequestException('Każde zdjęcie musi być adresem https://.');
+        }
+        return value;
+      });
+    }
+
     if ('coordinates' in changes) {
       if (!this.isRecord(changes.coordinates)) {
         throw new BadRequestException('coordinates musi zawierać latitude i longitude.');
