@@ -200,10 +200,7 @@ class Planner:
         prefix = (0, 1) if approach else (0,)
         radiuses = [self.settings.origin_snap_radius_m] + [100] * (len(nodes) - 1)
         profile = request.routing_profile
-        warnings = [
-            "Budżet obejmuje trasę od startu dopasowanego do sieci, w tym dojście do pierwszego POI. "
-            "Nie obejmuje zwiedzania, wejść do budynków ani odległości dopasowania GPS do sieci."
-        ]
+        warnings = ["Czas podróży nie uwzględnia zwiedzania!"]
         if profile != "walking":
             warnings.append(
                 "Ograniczenia uwzględniono w profilu grafu OSM; nie zweryfikowano "
