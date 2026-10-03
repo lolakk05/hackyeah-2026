@@ -1393,6 +1393,11 @@ h2 { font-weight: 800; }
 .empty-editor-icon { background: #223049; color: #ffb547; }
 
 .report-totals .report-total { color: #a7b5c9; }
+.reports-description {
+  margin: 5px 0 0;
+  color: #93a2b8;
+  font-size: 9px;
+}
 .report-row { border-top-color: #2a3850; }
 .report-place-name strong { color: #f2f5fa; }
 .report-place-name span { color: #93a2b8; }

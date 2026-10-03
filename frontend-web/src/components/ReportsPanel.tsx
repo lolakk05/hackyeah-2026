@@ -19,6 +19,9 @@ export function ReportsPanel({
         <div>
           <p className="eyebrow">GŁOS ODWIEDZAJĄCYCH</p>
           <h2>Zgłoszenia dostępności</h2>
+          <p className="reports-description">
+            Odpowiedzi o dostępności dla wózków, przypisane do miejsca docelowego.
+          </p>
         </div>
         <div className="report-totals">
           <span className="report-total positive"><i /> {totalAccessible} dostępne</span>

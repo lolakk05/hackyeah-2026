@@ -2,16 +2,14 @@ import type { AdminPlace } from '../data/types'
 import { Icon } from './Icon'
 
 export function StatsGrid({ places }: { places: AdminPlace[] }) {
-  const reports = places.reduce(
-    (sum, place) => ({
-      accessible: sum.accessible + place.reportCounts.accessible,
-      inaccessible: sum.inaccessible + place.reportCounts.inaccessible,
-    }),
-    { accessible: 0, inaccessible: 0 },
-  )
-  const total = reports.accessible + reports.inaccessible
   const confirmedAccessible = places.filter(
     (place) => place.accessibility.wheelchair === 'full',
+  ).length
+  const partiallyAccessible = places.filter(
+    (place) => place.accessibility.wheelchair === 'partial',
+  ).length
+  const inaccessible = places.filter(
+    (place) => place.accessibility.wheelchair === 'none',
   ).length
 
   const stats = [
@@ -30,17 +28,17 @@ export function StatsGrid({ places }: { places: AdminPlace[] }) {
       color: 'green',
     },
     {
-      label: 'Zgłoszenia dostępności',
-      value: total,
-      note: `${reports.accessible} dostępne · ${reports.inaccessible} niedostępne`,
+      label: 'Częściowo dostępne',
+      value: partiallyAccessible,
+      note: 'ograniczona dostępność',
       icon: 'chart' as const,
       color: 'blue',
     },
     {
-      label: 'Udział pozytywnych',
-      value: total ? `${Math.round((reports.accessible / total) * 100)}%` : '—',
-      note: 'na podstawie zgłoszeń',
-      icon: 'check' as const,
+      label: 'Niedostępne',
+      value: inaccessible,
+      note: 'brak dostępu dla wózków',
+      icon: 'close' as const,
       color: 'amber',
     },
   ]

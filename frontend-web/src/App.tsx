@@ -177,7 +177,6 @@ function App() {
               />
             </section>
 
-            <ReportsPanel places={places} />
           </>
         ) : (
           <section className="reports-page">
@@ -194,10 +193,6 @@ function App() {
               </button>
             </section>
             <ReportsPanel places={places} expanded />
-            <div className="reports-note">
-              Zgłoszenia w tym widoku są liczone dla kategorii „dostępność wózkiem”.
-              Odpowiedzi odnoszą się do miejsca docelowego wskazanego w zgłoszeniu.
-            </div>
           </section>
         )}
         <footer className="page-footer">
