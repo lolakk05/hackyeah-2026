@@ -1,11 +1,34 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { ApiQuery, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Users')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  @Get('ranking')
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'How many people to show (default 10)',
+  })
+  getRanking(@Query('limit') limit?: string) {
+    const take = limit ? parseInt(limit, 10) : 10;
+    return this.usersService.getRanking(take);
+  }
 
   @Post()
   create(@Body() createUserDto: CreateUserDto) {
