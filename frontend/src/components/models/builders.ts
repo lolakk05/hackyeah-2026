@@ -11,6 +11,8 @@ import * as THREE from 'three';
 
 import type { ModelKind } from '@/api/types';
 
+import * as extra from './builders-extra';
+
 const C = {
   grass: 0x7ed957,
   grassSide: 0x58a700,
@@ -362,6 +364,26 @@ const BUILDERS: Record<ModelKind, () => THREE.Group> = {
   dragon,
   synagogue,
   bridge,
+  church: extra.church,
+  twintower: extra.twinTower,
+  domechurch: extra.domeChurch,
+  chapel: extra.chapel,
+  orthodox: extra.orthodox,
+  synagogue2: extra.synagogueMoorish,
+  synagogue3: extra.synagogueSmall,
+  museum: extra.museum,
+  gallery: extra.gallery,
+  townhouse: extra.townhouse,
+  palace: extra.palace,
+  college: extra.college,
+  gate: extra.gate,
+  wallgate: extra.wallGate,
+  statue: extra.statue,
+  rider: extra.rider,
+  bust: extra.bust,
+  theatre: extra.theatre,
+  theatre2: extra.theatreNouveau,
+  cave: extra.cave,
   generic,
 };
 

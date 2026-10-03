@@ -16,6 +16,33 @@ export type ModelKind =
   | 'dragon'
   | 'synagogue'
   | 'bridge'
+  // churches and other places of worship
+  | 'church'
+  | 'twintower'
+  | 'domechurch'
+  | 'chapel'
+  | 'orthodox'
+  | 'synagogue2'
+  | 'synagogue3'
+  // museums
+  | 'museum'
+  | 'gallery'
+  | 'townhouse'
+  // palaces and colleges
+  | 'palace'
+  | 'college'
+  // gates and walls
+  | 'gate'
+  | 'wallgate'
+  // monuments
+  | 'statue'
+  | 'rider'
+  | 'bust'
+  // theatres
+  | 'theatre'
+  | 'theatre2'
+  // the dragon's cave
+  | 'cave'
   | 'generic';
 
 /** 'unknown' when the data source has no wheelchair information. */
