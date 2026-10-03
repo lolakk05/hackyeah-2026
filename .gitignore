@@ -1,0 +1,28 @@
+# Node
+**/node_modules/
+
+# Build
+**/dist/
+**/build/
+**/.next/
+
+# Env
+**/.env
+**/.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# Python
+**/__pycache__/
+**/*.pyc
+**/.venv/
