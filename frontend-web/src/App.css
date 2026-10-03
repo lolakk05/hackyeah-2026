@@ -1115,6 +1115,82 @@ h2 {
   .page-footer { gap: 12px; font-size: 7px; }
 }
 
+.map-canvas {
+  height: 340px;
+  background: #182438;
+  cursor: grab;
+}
+
+.map-tiles {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.map-tile {
+  position: absolute;
+  width: 256px;
+  height: 256px;
+  max-width: none;
+  filter: brightness(0.78) saturate(0.72);
+  user-select: none;
+}
+
+.map-marker {
+  z-index: 1;
+  cursor: pointer;
+}
+
+.map-controls {
+  position: absolute;
+  z-index: 2;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  gap: 5px;
+}
+
+.map-controls button {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid #354660;
+  border-radius: 11px;
+  background: #1a2537;
+  color: #f2f5fa;
+  font-size: 20px;
+  line-height: 1;
+  box-shadow: 0 3px 10px rgb(0 0 0 / 22%);
+}
+
+.map-controls button:hover:not(:disabled) {
+  border-color: #ffb547;
+  color: #ffb547;
+}
+
+.map-controls button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.map-attribution {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  bottom: 0;
+  padding: 4px 7px;
+  border-radius: 6px 0 0;
+  background: rgb(15 23 36 / 84%);
+  color: #a7b5c9;
+  font-size: 8px;
+  text-decoration: none;
+}
+
+.map-attribution:hover { color: #ffb547; }
+
 /* Match the Krakow-at-night theme used by the mobile map app. */
 body {
   color: #f2f5fa;
@@ -1351,6 +1427,7 @@ h2 { font-weight: 800; }
 .page-footer { color: #718198; }
 
 @media (max-width: 760px) {
-  .sidebar { background: #141e2d; border-bottom-color: #2a3850; }
+  .sidebar { background: #141e2d; border-bottom-color: #2a3850;     .map-canvas { height: 320px; }
+  }
   .nav-item { border-radius: 13px; }
 }
