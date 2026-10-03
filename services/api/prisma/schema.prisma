@@ -50,7 +50,6 @@ model Reward {
 model Place {
   placeId     String   @id @default(uuid())
   name        String
-  description String
   timeToVisit Int
   photos      String[]
 
