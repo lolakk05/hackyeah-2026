@@ -1,0 +1,14 @@
+# Spacer.io web app:  docker compose up --build  →  http://localhost:8080
+# Backend addresses come from .env (same folder); change them there and rebuild.
+services:
+  web:
+    build:
+      context: .
+      args:
+        EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:-}
+        EXPO_PUBLIC_AUTH_API_URL: ${EXPO_PUBLIC_AUTH_API_URL:-}
+        EXPO_PUBLIC_ACCOUNT_API_URL: ${EXPO_PUBLIC_ACCOUNT_API_URL:-}
+        EXPO_PUBLIC_AI_GUIDE_URL: ${EXPO_PUBLIC_AI_GUIDE_URL:-}
+    ports:
+      - "8080:80"
+    restart: unless-stopped

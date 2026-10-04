@@ -39,7 +39,10 @@ export default function RoadmapScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <TopBar progress={plan ? `${completedIds.length}/${plan.stopIds.length}` : undefined} />
+      <TopBar
+        progress={plan ? `${completedIds.length}/${plan.stopIds.length}` : undefined}
+        onBack={() => (router.canGoBack() ? router.back() : router.replace('/welcome'))}
+      />
 
       <ScrollView contentContainerStyle={styles.content}>
         <UnitBanner
@@ -53,6 +56,15 @@ export default function RoadmapScreen() {
           onAction={openSetup}
         />
 
+
+        {plan?.startedAtMarket ? (
+          <View style={[styles.notice, styles.noticeStrong]} accessibilityRole="alert">
+            <DuoText style={styles.noticeIcon}>📍</DuoText>
+            <DuoText variant="caption" color={t.text} style={styles.noticeText}>
+              {s.roadmap.startedAtMarket}
+            </DuoText>
+          </View>
+        ) : null}
 
         {skipped > 0 ? (
           <View style={styles.notice} accessibilityRole="text">
@@ -79,11 +91,6 @@ export default function RoadmapScreen() {
                 {s.roadmap.shorter}
               </DuoText>
             ) : null}
-            {route.warnings.map((w) => (
-              <DuoText key={w} variant="caption" color={t.textMuted}>
-                ⓘ {w}
-              </DuoText>
-            ))}
             {route.attribution ? (
               <View style={styles.attribution}>
                 <DuoText variant="caption" color={t.lockedText} style={styles.flex}>
@@ -102,14 +109,14 @@ export default function RoadmapScreen() {
           </View>
         ) : null}
 
-        {j.loading ? (
+        {j.loading && !plan ? (
           <View style={styles.center}>
             <ActivityIndicator size="large" color={Brand.primary} />
             <DuoText variant="body" color={t.textMuted}>
               {s.roadmap.loading}
             </DuoText>
           </View>
-        ) : j.error ? (
+        ) : j.error && !plan ? (
           <View style={styles.center}>
             <DuoText variant="heading">😕 {s.roadmap.loadError}</DuoText>
             <DuoText variant="caption" color={t.textMuted} style={styles.errorText}>
@@ -172,6 +179,7 @@ const useStyles = themedStyles((t) => ({
     borderRadius: t.radius.md,
     backgroundColor: t.surface,
   },
+  noticeStrong: { backgroundColor: t.soft(Brand.primary, 0.85), borderWidth: 1, borderColor: Brand.primary },
   noticeIcon: { fontSize: 20, lineHeight: 26 },
   noticeText: { flex: 1 },
   routeCard: { padding: 16, gap: 6, borderRadius: t.radius.lg, backgroundColor: t.surface },

@@ -51,6 +51,7 @@ export default function RegisterScreen() {
 
   return (
     <AuthLayout
+      onBack={() => (router.canGoBack() ? router.back() : router.replace('/login'))}
       pose="cheer"
       title={s.auth.registerTitle}
       text={s.auth.registerText}

@@ -137,7 +137,12 @@ export default function PlaceScreen() {
             </View>
           </View>
 
-          <PhotoCarousel photos={landmark.photos} name={landmark.name} color={landmark.color} />
+          <PhotoCarousel
+            photos={landmark.photos}
+            credits={landmark.photoCredits}
+            name={landmark.name}
+            color={landmark.color}
+          />
 
           <SectionCard title={s.place.about} icon="📖">
             <DuoText variant="body">{landmark.description}</DuoText>

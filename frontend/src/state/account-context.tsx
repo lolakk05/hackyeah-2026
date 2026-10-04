@@ -2,6 +2,7 @@ import { createContext, use, useCallback, useEffect, useRef, useState, type Reac
 
 import * as api from '@/api/account';
 import { AccountError, isOffline } from '@/api/account';
+import { seedDemoIssues } from '@/api/issues';
 import type { AccountUser, AuthSession, XpEvent } from '@/api/types';
 import { applyEvent, EMPTY_STATS, unlockedIds, type AchievementId, type PlayerStats } from '@/game/achievements';
 import { coinsForXp, levelInfo, xpForEvent, type LevelInfo } from '@/game/progression';
@@ -44,6 +45,8 @@ interface AccountState {
   pendingCount: number;
   login: (email: string, password: string) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
+  /** Sign in to the ready-made demo account (level, XP, coins, achievements already in). */
+  startDemo: () => Promise<void>;
   logout: () => void;
   /** Send waiting XP and fetch fresh totals (XP, coins) from the backend. */
   refresh: () => Promise<void>;
@@ -59,6 +62,44 @@ interface AccountState {
 }
 
 const AccountContext = createContext<AccountState | null>(null);
+
+/**
+ * The demo account's achievement counters: some achievements done, others
+ * close, so every part of the profile has something to show.
+ */
+const DEMO_STATS: PlayerStats = {
+  trips: 4,
+  meters: 8600,
+  longestTrip: 3200,
+  visits: 26,
+  places: [
+    // sample places (shown when the API is offline)
+    'barbican',
+    'st-marys',
+    'cloth-hall',
+    'town-hall-tower',
+    'wawel-castle',
+    'dragon',
+    // places from the API list (GET /pois, sorted by id)
+    'node-10091005353', // Teatr Współczesny w Krakowie
+    'node-10573734931', // Muzeum Dominikanów
+    'node-10702099103', // Kaplica pw. Świętego Jacka
+    'node-10829813177', // Ołtarz Wita Stwosza
+    'node-10878069005', // Kraków Pinball Museum
+    'node-10901629620', // widok na Staw Kaczeńcowy
+    'node-10921366576', // Kardynał Macharski na ławeczce
+    'node-10967807083', // Park Zielone Serce Podgórza
+    'node-11084128705', // kolorowe schody
+    'node-11145601702', // Krzysztof Komeda
+    'node-11165003942', // Rozbitkowie na Wiśle
+    'node-11186611565', // Muzeum Kata Kacia Nora
+    'node-11219556379', // Stanisław Wyspiański
+    'node-11235812890', // Klezmer Music Venue
+    'node-11360712316', // Mury Obronne
+  ],
+  answers: 12,
+  issues: 2,
+};
 
 const newEventId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 const round1 = (n: number) => Math.round(n * 10) / 10;
@@ -168,7 +209,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
           if (userRef.current) applyTotals({ ...userRef.current, xp: res.xp, coins: res.coins });
         } catch (e) {
           if (shouldRetry(e)) break; // try again later
-          console.warn('[xp] backend rejected a saved event, dropping it', e);
+          if (__DEV__) console.log('[xp] backend rejected a saved event, dropping it', e);
           setPending(pendingRef.current.filter((p) => p !== next));
         }
       }
@@ -233,6 +274,18 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     [startSession],
   );
 
+  const startDemo = useCallback(async () => {
+    const session = await api.demoSession();
+    const id = session.user.id;
+    // Same starting point every time: achievement counters and two reports of "mine".
+    statsRef.current = { ...statsRef.current, [id]: DEMO_STATS };
+    setAllStats(statsRef.current);
+    writeJson(STATS_FILE, statsRef.current);
+    setPending(pendingRef.current.filter((p) => p.userId !== id));
+    await seedDemoIssues(id, session.user.username).catch(() => {});
+    startSession(session);
+  }, [startSession, setPending]);
+
   const award = useCallback(
     async (input: XpEventInput): Promise<XpAward> => {
       const t = tokenRef.current;
@@ -249,7 +302,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
         return { xp: res.awarded, coins: res.coinsAwarded, totalXp };
       } catch (e) {
         if (!shouldRetry(e)) {
-          console.warn('[xp] could not award XP', e);
+          if (__DEV__) console.log('[xp] could not award XP', e);
           return { xp: 0, coins: 0 };
         }
         // No connection (or the session expired): count it on the phone now, send it later.
@@ -280,6 +333,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     pendingCount,
     login,
     register,
+    startDemo,
     logout,
     refresh,
     award,

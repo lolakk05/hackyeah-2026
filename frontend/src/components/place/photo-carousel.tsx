@@ -1,13 +1,26 @@
 import { Image } from 'expo-image';
 import { useState } from 'react';
-import { ScrollView, View, useWindowDimensions } from 'react-native';
+import { ScrollView, View, useWindowDimensions, type StyleProp, type ImageStyle } from 'react-native';
 
+import { alternatePhotoUrl } from '@/api/photos';
 import { DuoText } from '@/components/duo/duo-text';
+
 import { useI18n } from '@/i18n/language-context';
 import { themedStyles, useDuo } from '@/state/theme-context';
 
-/** Swipeable photo strip with page dots. */
-export function PhotoCarousel({ photos, name, color }: { photos: string[]; name: string; color: string }) {
+/** Swipeable photo strip with page dots and the photo's author / licence. */
+export function PhotoCarousel({
+  photos,
+  name,
+  color,
+  credits,
+}: {
+  photos: string[];
+  name: string;
+  color: string;
+  /** Author and licence for each photo (same order). */
+  credits?: string[];
+}) {
   const t = useDuo();
   const styles = useStyles();
   const { s, fmt } = useI18n();
@@ -15,15 +28,7 @@ export function PhotoCarousel({ photos, name, color }: { photos: string[]; name:
   const width = Math.min(screenWidth, 600) - 40;
   const [page, setPage] = useState(0);
 
-  if (photos.length === 0) {
-    return (
-      <View style={[styles.empty, { width, backgroundColor: t.soft(color) }]}>
-        <DuoText variant="body" color={t.textMuted}>
-          {s.place.noPhotos}
-        </DuoText>
-      </View>
-    );
-  }
+  if (photos.length === 0) return null;
 
   return (
     <View>
@@ -36,13 +41,11 @@ export function PhotoCarousel({ photos, name, color }: { photos: string[]; name:
         onScroll={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / width))}
         scrollEventThrottle={64}>
         {photos.map((uri, i) => (
-          <Image
+          <Photo
             key={uri}
-            source={{ uri }}
+            uri={uri}
             style={[styles.photo, { width, backgroundColor: t.soft(color) }]}
-            contentFit="cover"
-            transition={200}
-            accessibilityLabel={fmt(s.place.photo, { n: i + 1, total: photos.length, name })}
+            label={fmt(s.place.photo, { n: i + 1, total: photos.length, name })}
           />
         ))}
       </ScrollView>
@@ -53,14 +56,37 @@ export function PhotoCarousel({ photos, name, color }: { photos: string[]; name:
           ))}
         </View>
       ) : null}
+      {credits?.[page] ? (
+        <DuoText variant="caption" color={t.lockedText} numberOfLines={1} style={styles.credit}>
+          📷 {credits[page]}
+        </DuoText>
+      ) : null}
     </View>
+  );
+}
+
+/** One photo; if it fails to load, tries the other Wikimedia image server once. */
+function Photo({ uri, style, label }: { uri: string; style: StyleProp<ImageStyle>; label: string }) {
+  const [src, setSrc] = useState(uri);
+  return (
+    <Image
+      source={{ uri: src }}
+      style={style}
+      contentFit="cover"
+      transition={200}
+      accessibilityLabel={label}
+      onError={() => {
+        const other = alternatePhotoUrl(uri);
+        if (other && src !== other) setSrc(other);
+      }}
+    />
   );
 }
 
 const useStyles = themedStyles((t) => ({
   scroller: { borderRadius: t.radius.xl },
   photo: { height: 220 },
-  empty: { height: 140, borderRadius: t.radius.xl, alignItems: 'center', justifyContent: 'center' },
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 10 },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: t.border },
+  credit: { marginTop: 6, fontSize: 11, textAlign: 'center' as const },
 }));

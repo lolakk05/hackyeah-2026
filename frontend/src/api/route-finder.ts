@@ -7,6 +7,8 @@
 import type { Lang } from '@/i18n/strings';
 
 import { chooseModel, diversifyModels } from './model-choice';
+import { findPhotos, photoUrl } from './photos';
+import { genericAnswers } from './prepared-answers';
 import type { Landmark, LatLng, ModelKind, PlannedRoute, TripPlan, WheelchairAccess } from './types';
 
 // ─── Backend types ──────────────────────────────────────────
@@ -20,6 +22,10 @@ export interface RfPoi {
   osm_url?: string | null;
   coordinate_source?: string;
   tags?: Record<string, string>;
+  /** Other names of the place (optional). */
+  aliases?: string[];
+  /** Photos sent by the backend (optional; otherwise taken from poi-photos.json). */
+  photos?: { url: string; attribution?: string; author?: string; license?: string }[];
 }
 
 export interface RfLeg {
@@ -30,6 +36,8 @@ export interface RfLeg {
 }
 
 export interface RfPlanResponse {
+  /** Where the route really starts; fallback_reason says why it isn't where asked. */
+  start?: { mode?: string; fallback_reason?: string | null };
   start_poi: RfPoi;
   end_poi: RfPoi;
   intermediate_pois: RfPoi[];
@@ -50,7 +58,9 @@ export interface RfPlanResponse {
 /** Body of POST /routes/plan. Only these fields are allowed (others → 422). */
 export interface RfPlanRequest {
   duration_minutes: number;
-  start_location?: { latitude: number; longitude: number };
+  /** market (default), user (needs user_location) or poi (needs start_poi_id). */
+  start_mode?: 'market' | 'user' | 'poi';
+  user_location?: { latitude: number; longitude: number };
   start_poi_id?: string;
   category?: string;
   /** 0–10 (older backends: 0–2; see GET /capabilities) */
@@ -194,12 +204,25 @@ export function poiToLandmark(poi: RfPoi, lang: Lang): Landmark {
   if (tags.website || tags.url) facts.push({ icon: '🔗', label: pl ? 'Strona' : 'Website', value: (tags.website || tags.url)! });
   if (tags.wikipedia) facts.push({ icon: '📖', label: 'Wikipedia', value: tags.wikipedia });
 
+  const fromApi = poi.photos?.filter((p) => p?.url) ?? [];
+  const found = fromApi.length
+    ? {
+        photos: fromApi.map((p) => photoUrl(p.url)),
+        credits: fromApi.map((p) => p.attribution ?? [p.author, p.license].filter(Boolean).join(', ')),
+      }
+    : findPhotos(
+        [poi.name, tags.name, tags['name:pl'], tags['name:en'], ...(poi.aliases ?? [])],
+        { latitude: poi.latitude, longitude: poi.longitude },
+        poi.category,
+      );
+
   return {
     id: poi.id,
     name,
     tagline: `${icon} ${label}`,
     description,
-    photos: [],
+    photos: found?.photos ?? [],
+    photoCredits: found?.credits,
     visitMinutes: VISIT_MINUTES[poi.category] ?? 15,
     walkMinutesFromPrevious: 0,
     coordinates: { latitude: poi.latitude, longitude: poi.longitude },
@@ -217,6 +240,10 @@ export function poiToLandmark(poi: RfPoi, lang: Lang): Landmark {
     suggestedQuestions: pl
       ? ['Co to za miejsce?', 'Co warto zobaczyć w pobliżu?', 'Gdzie zjeść w okolicy?']
       : ['What is this place?', 'What else is worth seeing nearby?', 'Where can I eat nearby?'],
+    suggestedAnswers: genericAnswers(
+      { name, label, description, latitude: poi.latitude, longitude: poi.longitude, facts },
+      lang,
+    ),
   };
 }
 
@@ -278,6 +305,7 @@ export function planResponseToTrip(res: RfPlanResponse, lang: Lang): { plan: Tri
       totalMinutes: route.walkMinutes + visitMinutes,
       skippedForAccessibility: [],
       route,
+      startedAtMarket: res.start?.fallback_reason === 'user_too_far_from_market',
     },
     landmarks,
   };

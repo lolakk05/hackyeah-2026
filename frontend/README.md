@@ -54,3 +54,29 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+## Web app in Docker
+
+Builds the app for the browser and serves it with nginx:
+
+```bash
+cd frontend
+docker compose up --build
+# → http://localhost:8080
+```
+
+or without compose:
+
+```bash
+docker build -t spacerio-web .
+docker run --rm -p 8080:80 spacerio-web
+```
+
+- Backend addresses are baked in **at build time** from `.env`
+  (`EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_AUTH_API_URL`, `EXPO_PUBLIC_AI_GUIDE_URL`, …).
+  After changing them, rebuild (`docker compose up --build`).
+  One-off override: `docker build --build-arg EXPO_PUBLIC_API_URL=https://… -t spacerio-web .`
+- The backends must allow the web app's address (e.g. `http://localhost:8080`) in CORS,
+  and the sign-in server must list it as a trusted origin. Without that the browser
+  blocks the calls and the app quietly uses demo data ("Continue in demo mode" always works).
+- Files: `Dockerfile`, `nginx.conf`, `docker-compose.yml`, `.dockerignore`.

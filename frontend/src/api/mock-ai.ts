@@ -3,8 +3,8 @@ import type { Lang } from '@/i18n/strings';
 import type { Landmark } from './types';
 
 /**
- * Fake "AI guide" answers, used only while USE_MOCK_API is true.
- * Replace by your backend's /ask endpoint (see client.ts → askAboutLandmark).
+ * Offline "Ask Pinek" answers, built from the place's own data. Used when
+ * the AI service isn't set or can't be reached (see client.ts → askAboutLandmark).
  */
 export function mockAnswer(landmark: Landmark, question: string, lang: Lang): string {
   const q = question.toLowerCase();
@@ -33,8 +33,10 @@ export function mockAnswer(landmark: Landmark, question: string, lang: Lang): st
       ? `Zaplanuj tu ok. ${landmark.visitMinutes} minut.${hours ? ` ${hours.label}: ${hours.value}.` : ''}`
       : `Plan about ${landmark.visitMinutes} minutes here.${hours ? ` ${hours.label}: ${hours.value}.` : ''}`;
   }
-  const first = landmark.description.split('. ')[0];
+  // General question: share the most interesting bit of the description.
+  const sentences = landmark.description.split(/(?<=\.)\s+/).filter(Boolean);
+  const story = sentences.slice(0, 2).join(' ') || landmark.description;
   return pl
-    ? `Dobre pytanie! (To przykładowa odpowiedź AI.) ${first}. Podłącz prawdziwe API w src/api/config.ts, aby dostać pełne odpowiedzi. 🤖`
-    : `Great question! (This is a sample AI answer.) ${first}. Connect the real API in src/api/config.ts to get full answers. 🤖`;
+    ? `Dobre pytanie! ${story} Zaplanuj tu ok. ${landmark.visitMinutes} minut. 📍`
+    : `Great question! ${story} Plan about ${landmark.visitMinutes} minutes here. 📍`;
 }

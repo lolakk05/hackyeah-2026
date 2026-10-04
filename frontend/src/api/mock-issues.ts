@@ -93,3 +93,14 @@ export async function confirm(token: string, id: string): Promise<{ confirmation
   }
   return { confirmations: issue.confirmations };
 }
+
+/** Two reports made by the demo account (for the "Mine" tab), added once. */
+export async function seedDemoIssues(userId: string, username: string): Promise<void> {
+  const data = await load();
+  const mine: IssueReport[] = [
+    sample('demo-1', 'surface', 'Chodnik jest zniszczony lub bardzo nierówny.', 'hard', ['wheelchair', 'lowVision'], 50.0627, 19.9405, username, 3, 26),
+    sample('demo-2', 'other', 'Winda przy wejściu nie działa, jest tylko wejście po schodach.', 'blocked', ['wheelchair', 'stepFree'], 50.0605, 19.9388, username, 5, 50),
+  ].map((r) => ({ ...r, userId }));
+  data.issues = [...data.issues.filter((i) => !i.id.startsWith('demo-')), ...mine];
+  save();
+}

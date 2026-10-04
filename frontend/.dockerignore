@@ -1,0 +1,14 @@
+# Not needed to build the web app (and some are big)
+node_modules
+ios
+android
+dist
+web-build
+.expo
+.idea
+.claude
+.git
+*.tgz
+krakow-osm.json
+npm-debug.*
+.DS_Store

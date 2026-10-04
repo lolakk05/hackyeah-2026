@@ -7,20 +7,37 @@ import { Brand } from '@/constants/duo-theme';
 import { formatCoins } from '@/game/progression';
 import { useI18n } from '@/i18n/language-context';
 import { useAccount } from '@/state/account-context';
-import { themedStyles } from '@/state/theme-context';
+import { themedStyles, useDuo } from '@/state/theme-context';
 
 /** Top bar: city, trip progress and coins (tap → profile, where XP and level are). */
-export function TopBar({ progress }: { progress?: string }) {
+export function TopBar({ progress, onBack }: { progress?: string; onBack?: () => void }) {
   const styles = useStyles();
+  const t = useDuo();
   const { s, lang } = useI18n();
   const { user } = useAccount();
   const coins = formatCoins(user?.coins ?? 0, lang);
 
   return (
     <View style={styles.bar}>
-      <DuoText variant="heading" accessibilityRole="header">
-        {s.common.city}
-      </DuoText>
+      <View style={styles.left}>
+        {onBack ? (
+          <Pressable
+            onPress={() => {
+              tapFeedback();
+              onBack();
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={s.common.back}
+            hitSlop={12}>
+            <DuoText variant="title" color={t.textMuted}>
+              ←
+            </DuoText>
+          </Pressable>
+        ) : null}
+        <DuoText variant="heading" accessibilityRole="header">
+          {s.common.city}
+        </DuoText>
+      </View>
       <View style={styles.right}>
         {progress ? (
           <View style={styles.pill} accessibilityLabel={progress}>
@@ -59,6 +76,7 @@ const useStyles = themedStyles((t) => ({
     paddingVertical: 12,
     gap: 8,
   },
+  left: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   right: { flexDirection: 'row', gap: 6, flexShrink: 1 },
   pill: {
     flexDirection: 'row',

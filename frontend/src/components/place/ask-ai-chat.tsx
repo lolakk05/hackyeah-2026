@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 
-import { askAboutLandmark } from '@/api/client';
+import { preparedAnswer } from '@/api/prepared-answers';
 import type { ChatMessage, Landmark } from '@/api/types';
 import { DuoText } from '@/components/duo/duo-text';
 import { Pinek } from '@/components/pinek';
@@ -15,11 +15,15 @@ import { SectionCard } from './section-card';
 let nextId = 0;
 const newId = () => `m${Date.now()}-${nextId++}`;
 
-/** "Ask the guide" chat: question chips, message bubbles and a text box. Calls askAboutLandmark(). */
+/**
+ * "Ask Pinek" chat: question chips, message bubbles and a text box.
+ * The suggested questions get Pinek's prepared answers; any other question
+ * gets a fixed, friendly reply (guide.customReply).
+ */
 export function AskAiChat({ landmark }: { landmark: Landmark }) {
   const t = useDuo();
   const styles = useStyles();
-  const { s, fmt } = useI18n();
+  const { s, fmt, lang } = useI18n();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [thinking, setThinking] = useState(false);
@@ -45,12 +49,10 @@ export function AskAiChat({ landmark }: { landmark: Landmark }) {
     setInput('');
     setThinking(true);
     try {
-      const answer = await askAboutLandmark(landmark, question, messages, controller.signal);
+      const answer = preparedAnswer(landmark, question, lang ?? 'en') ?? s.guide.customReply;
+      // a short "typing…" moment, so the answer doesn't feel instant and robotic
+      await new Promise((r) => setTimeout(r, 700 + Math.min(answer.length, 300) * 2));
       if (!controller.signal.aborted) setMessages([...history, { id: newId(), role: 'assistant', text: answer }]);
-    } catch (e) {
-      if (controller.signal.aborted) return;
-      const msg = e instanceof Error && e.message ? `${s.guide.error}\n${e.message}` : s.guide.error;
-      setMessages([...history, { id: newId(), role: 'assistant', text: msg }]);
     } finally {
       if (active.current === controller) {
         active.current = null;

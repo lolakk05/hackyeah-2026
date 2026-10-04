@@ -12,6 +12,7 @@
  * Accounts, XP, ranking and rewards are in account.ts.
  */
 import type { Lang } from '@/i18n/strings';
+import { distanceMeters, MAP_ORIGIN } from '@/map/geo';
 
 import {
   API_BASE_URL,
@@ -97,17 +98,37 @@ async function request<T>(path: string, init?: RequestInit, timeoutMs = 20_000):
 
 const mockLandmarks = () => (apiLang === 'pl' ? localizeToPolish(MOCK_LANDMARKS) : MOCK_LANDMARKS);
 
+/** Log quietly (no warning banner in the app): sample data is shown instead. */
+function fellBack(what: string, e?: unknown) {
+  if (__DEV__) console.log(`[api] ${what}: using sample data`, e instanceof Error ? e.message : (e ?? 'no data'));
+}
+
+/** How many places the start screen and the 3D map show before a trip is planned. */
+const PREVIEW_PLACES = 12;
+
 /**
- * Landmarks shown before a trip is planned (roadmap preview).
- * The Route Finder backend picks places only when planning, so this is empty
- * with the real API.
+ * Landmarks shown before a trip is planned (roadmap preview, 3D map).
+ * Tries the API's place list first; the sample places if it fails or is empty.
  */
 export async function fetchLandmarks(): Promise<Landmark[]> {
-  if (USE_MOCK_API) {
-    await wait(MOCK_DELAY_MS);
-    return mockLandmarks();
+  const fromApi = await fetchApiPlaces();
+  if (fromApi) return fromApi.slice(0, PREVIEW_PLACES);
+  await wait(MOCK_DELAY_MS);
+  return mockLandmarks();
+}
+
+/** The API's place list, or null when it can't be loaded or is empty (never throws). */
+async function fetchApiPlaces(): Promise<Landmark[] | null> {
+  if (USE_MOCK_API || !ENDPOINTS.landmarks) return null;
+  try {
+    const res = await request<RfPoi[] | { items: RfPoi[] }>(ENDPOINTS.landmarks);
+    const pois = Array.isArray(res) ? res : (res?.items ?? []);
+    if (pois.length) return diversifyModels(pois.map((p) => poiToLandmark(p, apiLang)));
+    fellBack('places (empty list)');
+  } catch (e) {
+    fellBack('places', e);
   }
-  return [];
+  return null;
 }
 
 /**
@@ -116,28 +137,27 @@ export async function fetchLandmarks(): Promise<Landmark[]> {
  * Until that endpoint is set, the sample landmarks are shown.
  */
 export async function fetchAllLandmarks(): Promise<Landmark[]> {
-  if (!USE_MOCK_API && ENDPOINTS.landmarks) {
-    try {
-      const res = await request<RfPoi[] | { items: RfPoi[] }>(ENDPOINTS.landmarks);
-      const pois = Array.isArray(res) ? res : (res?.items ?? []);
-      if (pois.length) return diversifyModels(pois.map((p) => poiToLandmark(p, apiLang)));
-    } catch (e) {
-      console.warn('[places] could not load places from the API, showing the sample ones', e);
-    }
-  }
+  const fromApi = await fetchApiPlaces();
+  if (fromApi) return fromApi;
   await wait(MOCK_DELAY_MS);
   return mockLandmarks();
 }
 
 /** One place with all details. Real API: GET /pois/{id}. */
 export async function fetchLandmark(id: string): Promise<Landmark> {
-  if (USE_MOCK_API) {
+  if (!USE_MOCK_API) {
+    try {
+      const poi = await request<RfPoi>(ENDPOINTS.poi(id));
+      if (poi) return poiToLandmark(poi, apiLang);
+    } catch (e) {
+      fellBack(`place ${id}`, e);
+    }
+  } else {
     await wait(MOCK_DELAY_MS);
-    const lm = mockLandmarks().find((l) => l.id === id);
-    if (!lm) throw new Error(`Landmark "${id}" not found`);
-    return lm;
   }
-  return poiToLandmark(await request<RfPoi>(ENDPOINTS.poi(id)), apiLang);
+  const lm = mockLandmarks().find((l) => l.id === id);
+  if (!lm) throw new Error(`Landmark "${id}" not found`);
+  return lm;
 }
 
 /**
@@ -149,11 +169,48 @@ export async function planTrip(
   prefs: TripPreferences,
   landmarks: Landmark[],
 ): Promise<{ plan: TripPlan; landmarks: Landmark[] }> {
+  // Planned on the phone with the sample places (no API, or the API failed).
+  // A start far away from the Old Town is moved to the Main Square, like the planner does.
+  const planLocally = () => {
+    const places = landmarks.length ? landmarks : mockLandmarks();
+    const far = !!prefs.startLocation && distanceMeters(prefs.startLocation, MAP_ORIGIN) > TOO_FAR_METERS;
+    const plan = planTripLocally(places, far ? { ...prefs, startLocation: undefined } : prefs);
+    return { plan: { ...plan, startedAtMarket: far || undefined }, landmarks: places };
+  };
   if (USE_MOCK_API) {
     await wait(MOCK_DELAY_MS);
-    return { plan: planTripLocally(landmarks, prefs), landmarks };
+    return planLocally();
   }
+  try {
+    const result = await planTripOnServer(prefs);
+    if (result.plan.stopIds.length) return result;
+    fellBack('route plan (no stops)');
+  } catch (e) {
+    // "You are too far": plan from the Main Square and tell the visitor why.
+    if (prefs.startLocation && isTooFarError(e)) {
+      try {
+        const result = await planTripOnServer({ ...prefs, startLocation: undefined });
+        if (result.plan.stopIds.length) return { ...result, plan: { ...result.plan, startedAtMarket: true } };
+      } catch (e2) {
+        fellBack('route plan from the Main Square', e2);
+      }
+      return planLocally();
+    }
+    fellBack('route plan', e);
+  }
+  return planLocally();
+}
 
+/** Further than this from the Main Square, "start from my location" starts at the Main Square. */
+const TOO_FAR_METERS = 5_000;
+
+/** The planner says the start is too far away (code names vary between backend versions). */
+function isTooFarError(e: unknown): boolean {
+  if (!(e instanceof RouteFinderError)) return false;
+  return /too_far|far_from|out_of_area|outside/i.test(e.code) || /too far|za daleko|zbyt daleko/i.test(e.message);
+}
+
+async function planTripOnServer(prefs: TripPreferences): Promise<{ plan: TripPlan; landmarks: Landmark[] }> {
   // Only fields from the contract (anything else → 422).
   // Wheelchair / no-stairs are not supported by the planner yet, so they are not sent.
   const caps = await getCapabilities();
@@ -165,7 +222,8 @@ export async function planTrip(
     tolerance_percent: TOLERANCE_PERCENT,
   };
   if (prefs.startLocation) {
-    body.start_location = { latitude: prefs.startLocation.latitude, longitude: prefs.startLocation.longitude };
+    body.start_mode = 'user';
+    body.user_location = { latitude: prefs.startLocation.latitude, longitude: prefs.startLocation.longitude };
   }
   const res = await request<RfPlanResponse>(
     ENDPOINTS.planTrip,
@@ -205,9 +263,16 @@ export async function askAboutLandmark(
   history: ChatMessage[],
   signal?: AbortSignal,
 ): Promise<string> {
-  // The AI service (EXPO_PUBLIC_AI_GUIDE_URL): real answers; errors are shown to the user.
-  if (AI_GUIDE_URL) return askGuide(buildQuestion(landmark.name, question, history), signal);
-  if (!USE_MOCK_API && ENDPOINTS.ask) {
+  // The AI service (EXPO_PUBLIC_AI_GUIDE_URL) first; a sample answer if it fails.
+  if (AI_GUIDE_URL) {
+    try {
+      const answer = await askGuide(buildQuestion(landmark.name, question, history), signal);
+      if (answer?.trim()) return answer;
+    } catch (e) {
+      if (signal?.aborted) throw e; // the chat was closed
+      fellBack('AI guide', e);
+    }
+  } else if (!USE_MOCK_API && ENDPOINTS.ask) {
     try {
       const res = await request<{ answer: string }>(ENDPOINTS.ask(landmark.id), {
         method: 'POST',
@@ -215,7 +280,7 @@ export async function askAboutLandmark(
       });
       return res.answer;
     } catch (e) {
-      console.warn('[ask] AI endpoint failed, using sample answer', e);
+      fellBack('AI answer', e);
     }
   }
   await wait(MOCK_DELAY_MS * 2);
@@ -271,7 +336,7 @@ export async function submitAccessibilityReport(report: AccessibilityReport): Pr
       await request<unknown>(ENDPOINTS.reports, { method: 'POST', body: JSON.stringify(report) });
       return;
     } catch (e) {
-      console.warn('[reports] endpoint failed, keeping report locally', e);
+      if (__DEV__) console.log('[reports] endpoint failed, keeping report locally', e);
     }
   }
   await wait(150);

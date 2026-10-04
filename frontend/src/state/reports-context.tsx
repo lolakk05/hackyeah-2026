@@ -75,7 +75,7 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
         await submitIssue(token, item.report);
       } catch (e) {
         if (shouldRetry(e)) return;
-        console.warn('[reports] backend rejected a saved report, dropping it', e);
+        if (__DEV__) console.log('[reports] backend rejected a saved report, dropping it', e);
       }
       setPending(pendingRef.current.filter((p) => p.report.id !== item.report.id));
     }

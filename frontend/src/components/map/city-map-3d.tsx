@@ -1,8 +1,8 @@
 import { GLView, type ExpoWebGLRenderingContext } from 'expo-gl';
 import { useIsFocused } from 'expo-router';
 import { useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react';
-import { ActivityIndicator, Animated, Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { ActivityIndicator, Animated, Platform, Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import { Gesture, GestureDetector, MouseButton } from 'react-native-gesture-handler';
 import * as THREE from 'three';
 
 import { MAP_DATA_URL } from '@/api/config';
@@ -107,7 +107,8 @@ export function CityMap3D({
   const size = useRef({ w: 1, h: 1 });
   const city = useRef<CityScene | null>(null);
   const camera = useRef<THREE.PerspectiveCamera | null>(null);
-  const running = useRef(false);
+  // true from the start: on web the GL context (and the first frame) comes before the effects run
+  const running = useRef(true);
   const content = useRef<CityContent | null>(null);
   const latest = useRef({ stops, user, route, fullRoute, issues });
   useEffect(() => {
@@ -229,7 +230,7 @@ export function CityMap3D({
   // ── GL setup + render loop ──
   const onContextCreate = (gl: ExpoWebGLRenderingContext) => {
     try {
-      const { renderer, width, height } = createThreeRenderer(gl, CITY_PALETTE.sky);
+      const { renderer, width, height, fit } = createThreeRenderer(gl, CITY_PALETTE.sky);
       const scene = createCityScene(CITY_PALETTE);
       city.current?.dispose();
       city.current = scene;
@@ -260,7 +261,8 @@ export function CityMap3D({
         frame += 1;
         // While the camera is still, only small markers move: draw every other
         // frame (30 fps) to save battery and keep the phone cool.
-        const settled = rig.isSettled();
+        const resized = fit(cam); // web: follow the browser window size
+        const settled = rig.isSettled() && !resized;
         rig.update(cam);
         if (!settled || frame % 2 === 0) {
           scene.tick((now - start) / 1000);
@@ -332,8 +334,14 @@ export function CityMap3D({
 
   const oneFinger = Gesture.Pan()
     .maxPointers(1)
+    .mouseButton(MouseButton.LEFT)
     .runOnJS(true)
     .onChange((e) => rig.rotateBy(e.changeX, e.changeY));
+  // Web: drag with the right (or middle) mouse button to move the map
+  const mousePan = Gesture.Pan()
+    .mouseButton(MouseButton.RIGHT | MouseButton.MIDDLE)
+    .runOnJS(true)
+    .onChange((e) => rig.panBy(e.changeX, e.changeY, size.current.h));
   const twoFingers = Gesture.Pan()
     .minPointers(2)
     .runOnJS(true)
@@ -347,7 +355,28 @@ export function CityMap3D({
   const tap = Gesture.Tap()
     .runOnJS(true)
     .onEnd((e) => pick(e.x, e.y));
-  const gestures = Gesture.Simultaneous(Gesture.Exclusive(oneFinger, tap), twoFingers, pinch, twist);
+  const gestures = Gesture.Simultaneous(Gesture.Exclusive(oneFinger, tap), mousePan, twoFingers, pinch, twist);
+
+  // Web: mouse wheel / trackpad pinch zooms; no browser menu on right-click.
+  const surface = useRef<View>(null);
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const el = surface.current as unknown as HTMLElement | null;
+    if (!el?.addEventListener) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      // trackpad pinch arrives as wheel + ctrlKey, with smaller deltas
+      const delta = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+      rig.zoomBy(Math.exp(-delta * (e.ctrlKey ? 0.01 : 0.0015)));
+    };
+    const noMenu = (e: Event) => e.preventDefault();
+    el.addEventListener('wheel', onWheel, { passive: false });
+    el.addEventListener('contextmenu', noMenu);
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+      el.removeEventListener('contextmenu', noMenu);
+    };
+  }, [rig]);
 
   const onLayout = (e: LayoutChangeEvent) => {
     size.current = { w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height };
@@ -356,7 +385,7 @@ export function CityMap3D({
   return (
     <View style={styles.fill} onLayout={onLayout}>
       <GestureDetector gesture={gestures}>
-        <View style={styles.fill} accessibilityLabel={s.map.a11y} accessible>
+        <View ref={surface} style={styles.fill} accessibilityLabel={s.map.a11y} accessible>
           <GLView style={styles.fill} onContextCreate={onContextCreate} msaaSamples={2} />
         </View>
       </GestureDetector>

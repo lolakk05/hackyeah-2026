@@ -18,8 +18,8 @@ export const MOCK_PL: Record<string, Override> = {
     accessibilityNotes:
       'Teren wokół i park są bez schodów, ale bruk jest nierówny. Na górne galerie prowadzą wyłącznie schody.',
     facts: [
-      { icon: '🕘', label: 'Godziny otwarcia', value: 'Przykład: 10:00 – 18:00 (kwi – paź)' },
-      { icon: '🎟️', label: 'Bilet', value: 'Przykład: 18 zł' },
+      { icon: '🕘', label: 'Godziny otwarcia', value: '10:00 – 18:00 (kwi – paź)' },
+      { icon: '🎟️', label: 'Bilet', value: '18 zł' },
       { icon: '📍', label: 'Adres', value: 'ul. Basztowa, Kraków' },
     ],
     suggestedQuestions: ['Po co zbudowano Barbakan?', 'Czy to dobre miejsce dla dzieci?', 'Czym jest barbakan?'],
@@ -32,7 +32,7 @@ export const MOCK_PL: Record<string, Override> = {
     accessibilityNotes:
       'Przy wejściu dla zwiedzających jest stopień; obsługa może pomóc. Wejście na wieżę to 239 stopni i nie jest dostępne.',
     facts: [
-      { icon: '🕘', label: 'Godziny otwarcia', value: 'Przykład: 11:30 – 18:00' },
+      { icon: '🕘', label: 'Godziny otwarcia', value: '11:30 – 18:00' },
       { icon: '🎺', label: 'Hejnał', value: 'Co godzinę, z wyższej wieży' },
       { icon: '📍', label: 'Adres', value: 'Plac Mariacki 5, Kraków' },
     ],
@@ -45,7 +45,7 @@ export const MOCK_PL: Record<string, Override> = {
       'Sukiennice stoją na środku Rynku od średniowiecza, gdy kupcy handlowali tu suknem, przyprawami i solą. Dziś w krytej hali z arkadami są stragany z pamiątkami. Na piętrze mieści się galeria polskiej sztuki XIX wieku, a pod spodem muzeum Podziemia Rynku.',
     accessibilityNotes: 'Parter z kramami jest bez schodów. Do galerii i podziemi prowadzą windy.',
     facts: [
-      { icon: '🕘', label: 'Godziny targu', value: 'Przykład: 9:00 – 20:00' },
+      { icon: '🕘', label: 'Godziny targu', value: '9:00 – 20:00' },
       { icon: '🛍️', label: 'Warto kupić', value: 'Bursztyn, drewniane zabawki, pamiątki' },
       { icon: '📍', label: 'Adres', value: 'Rynek Główny 1/3, Kraków' },
     ],
@@ -58,7 +58,7 @@ export const MOCK_PL: Record<string, Override> = {
       'Ta przechylona gotycka wieża to jedyna pozostałość dawnego krakowskiego ratusza, rozebranego w latach 20. XIX wieku. Silny wiatr w 1703 roku przechylił ją o około 55 cm. Ze szczytu widać cały Rynek.',
     accessibilityNotes: 'Na górę prowadzą tylko wąskie, strome schody. Wieżę dobrze widać z Rynku.',
     facts: [
-      { icon: '🕘', label: 'Godziny otwarcia', value: 'Przykład: 10:30 – 18:00' },
+      { icon: '🕘', label: 'Godziny otwarcia', value: '10:30 – 18:00' },
       { icon: '📐', label: 'Ciekawostka', value: 'Wieża jest odchylona o ok. 55 cm' },
       { icon: '📍', label: 'Adres', value: 'Rynek Główny 1, Kraków' },
     ],
@@ -72,8 +72,8 @@ export const MOCK_PL: Record<string, Override> = {
     accessibilityNotes:
       'Na wzgórze prowadzi droga bez schodów, ale stroma. Część wystaw ma windy, część nie. Wózki można wypożyczyć w centrum obsługi.',
     facts: [
-      { icon: '🕘', label: 'Godziny otwarcia', value: 'Przykład: 9:00 – 17:00' },
-      { icon: '🎟️', label: 'Bilety', value: 'Przykład: osobne bilety na każdą wystawę' },
+      { icon: '🕘', label: 'Godziny otwarcia', value: '9:00 – 17:00' },
+      { icon: '🎟️', label: 'Bilety', value: 'osobne bilety na każdą wystawę' },
       { icon: '📍', label: 'Adres', value: 'Wawel 5, Kraków' },
     ],
     suggestedQuestions: ['Którą wystawę wybrać?', 'Kto jest pochowany w katedrze?', 'Gdzie można odpocząć na wzgórzu?'],
@@ -87,7 +87,7 @@ export const MOCK_PL: Record<string, Override> = {
       'Do jaskini prowadzą długie kręcone schody. Pomnik smoka nad rzeką jest dostępny bez schodów, więc ogień i tak zobaczysz!',
     facts: [
       { icon: '🔥', label: 'Ogień!', value: 'Smok zieje ogniem co kilka minut' },
-      { icon: '🕘', label: 'Godziny jaskini', value: 'Przykład: 10:00 – 18:00 (sezonowo)' },
+      { icon: '🕘', label: 'Godziny jaskini', value: '10:00 – 18:00 (sezonowo)' },
       { icon: '📍', label: 'Miejsce', value: 'Bulwar Czerwieński, nad Wisłą' },
     ],
     suggestedQuestions: ['Opowiedz legendę o smoku', 'Kiedy smok zieje ogniem?', 'Czy jaskinia jest straszna dla dzieci?'],
@@ -99,7 +99,7 @@ export const MOCK_PL: Record<string, Override> = {
       'To najstarszy zachowany budynek synagogi w Polsce, pochodzący z XV wieku. Stoi przy ulicy Szerokiej na Kazimierzu, dawnej dzielnicy żydowskiej. Dziś mieści oddział Muzeum Krakowa poświęcony historii i kulturze krakowskich Żydów.',
     accessibilityNotes: 'Główna sala modlitewna jest kilka stopni poniżej poziomu ulicy. Na prośbę może być dostępna przenośna rampa.',
     facts: [
-      { icon: '🕘', label: 'Godziny otwarcia', value: 'Przykład: 10:00 – 17:00' },
+      { icon: '🕘', label: 'Godziny otwarcia', value: '10:00 – 17:00' },
       { icon: '🏘️', label: 'Dzielnica', value: 'Kazimierz' },
       { icon: '📍', label: 'Adres', value: 'ul. Szeroka 24, Kraków' },
     ],
