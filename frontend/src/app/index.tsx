@@ -1,98 +1,91 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
+import { router } from 'expo-router';
+import { Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { DuoText } from '@/components/duo/duo-text';
+import { tapFeedback } from '@/components/duo/haptics';
+import { Brand } from '@/constants/duo-theme';
+import { useI18n } from '@/i18n/language-context';
+import type { Lang } from '@/i18n/strings';
+import { useAccount } from '@/state/account-context';
+import { themedStyles, useDuo } from '@/state/theme-context';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+const LANGUAGES: { lang: Lang; flag: string; name: string; hint: string }[] = [
+  { lang: 'pl', flag: '🇵🇱', name: 'Polski', hint: 'Kontynuuj po polsku' },
+  { lang: 'en', flag: '🇬🇧', name: 'English', hint: 'Continue in English' },
+];
+
+/** First screen: choose the app language. */
+export default function LanguageScreen() {
+  const t = useDuo();
+  const styles = useStyles();
+  const { lang, setLang } = useI18n();
+  const { status } = useAccount();
+
+  const choose = (l: Lang) => {
+    tapFeedback(true);
+    setLang(l);
+    router.push(status === 'signedIn' ? '/welcome' : '/login');
+  };
+
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+      <View style={styles.content}>
+        <DuoText style={styles.globe}>🌍</DuoText>
+        <DuoText variant="title" style={styles.center} accessibilityRole="header">
+          Wybierz język{'\n'}Choose your language
+        </DuoText>
+
+        <View style={styles.list}>
+          {LANGUAGES.map((l) => (
+            <Pressable
+              key={l.lang}
+              onPress={() => choose(l.lang)}
+              accessibilityRole="button"
+              accessibilityLabel={l.name}
+              accessibilityHint={l.hint}
+              accessibilityState={{ selected: lang === l.lang }}>
+              {({ pressed }) => (
+                <View style={[styles.option, lang === l.lang && styles.optionSelected, pressed && styles.pressed]}>
+                  <DuoText style={styles.flag}>{l.flag}</DuoText>
+                  <View style={styles.texts}>
+                    <DuoText variant="title">{l.name}</DuoText>
+                    <DuoText variant="caption" color={t.textMuted}>
+                      {l.hint}
+                    </DuoText>
+                  </View>
+                  <DuoText variant="title" color={Brand.primary}>
+                    →
+                  </DuoText>
+                </View>
+              )}
+            </Pressable>
+          ))}
+        </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
-export default function HomeScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
+const useStyles = themedStyles((t) => ({
+  safe: { flex: 1, backgroundColor: t.background },
+  content: { flex: 1, justifyContent: 'center', padding: 24, gap: 20, maxWidth: 520, width: '100%', alignSelf: 'center' },
+  globe: { fontSize: 64, lineHeight: 76, textAlign: 'center' },
+  center: { textAlign: 'center' },
+  list: { gap: 14, marginTop: 12 },
+  option: {
     flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
     alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
+    gap: 16,
+    padding: 20,
+    minHeight: 92,
+    borderRadius: t.radius.xl,
+    backgroundColor: t.card,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
   },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
-});
+  optionSelected: { borderColor: Brand.primary },
+  pressed: { backgroundColor: t.cardRaised },
+  flag: { fontSize: 40, lineHeight: 48 },
+  texts: { flex: 1 },
+}));

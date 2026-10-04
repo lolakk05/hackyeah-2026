@@ -1,26 +1,69 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreatePlaceDto } from './dto/create-place.dto';
 import { UpdatePlaceDto } from './dto/update-place.dto';
+import { Roles } from '@thallesp/nestjs-better-auth';
 
 @Injectable()
 export class PlacesService {
-  create(createPlaceDto: CreatePlaceDto) {
-    return 'This action adds a new place';
+  constructor(private readonly prisma: PrismaService) {}
+
+  async create(createPlaceDto: CreatePlaceDto) {
+    const { openingHours, ...placeData } = createPlaceDto;
+
+    return this.prisma.place.create({
+      data: {
+        ...placeData,
+        ...(openingHours && {
+          openingHours: {
+            create: openingHours,
+          },
+        }),
+      },
+      include: {
+        openingHours: true,
+      },
+    });
   }
 
-  findAll() {
-    return `This action returns all places`;
+  async findAll() {
+    return this.prisma.place.findMany({
+      include: {
+        openingHours: true,
+      },
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} place`;
+  async findOne(id: string) {
+    const place = await this.prisma.place.findUnique({
+      where: { placeId: id },
+      include: {
+        openingHours: true,
+      },
+    });
+
+    if (!place) {
+      throw new NotFoundException(`Miejsce o ID ${id} nie zostało znalezione`);
+    }
+
+    return place;
   }
 
-  update(id: number, updatePlaceDto: UpdatePlaceDto) {
-    return `This action updates a #${id} place`;
+  async update(id: string, updatePlaceDto: UpdatePlaceDto) {
+    const { openingHours, ...placeData } = updatePlaceDto;
+
+    return this.prisma.place.update({
+      where: { placeId: id },
+      data: placeData,
+      include: {
+        openingHours: true,
+      },
+    });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} place`;
+  async remove(id: string) {
+    return this.prisma.place.delete({
+      where: { placeId: id },
+    });
   }
 }
