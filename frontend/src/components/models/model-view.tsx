@@ -1,13 +1,14 @@
 import { GLView, type ExpoWebGLRenderingContext } from 'expo-gl';
 import { useIsFocused } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { PanResponder, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { PanResponder, Platform, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { ENABLE_3D_MODELS } from '@/api/config';
 
 import { disposeModel, ownMaterials } from './builders';
 import { createThreeRenderer } from './gl-setup';
 import type { ModelScene } from './scene';
+import { WebModel } from './web-model-view';
 
 export type ModelMotion = 'spin' | 'sway' | 'none';
 
@@ -40,7 +41,10 @@ export function ModelView(props: ModelViewProps) {
       </View>
     );
   }
-  return <GLModel key={`${props.sceneKey}-${props.motion}-${props.backgroundColor}`} {...props} />;
+  const key = `${props.sceneKey}-${props.motion}-${props.backgroundColor}`;
+  // Web: one shared WebGL renderer for all models (browsers drop extra contexts).
+  if (Platform.OS === 'web') return <WebModel key={key} {...props} />;
+  return <GLModel key={key} {...props} />;
 }
 
 function GLModel({ createScene, backgroundColor, motion = 'spin', interactive = false, fallback, style }: ModelViewProps) {
@@ -87,7 +91,7 @@ function GLModel({ createScene, backgroundColor, motion = 'spin', interactive = 
 
   const onContextCreate = (gl: ExpoWebGLRenderingContext) => {
     try {
-      const { renderer, width, height } = createThreeRenderer(gl, backgroundColor);
+      const { renderer, width, height, fit } = createThreeRenderer(gl, backgroundColor);
       renderer.debug.onShaderError = (_gl, _program, vs, fs) => {
         const log = gl.getShaderInfoLog(vs) || gl.getShaderInfoLog(fs) || 'unknown shader error';
         setError(`Shader error: ${log.slice(0, 160)}`);
@@ -118,6 +122,8 @@ function GLModel({ createScene, backgroundColor, motion = 'spin', interactive = 
           model.rotation.y = baseRotation + s.drag + auto;
           model.position.y = motion === 'spin' ? Math.sin(t * 2) * 0.05 : 0;
           tick?.(t);
+          // web: the canvas got its real size → match it and draw a few more frames
+          if (fit(camera)) warmupFrames = Math.max(warmupFrames, 3);
           renderer.render(scene, camera);
           gl.endFrameEXP?.();
         } catch (e) {
@@ -135,7 +141,21 @@ function GLModel({ createScene, backgroundColor, motion = 'spin', interactive = 
       };
       render();
 
+      // Web: a still model stops drawing; redraw it when the page layout resizes the canvas.
+      const domCanvas = (gl as unknown as { canvas?: HTMLCanvasElement }).canvas;
+      let observer: ResizeObserver | null = null;
+      if (domCanvas && typeof ResizeObserver !== 'undefined') {
+        observer = new ResizeObserver(() => {
+          if (state.current.disposed || state.current.paused || animated || interactive) return;
+          cancelAnimationFrame(frame);
+          warmupFrames = Math.max(warmupFrames, 3);
+          frame = requestAnimationFrame(render);
+        });
+        observer.observe(domCanvas);
+      }
+
       cleanup.current = () => {
+        observer?.disconnect();
         cancelAnimationFrame(frame);
         disposeModel(model);
         materials.forEach((m) => m.dispose());

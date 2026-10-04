@@ -4,7 +4,6 @@ import { ActivityIndicator, Alert, Platform, ScrollView, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AccountError, fetchRedemptions, fetchRewards, redeemReward } from '@/api/account';
-import { USE_MOCK_ACCOUNTS } from '@/api/config';
 import type { Redemption, Reward } from '@/api/types';
 import { ScreenHeader } from '@/components/account/screen-header';
 import { DuoButton } from '@/components/duo/duo-button';
@@ -33,7 +32,7 @@ export default function RewardsScreen() {
     setError(null);
     try {
       await refresh();
-      const [list, mine] = await Promise.all([fetchRewards(), token ? fetchRedemptions(token) : []]);
+      const [list, mine] = await Promise.all([fetchRewards(token), token ? fetchRedemptions(token) : []]);
       setRewards(list);
       setCodes(mine);
     } catch (e) {
@@ -191,11 +190,6 @@ function CodeCard({
         {s.rewards.howToUse}
         {code.expiresAt ? ` ${fmt(s.rewards.validUntil, { date: formatDate(code.expiresAt) })}.` : ''}
       </DuoText>
-      {USE_MOCK_ACCOUNTS ? (
-        <DuoText variant="caption" color={t.lockedText}>
-          {s.rewards.demo}
-        </DuoText>
-      ) : null}
     </View>
   );
 }

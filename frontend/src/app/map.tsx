@@ -33,6 +33,11 @@ export default function MapScreen() {
   const mapRef = useRef<CityMapHandle>(null);
 
   const stops = j.roadmap;
+  // Route stops first, then up to 40 other places as 3D models (more would slow the map down).
+  const mapLandmarks = useMemo(() => {
+    const ids = new Set(stops.map((st) => st.id));
+    return [...stops, ...j.landmarks.filter((l) => !ids.has(l.id)).slice(0, 40)];
+  }, [stops, j.landmarks]);
   const nextStop = stops.find((st) => st.id === j.currentId) ?? null;
   const nextIndex = nextStop ? stops.indexOf(nextStop) : -1;
   // Fallback position when GPS isn't available or you're not in Kraków:
@@ -195,7 +200,7 @@ export default function MapScreen() {
     <View style={styles.root}>
       <CityMap3D
         ref={mapRef}
-        landmarks={j.landmarks}
+        landmarks={mapLandmarks}
         stops={mapStops}
         user={me}
         route={route?.path ?? null}

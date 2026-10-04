@@ -20,6 +20,39 @@ export { AccountError, type AccountErrorCode } from './account-error';
 /** Network problems: the action can be retried later. */
 export const isOffline = (e: unknown) => e instanceof AccountError && e.code === 'network';
 
+/** The server can't be reached or is broken (not "wrong password" or similar). */
+const unreachable = (e: unknown) =>
+  !(e instanceof AccountError) || e.code === 'network' || e.status >= 500 || e.status === 404 || e.code === 'generic';
+
+/** Sign-in goes to a real server (the auth server or the account backend). */
+const USES_SERVER = USE_AUTH_SERVER || !USE_MOCK_ACCOUNTS;
+
+/** Sessions made by the on-phone sample backend (used when the servers are down). */
+const isMockToken = (token: string | null | undefined) => !!token && token.startsWith('mock.');
+
+/** Log quietly (no warning banner in the app): the sample data is shown instead. */
+const fellBack = (what: string, e: unknown) => {
+  if (__DEV__) console.log(`[account] ${what}: server unavailable, using sample data`, e instanceof Error ? e.message : e);
+};
+
+/** Sign in on the phone's sample backend; creates the demo account if it doesn't exist yet. */
+async function demoLogin(email: string, password: string): Promise<AuthSession> {
+  try {
+    return await mock.login(email, password);
+  } catch (e) {
+    if (!(e instanceof AccountError) || e.code !== 'invalid_credentials') throw e;
+    const base = email.split('@')[0] || 'Explorer';
+    try {
+      return await mock.register(base, email, password);
+    } catch (e2) {
+      if (e2 instanceof AccountError && e2.code === 'username_taken') {
+        return mock.register(`${base}${Math.floor(Math.random() * 900 + 100)}`, email, password);
+      }
+      throw e; // email already used with another password: "wrong email or password"
+    }
+  }
+}
+
 let lang: Lang = 'en';
 export function setAccountLanguage(next: Lang) {
   lang = next;
@@ -120,20 +153,38 @@ const BETTER_AUTH_CODES: Record<string, AccountErrorCode> = {
 // ─── Sign-in ────────────────────────────────────────────────
 
 export async function register(username: string, email: string, password: string): Promise<AuthSession> {
-  if (USE_AUTH_SERVER) {
-    const res = await auth.signUp(username, email, password);
-    // No session yet: the server wants the email confirmed first.
-    if (!res?.token || !res.user) throw new AccountError('Confirm your email, then sign in', 'check_email');
-    return withProgress(res.token, res.user);
+  try {
+    if (USE_AUTH_SERVER) {
+      const res = await auth.signUp(username, email, password);
+      // No session yet: the server wants the email confirmed first.
+      if (!res?.token || !res.user) throw new AccountError('Confirm your email, then sign in', 'check_email');
+      return await withProgress(res.token, res.user);
+    }
+    if (USE_MOCK_ACCOUNTS) return await mock.register(username, email, password);
+    return await call<AuthSession>(ACCOUNT_ENDPOINTS.register, {
+      method: 'POST',
+      body: JSON.stringify({ username, email, password }),
+    });
+  } catch (e) {
+    // Server down: make a demo account on the phone instead of showing an error.
+    if (!USES_SERVER || !unreachable(e)) throw e;
+    fellBack('register', e);
+    return mock.register(username, email, password);
   }
-  if (USE_MOCK_ACCOUNTS) return mock.register(username, email, password);
-  return call<AuthSession>(ACCOUNT_ENDPOINTS.register, {
-    method: 'POST',
-    body: JSON.stringify({ username, email, password }),
-  });
 }
 
 export async function login(email: string, password: string): Promise<AuthSession> {
+  try {
+    return await serverLogin(email, password);
+  } catch (e) {
+    // Server down: sign in with a demo account on the phone instead of showing an error.
+    if (!USES_SERVER || !unreachable(e)) throw e;
+    fellBack('login', e);
+    return demoLogin(email, password);
+  }
+}
+
+async function serverLogin(email: string, password: string): Promise<AuthSession> {
   if (USE_AUTH_SERVER) {
     const res = await auth.signIn(email, password).catch((e: unknown) => {
       if (e instanceof AccountError && e.code === 'unauthorized') throw new AccountError(e.message, 'invalid_credentials', 401);
@@ -157,8 +208,14 @@ export async function login(email: string, password: string): Promise<AuthSessio
   }
 }
 
+/** The ready-made demo account (kept on the phone; nothing is sent to the servers). */
+export async function demoSession(): Promise<AuthSession> {
+  return mock.demoSession(lang);
+}
+
 /** Fresh totals for the signed-in user. */
 export async function fetchMe(token: string): Promise<AccountUser> {
+  if (isMockToken(token)) return mock.me(token);
   if (USE_AUTH_SERVER) {
     const session = await auth.getSession(token);
     if (!session?.user) throw new AccountError('Session expired', 'unauthorized', 401);
@@ -172,38 +229,58 @@ export async function fetchMe(token: string): Promise<AccountUser> {
 
 /** Report something that earns XP; the backend adds XP and coins. */
 export async function sendXpEvent(token: string, event: XpEvent): Promise<XpEventResult> {
-  if (USE_MOCK_ACCOUNTS) return mock.addXp(token, event);
+  if (USE_MOCK_ACCOUNTS || isMockToken(token)) return mock.addXp(token, event);
   return call<XpEventResult>(ACCOUNT_ENDPOINTS.xpEvents, { method: 'POST', body: JSON.stringify(event), token });
 }
 
 // ─── Ranking ────────────────────────────────────────────────
 
 export async function fetchRanking(token: string | null, limit = 50): Promise<Ranking> {
-  if (USE_MOCK_ACCOUNTS) return mock.ranking(token, limit);
-  return call<Ranking>(`${ACCOUNT_ENDPOINTS.ranking}?limit=${limit}`, { token: token ?? undefined });
+  if (USE_MOCK_ACCOUNTS || isMockToken(token)) return mock.ranking(token, limit);
+  try {
+    const res = await call<Ranking>(`${ACCOUNT_ENDPOINTS.ranking}?limit=${limit}`, {
+      token: isMockToken(token) ? undefined : (token ?? undefined),
+    });
+    if (res?.entries?.length) return res;
+  } catch (e) {
+    fellBack('ranking', e);
+  }
+  return mock.ranking(token, limit);
 }
 
 // ─── Rewards ────────────────────────────────────────────────
 
-export async function fetchRewards(): Promise<Reward[]> {
-  if (USE_MOCK_ACCOUNTS) return mock.rewards(lang);
-  return call<Reward[]>(ACCOUNT_ENDPOINTS.rewards);
+export async function fetchRewards(token?: string | null): Promise<Reward[]> {
+  // Demo / phone accounts redeem on the phone, so they need the phone's reward list.
+  if (USE_MOCK_ACCOUNTS || isMockToken(token)) return mock.rewards(lang);
+  try {
+    const res = await call<Reward[]>(ACCOUNT_ENDPOINTS.rewards);
+    if (Array.isArray(res) && res.length) return res;
+  } catch (e) {
+    fellBack('rewards', e);
+  }
+  return mock.rewards(lang);
 }
 
 /** Spend coins on a reward. Returns the discount code and the new coin balance. */
 export async function redeemReward(token: string, rewardId: string): Promise<{ redemption: Redemption; coins: number }> {
-  if (USE_MOCK_ACCOUNTS) return mock.redeem(token, rewardId, lang);
+  if (USE_MOCK_ACCOUNTS || isMockToken(token)) return mock.redeem(token, rewardId, lang);
   return call(ACCOUNT_ENDPOINTS.redeem(rewardId), { method: 'POST', token });
 }
 
 export async function fetchRedemptions(token: string): Promise<Redemption[]> {
-  if (USE_MOCK_ACCOUNTS) return mock.redemptions(token);
-  return call<Redemption[]>(ACCOUNT_ENDPOINTS.redemptions, { token });
+  if (USE_MOCK_ACCOUNTS || isMockToken(token)) return mock.redemptions(token).catch(() => []);
+  try {
+    return await call<Redemption[]>(ACCOUNT_ENDPOINTS.redemptions, { token });
+  } catch (e) {
+    fellBack('redemptions', e);
+    return mock.redemptions(token).catch(() => []); // codes kept on the phone, if any
+  }
 }
 
 /** Sign out on the server (the app forgets the session either way). */
 export async function signOut(token: string): Promise<void> {
-  if (!USE_AUTH_SERVER) return;
+  if (!USE_AUTH_SERVER || isMockToken(token)) return;
   await auth.signOut(token).catch(() => {});
 }
 

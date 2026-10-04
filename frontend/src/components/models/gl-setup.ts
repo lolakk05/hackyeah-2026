@@ -8,9 +8,12 @@ import * as THREE from 'three';
  * the big city map.
  */
 export function createThreeRenderer(gl: ExpoWebGLRenderingContext, clearColor: string) {
-  if (Platform.OS !== 'web') patchExpoGL(gl);
-  const width = gl.drawingBufferWidth;
-  const height = gl.drawingBufferHeight;
+  const web = Platform.OS === 'web';
+  if (!web) patchExpoGL(gl);
+  const domCanvas = web ? (gl as unknown as { canvas?: HTMLCanvasElement }).canvas : undefined;
+  // On web the canvas may not have its final size yet: use its CSS size (fixed later by fit()).
+  const width = (domCanvas?.clientWidth || gl.drawingBufferWidth) ?? 0;
+  const height = (domCanvas?.clientHeight || gl.drawingBufferHeight) ?? 0;
   if (!width || !height) throw new Error(`GL surface has no size (${width}x${height})`);
 
   // three.js expects a canvas; on native we hand it a minimal stand-in.
@@ -29,7 +32,33 @@ export function createThreeRenderer(gl: ExpoWebGLRenderingContext, clearColor: s
   renderer.setPixelRatio(1);
   renderer.setSize(width, height, false);
   renderer.setClearColor(new THREE.Color(clearColor), 1);
-  return { renderer, width, height };
+
+  /**
+   * Web only: keep the drawing buffer matched to the canvas' size on the page
+   * (window resized, layout changed) and sharp on HiDPI screens.
+   * Call before each render; returns true when the size changed.
+   */
+  let last = '';
+  const fit = (camera?: THREE.PerspectiveCamera): boolean => {
+    if (!domCanvas) return false;
+    const w = domCanvas.clientWidth;
+    const h = domCanvas.clientHeight;
+    if (!w || !h) return false;
+    const ratio = Math.min(globalThis.devicePixelRatio || 1, 2);
+    const key = `${w}x${h}@${ratio}`;
+    // expo-gl's wrapper also sets canvas.width on layout; re-apply if it changed it
+    if (key === last && domCanvas.width === Math.floor(w * ratio)) return false;
+    last = key;
+    renderer.setPixelRatio(ratio);
+    renderer.setSize(w, h, false);
+    if (camera) {
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+    return true;
+  };
+  fit();
+  return { renderer, width, height, fit };
 }
 
 /**

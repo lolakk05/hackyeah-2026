@@ -35,7 +35,6 @@ export default function SetupScreen() {
   // Mock mode: instant local preview of how many stops fit.
   const preview = useMemo(() => planTripLocally(landmarks, prefs), [landmarks, prefs]);
   const n = preview.stopIds.length;
-  const accessibilityAsked = prefs.needs.wheelchair || prefs.needs.reducedMobility;
 
   const close = () => (router.canGoBack() ? router.back() : router.replace('/welcome'));
 
@@ -142,11 +141,6 @@ export default function SetupScreen() {
               <DuoText variant="caption" color={t.textMuted}>
                 {s.setup.walkOnlyNote}
               </DuoText>
-              {accessibilityAsked ? (
-                <DuoText variant="caption" color={Brand.primary}>
-                  ⚠️ {s.setup.accessNotSupported}
-                </DuoText>
-              ) : null}
             </>
           )}
         </View>

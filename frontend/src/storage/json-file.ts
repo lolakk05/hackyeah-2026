@@ -6,13 +6,44 @@
 import { File, Paths } from 'expo-file-system';
 import { Platform } from 'react-native';
 
-/** Web has no app documents folder: keep the data in memory there. */
+/**
+ * Web has no app documents folder: use the browser's localStorage (survives a
+ * page reload), or memory when the browser blocks it (private mode).
+ */
 const memory = new Map<string, string>();
+const PREFIX = 'spacerio:';
+const webStore = {
+  get(name: string): string | null {
+    try {
+      const v = globalThis.localStorage?.getItem(PREFIX + name);
+      if (v != null) return v;
+    } catch {
+      // blocked: memory only
+    }
+    return memory.get(name) ?? null;
+  },
+  set(name: string, text: string) {
+    memory.set(name, text);
+    try {
+      globalThis.localStorage?.setItem(PREFIX + name, text);
+    } catch {
+      // full or blocked: memory only
+    }
+  },
+  remove(name: string) {
+    memory.delete(name);
+    try {
+      globalThis.localStorage?.removeItem(PREFIX + name);
+    } catch {
+      // nothing to remove
+    }
+  },
+};
 
 export async function readJson<T>(name: string): Promise<T | null> {
   try {
     if (Platform.OS === 'web') {
-      const text = memory.get(name);
+      const text = webStore.get(name);
       return text ? (JSON.parse(text) as T) : null;
     }
     const file = new File(Paths.document, name);
@@ -27,7 +58,7 @@ export function writeJson(name: string, data: unknown) {
   const text = JSON.stringify(data);
   try {
     if (Platform.OS === 'web') {
-      memory.set(name, text);
+      webStore.set(name, text);
       return;
     }
     const file = new File(Paths.document, name);
@@ -42,7 +73,7 @@ export function writeJson(name: string, data: unknown) {
 export function removeJson(name: string) {
   try {
     if (Platform.OS === 'web') {
-      memory.delete(name);
+      webStore.remove(name);
       return;
     }
     const file = new File(Paths.document, name);

@@ -1,16 +1,17 @@
 import { router } from 'expo-router';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AccountError } from '@/api/account';
-import { USE_AUTH_SERVER, USE_MOCK_ACCOUNTS } from '@/api/config';
 import { DuoButton } from '@/components/duo/duo-button';
 import { DuoText } from '@/components/duo/duo-text';
+import { errorFeedback, successFeedback } from '@/components/duo/haptics';
 import { Pinek, type PinekPose } from '@/components/pinek';
 import { Brand } from '@/constants/duo-theme';
 import { useI18n } from '@/i18n/language-context';
 import type { Strings } from '@/i18n/strings';
+import { useAccount } from '@/state/account-context';
 import { themedStyles, useDuo } from '@/state/theme-context';
 
 /** Turn a login/register error into a message for the form. */
@@ -53,6 +54,7 @@ export function AuthLayout({
   switchText,
   switchLabel,
   onSwitch,
+  onBack,
 }: {
   /** Pinek's pose at the top. */
   pose: PinekPose;
@@ -68,14 +70,43 @@ export function AuthLayout({
   switchText: string;
   switchLabel: string;
   onSwitch: () => void;
+  /** Top-left back arrow (default: back to the language choice). */
+  onBack?: () => void;
 }) {
   const t = useDuo();
   const styles = useStyles();
   const { s, lang } = useI18n();
+  const account = useAccount();
+  const [demoLoading, setDemoLoading] = useState(false);
+
+  /** Skip signing up: a ready-made account with progress, kept on the phone only. */
+  const startDemo = async () => {
+    if (demoLoading) return;
+    setDemoLoading(true);
+    try {
+      await account.startDemo();
+      successFeedback();
+      if (router.canDismiss()) router.dismissAll();
+      router.replace('/welcome');
+    } catch {
+      errorFeedback();
+      setDemoLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <View style={styles.topRow}>
+        <Pressable
+          onPress={onBack ?? (() => (router.canGoBack() ? router.back() : router.replace('/')))}
+          accessibilityRole="button"
+          accessibilityLabel={s.common.back}
+          hitSlop={12}
+          style={styles.back}>
+          <DuoText variant="title" color={t.textMuted}>
+            ←
+          </DuoText>
+        </Pressable>
         <Pressable
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
           accessibilityRole="button"
@@ -97,6 +128,23 @@ export function AuthLayout({
             <DuoText variant="body" color={t.textMuted}>
               {text}
             </DuoText>
+          </View>
+
+          <DuoButton
+            title={s.auth.demoButton}
+            subtitle={s.auth.demoSubtitle}
+            variant="success"
+            onPress={startDemo}
+            loading={demoLoading}
+            disabled={loading}
+            accessibilityHint={s.auth.demoA11y}
+          />
+          <View style={styles.orRow} importantForAccessibility="no-hide-descendants">
+            <View style={styles.orLine} />
+            <DuoText variant="caption" color={t.textMuted}>
+              {s.auth.orAccount}
+            </DuoText>
+            <View style={styles.orLine} />
           </View>
 
           <View style={styles.fields}>{children}</View>
@@ -128,11 +176,6 @@ export function AuthLayout({
             </Pressable>
           </View>
 
-          {USE_MOCK_ACCOUNTS && !USE_AUTH_SERVER ? (
-            <DuoText variant="caption" color={t.lockedText} style={styles.center}>
-              {s.auth.demoNote}
-            </DuoText>
-          ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -142,7 +185,16 @@ export function AuthLayout({
 const useStyles = themedStyles((t) => ({
   safe: { flex: 1, backgroundColor: t.background },
   flex: { flex: 1 },
-  topRow: { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 24, paddingTop: 8 },
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 8,
+  },
+  back: { paddingRight: 8 },
+  orRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  orLine: { flex: 1, height: 1, backgroundColor: t.border },
   langChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: t.card },
   bold: { fontWeight: '700' },
   content: { padding: 24, gap: 20, maxWidth: 520, width: '100%', alignSelf: 'center', flexGrow: 1, justifyContent: 'center' },

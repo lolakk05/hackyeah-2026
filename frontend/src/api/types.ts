@@ -79,6 +79,8 @@ export interface Landmark {
   description: string;
   /** Photo URLs. */
   photos: string[];
+  /** Author and licence for each photo, same order as `photos`. */
+  photoCredits?: string[];
   /** How long a typical visit takes, in minutes. */
   visitMinutes: number;
   /** Walking time from the previous stop on the default route, in minutes. */
@@ -92,6 +94,8 @@ export interface Landmark {
   color: string;
   /** Questions suggested in the "Ask AI" section. */
   suggestedQuestions: string[];
+  /** Pinek's prepared answers to `suggestedQuestions` (same order), when the place has its own. */
+  suggestedAnswers?: string[];
 }
 
 /** Accessibility needs the visitor selects on the setup screen. */
@@ -158,6 +162,11 @@ export interface TripPlan {
   skippedForAccessibility: string[];
   /** Route line + legs, when the plan comes from the route planner backend. */
   route?: PlannedRoute;
+  /**
+   * "Start from my location" was asked, but the visitor is too far from the
+   * Old Town, so the route starts at the Main Square instead.
+   */
+  startedAtMarket?: boolean;
 }
 
 export interface ChatMessage {

@@ -179,7 +179,7 @@ export async function redeem(token: string, rewardId: string, lang: Lang): Promi
     id: `r${now.getTime().toString(36)}`,
     rewardId,
     title: reward.title,
-    code: `DEMO-${randomBlock()}-${randomBlock()}`,
+    code: `KMK-${randomBlock()}-${randomBlock()}`,
     createdAt: now.toISOString(),
     expiresAt: new Date(now.getTime() + 30 * 86_400_000).toISOString(),
   };
@@ -214,4 +214,44 @@ export async function linkUser(token: string, u: { id: string; username: string;
   user.tokens = [...(user.tokens ?? []).filter((t) => t !== token).slice(-4), token];
   save();
   return publicUser(user);
+}
+
+// ─── Demo account (the "Continue in demo mode" button) ──────
+
+/** Fixed id, so the demo account is the same every time. */
+export const DEMO_USER_ID = 'demo-explorer';
+const DEMO_XP = 1120; // level 6, a good part of the way to level 7
+const DEMO_COINS = 240; // enough to try every discount except the 72-hour one
+
+/**
+ * Sign in to the demo account, reset to the same starting point every time:
+ * a level, XP, coins and one discount code already collected.
+ */
+export async function demoSession(lang: Lang): Promise<AuthSession> {
+  await wait();
+  const data = await load();
+  const reward = REWARDS[lang][1];
+  const now = Date.now();
+  const user: MockUser = {
+    id: DEMO_USER_ID,
+    username: 'Marek Muzyka',
+    email: 'marek.muzyka@spacer.io',
+    xp: DEMO_XP,
+    coins: DEMO_COINS,
+    passwordHash: '',
+    redemptions: [
+      {
+        id: 'demo-code-1',
+        rewardId: reward.id,
+        title: reward.title,
+        code: 'KMK-7Q4M-2026',
+        createdAt: new Date(now - 2 * 86_400_000).toISOString(),
+        expiresAt: new Date(now + 28 * 86_400_000).toISOString(),
+      },
+    ],
+    seenEvents: [],
+  };
+  data.users = [...data.users.filter((u) => u.id !== DEMO_USER_ID), user];
+  save();
+  return { token: tokenFor(user), user: publicUser(user) };
 }

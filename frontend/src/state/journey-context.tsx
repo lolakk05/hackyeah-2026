@@ -103,7 +103,8 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
 
   // Landmarks (in the chosen language)
   useEffect(() => {
-    if (!lang) return;
+    // Load even before a language is picked (e.g. a web page opened on /roadmap):
+    // English until then, reloaded in the chosen language when it changes.
     let cancelled = false;
     setLoading(true);
     setError(null);
