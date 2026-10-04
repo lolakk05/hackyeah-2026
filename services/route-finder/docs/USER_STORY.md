@@ -8,6 +8,8 @@ Nazwy pól, przykłady requestów i limity należą do [API.md](API.md).
 Użytkownik chce wykorzystać dostępny czas na zwiedzanie Krakowa. W zewnętrznej
 aplikacji wybiera długość podróży, początek w bieżącej lokalizacji albo na Rynku
 i niezależne preferencje: poruszanie się na wózku oraz unikanie schodów.
+Może wybrać język polski lub angielski i rozpocząć spacer poza centrum,
+np. przy Tauron Arenie, przeznaczając odpowiedni czas na dojście do atrakcji.
 
 Aplikacja przesyła wybór do Route Finder. Serwis zwraca trasę z kolejnymi POI,
 przewidywanym czasem oraz danymi nawigacyjnymi. Aplikacja przedstawia punkty jako
@@ -34,6 +36,8 @@ prowadzenie użytkownika na żywo jest zadaniem klienta.
 | Wybór czasu | Plan mieści się w budżecie przemieszczania; krótszy wynik jest jawnie oznaczony. Zwiedzanie i postoje są osobnym czasem. |
 | Start od użytkownika | Trasa uwzględnia przejście od początku dopasowanego do sieci do pierwszej atrakcji; przesunięcie GPS do sieci jest ujawnione. |
 | Domyślny start | Po wyborze Rynku użytkownik otrzymuje jednoznaczny początek planu. |
+| Brak powtórzeń | Każda atrakcja jest odwiedzana raz w planie; rozpoznane duplikaty danych są pomijane. Powtarzanie ulic jest dopuszczalne. |
+| Język | Komunikaty planera i dostępne tłumaczenia nazw POI odpowiadają wyborowi użytkownika. Bez tłumaczenia zachowana jest nazwa oryginalna. |
 | Preferencje dostępności | Używany jest odpowiedni graf; brak jego konfiguracji nie powoduje cichego zastosowania zwykłej trasy. Wózek implikuje unikanie schodów. |
 | Więcej atrakcji | Planer potrafi uwzględniać dodatkowe POI w ramach budżetu i opublikowanych limitów. Maksimum nie oznacza gwarantowanej liczby. |
 | Roadmapa | Kolejność miejsc i ich identyfikatory są jednoznaczne; każde miejsce jest powiązane z punktem sieci. |

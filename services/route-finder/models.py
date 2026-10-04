@@ -1,11 +1,20 @@
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, FiniteFloat, StringConstraints, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    FiniteFloat,
+    StringConstraints,
+    field_validator,
+    model_validator,
+)
 
 Latitude = Annotated[FiniteFloat, Field(ge=-90, le=90)]
 Longitude = Annotated[FiniteFloat, Field(ge=-180, le=180)]
 Coordinates = tuple[Longitude, Latitude]
 Category = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
+Language = Literal["pl", "en"]
 
 
 class POI(BaseModel):
@@ -60,6 +69,7 @@ class PlanRequest(BaseModel):
                     "avoid_stairs": False,
                     "max_intermediate_stops": 8,
                     "randomize": True,
+                    "language": "pl",
                 },
             ]
         },
@@ -68,6 +78,20 @@ class PlanRequest(BaseModel):
         description="Maksymalny czas marszu w minutach (5–360); "
         "obejmuje dojście od punktu startowego do pierwszego POI, bez zwiedzania."
     )
+    language: Language = Field(
+        default="pl",
+        description="Język nazw POI i komunikatów: pl/en; akceptuje też polish/english. "
+        "Brak tłumaczenia nazwy w OSM oznacza użycie nazwy oryginalnej.",
+    )
+
+    @field_validator("language", mode="before")
+    @classmethod
+    def normalize_language(cls, value):
+        if isinstance(value, str):
+            value = value.strip().lower()
+            return {"polish": "pl", "english": "en"}.get(value, value)
+        return value
+
     start_mode: Literal["market", "user", "poi"] | None = Field(
         default=None, description="Domyślnie market; user wymaga user_location, poi start_poi_id."
     )
@@ -210,6 +234,7 @@ class Accessibility(BaseModel):
 
 
 class PlanResponse(BaseModel):
+    language: Language
     start: RouteStart
     start_poi: POI
     end_poi: POI

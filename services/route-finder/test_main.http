@@ -38,7 +38,22 @@ Content-Type: application/json
 {
   "duration_minutes": 45,
   "start_mode": "market",
+  "language": "polish",
   "randomize": true
+}
+
+### Start near Tauron Arena: approach to central POIs included in the 90-minute budget
+POST {{baseUrl}}/routes/plan
+Content-Type: application/json
+
+{
+  "duration_minutes": 90,
+  "start_mode": "user",
+  "user_location": {"latitude": 50.0668889, "longitude": 19.9905833},
+  "language": "english",
+  "wheelchair": false,
+  "avoid_stairs": false,
+  "max_intermediate_stops": 8
 }
 
 ### Museum walk with up to two intermediate stops

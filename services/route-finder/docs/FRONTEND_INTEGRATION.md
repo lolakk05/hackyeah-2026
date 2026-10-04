@@ -6,11 +6,28 @@ utrzymujemy wyłącznie w [API.md](API.md). Kontekst produktu: [USER_STORY.md](U
 
 ## Przygotowanie połączenia
 
-Adres bazowy API trzymaj w konfiguracji aplikacji. Backend nie włącza CORS:
-dla innego originu skonfiguruj proxy albo uzgodnij dozwolony origin z backendem.
-Przekazuj statusy i nagłówki odpowiedzi. Przy bezpośrednim CORS odczyt nagłówka
-`Retry-After` wymaga udostępnienia go przez `Access-Control-Expose-Headers`.
-`no-cors` nie daje klientowi dostępu do JSON i nie rozwiązuje integracji.
+Adres bazowy API trzymaj w konfiguracji aplikacji. Backend obsługuje CORS,
+przeglądarkowe preflight `OPTIONS` oraz odczyt `Retry-After`. Do tego serwisu wysyłaj
+zapytania bez cookies (`credentials: "omit"`); nie wymaga sesji użytkownika.
+Dozwolone originy ustawia backend zgodnie z [konfiguracją](OPIS_API.md).
+Origin zawiera protokół, host i port frontendu, bez ścieżki API.
+
+```javascript
+const response = await fetch(`${apiBase}/routes/plan`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  credentials: "omit",
+  body: JSON.stringify(formRequest),
+});
+const result = await response.json();
+```
+
+Zawartość `formRequest` określa [kontrakt](API.md). `no-cors` nie pozwala odczytać
+odpowiedzi i nie rozwiązuje integracji. Otworzenie URL planera w pasku adresu
+wykonuje GET, więc 405 jest wtedy poprawne. W DevTools → Network sprawdź metodę:
+preflight OPTIONS powinien przejść, a właściwy request powinien być POST.
+Jeśli OPTIONS wciąż zwraca 405 po wdrożeniu poprawki, sprawdź adres serwisu,
+uruchomioną wersję oraz czy proxy nie blokuje tej metody.
 
 Po wejściu do formularza pobierz capabilities oraz kategorie. Capabilities służy
 do ustawienia limitów kontrolek i dostępności opcji profilu. Włączona konfiguracja
@@ -22,6 +39,7 @@ nie jest gwarancją, że routing odpowie; nadal potrzebna jest obsługa błędó
 |---|---|---|
 | Czas podróży | `duration_minutes` | Suwak/pole liczbowe; wyjaśnij, że chodzi o przemieszczanie, bez postojów. |
 | Radio „Rynek / Moja lokalizacja” | `start_mode`, `user_location` | Przy GPS pobierz pozycję urządzenia; przy Rynku wyczyść lokalizację z payloadu. |
+| Wybór „Polski / English” | `language` | Wysyłaj język aplikacji. Pokazuj zwrócone nazwy i ostrzeżenia; nazwy bez tłumaczenia mogą pozostać oryginalne. |
 | Opcjonalnie „Wybierz miejsce” | `start_mode`, `start_poi_id` | Otwórz katalog; wstaw ID wybranego miejsca. |
 | „Jeżdżę na wózku” | `wheelchair` | Pozwól wybrać tylko przy skonfigurowanym profilu dla wózka. |
 | „Nie chcę schodów” | `avoid_stairs` | Bez wózka wymaga profilu bez schodów. Przy wózku pokaż, że jest uwzględniane automatycznie. |

@@ -22,6 +22,7 @@ JSON jest kodowany w UTF-8. Nieznane pola modeli żądań są odrzucane.
 | Metoda | Ścieżka | Funkcja |
 |---|---|---|
 | POST | `/routes/plan` | Plan podróży według czasu i preferencji. |
+| OPTIONS | `/routes/plan` | Preflight CORS obsługiwany przez middleware. |
 | GET | `/capabilities` | Konfiguracja profili i limity formularza. |
 | GET | `/pois` | Katalog z filtrowaniem i paginacją. |
 | GET | `/pois/{poi_id}` | Jeden POI. |
@@ -36,11 +37,17 @@ JSON jest kodowany w UTF-8. Nieznane pola modeli żądań są odrzucane.
 
 ## POST `/routes/plan`
 
+Endpoint wymaga POST. GET (np. po wpisaniu URL w pasku przeglądarki) zwraca 405.
+Preflight OPTIONS z `Origin` i `Access-Control-Request-Method` zwraca tekst `OK`
+ze statusem 200 dla dozwolonego originu i metody. Odrzucony preflight daje 400.
+Obsługa przeglądarki: [FRONTEND_INTEGRATION.md](FRONTEND_INTEGRATION.md).
+
 ### Żądanie
 
 | Pole | Typ i domyślnie | Reguły |
 |---|---|---|
 | `duration_minutes` | number, wymagane | Skończona liczba 5–360 (do 6 godzin); dopuszcza ułamki. |
+| `language` | `pl` / `en`, domyślnie `pl` | Akceptuje także `polish` / `english`; odpowiedź używa `pl` / `en`. |
 | `start_mode` | `market` / `user` / `poi` / null, domyślnie null | Bez wartości tryb jest wywnioskowany z pól startu. |
 | `user_location` | Location/null, domyślnie null | Wymagane dla `user`. |
 | `start_poi_id` | string/null, domyślnie null | ID z katalogu, 1–100 znaków; wymagane dla `poi`. |
@@ -63,11 +70,22 @@ Bool wysyłaj jako `true`/`false`; Pydantic akceptuje również liczby 0/1.
 - Pominięcie/null trybu: ID → `poi`, lokalizacja → `user`, brak obu → `market`.
 - Sprzeczne dane lub brak pola wymaganego dla jawnego trybu dają 422.
 
-Dla Rynku i użytkownika pierwszy POI jest wybierany w promieniu 2 km od startu.
+Dla Rynku i użytkownika pierwszy POI jest wybierany w promieniu
+`min(50000, duration_minutes * 60 * 2)` metrów od startu. To filtr przestrzenny,
+nie szacowany czas przejścia. OSRM musi potwierdzić zmieszczenie całej trasy w budżecie.
 Odcinek od startu dopasowanego do sieci do tego POI jest częścią planu. Odległość
 od surowej pozycji GPS do sieci nie jest dodawana jako sztuczny odcinek.
 `max_intermediate_stops=10` pozwala na do 12 POI; start użytkownika nie jest POI.
 Nie ma gwarancji uzyskania maksymalnej liczby miejsc ani powrotu do początku.
+W `stops` każde ID występuje tylko raz. Planer pomija też rozpoznane bliskie
+duplikaty tej samej atrakcji w OSM; reguły rozpoznawania opisuje [algorytm](OPIS_API.md).
+To nie wyklucza ponownego przejścia tą samą ulicą.
+
+**Język:** obejmuje `warnings`, domenowe `detail.message` planera oraz nazwy POI
+we wszystkich polach odpowiedzi planu. Nazwa pochodzi z `name:pl` lub `name:en`
+w tagach OSM; jeśli tłumaczenia brak, pozostaje oryginalna. Nie zmienia kategorii,
+ID, tagów ani kodów manewrów i nazw ulic z OSRM. Błędy walidacji FastAPI (422),
+błędy metod/CORS i pozostałe endpointy zachowują dotychczasowy język.
 
 **Losowanie (domyślne):** pominięcie pola lub `randomize=true` wykonuje nowe planowanie
 również dla identycznego requestu. Początek, kategoria, limity i preferencje dostępności
@@ -100,8 +118,27 @@ Nie ma automatycznego przejścia na inny profil.
 Rynek, standardowy spacer:
 
 ```json
-{"duration_minutes":30,"start_mode":"market"}
+{"duration_minutes":30,"start_mode":"market","language":"polish"}
 ```
+
+Start przy Tauron Arenie, odpowiedź po angielsku, dojście wliczone w 90 minut:
+
+```json
+{
+  "duration_minutes": 90,
+  "start_mode": "user",
+  "user_location": {"latitude": 50.0668889, "longitude": 19.9905833},
+  "language": "english",
+  "wheelchair": false,
+  "avoid_stairs": false,
+  "max_intermediate_stops": 8
+}
+```
+
+Współrzędne okolic parkingu przy arenie pochodzą z
+[serwisu miasta Krakowa](https://www.krakow.pl/instcbi/260498/inst/54386/2261/ul-Stanislawa-Lema-7.html).
+W aplikacji używaj rzeczywistej pozycji GPS. Za krótki budżet daje 404, a brak
+dopasowania GPS do sieci nie powoduje przeniesienia początku na Rynek.
 
 Ponowne losowanie atrakcji dla spaceru z Rynku:
 
@@ -171,6 +208,7 @@ Poprawna walidacja nie gwarantuje znalezienia trasy ani dostępności serwera OS
 | `accessibility` | Wybrane preferencje i informacja o użytym profilu. |
 | `source` | `osrm` albo `cache`. |
 | `warnings` | Tablica informacji o ograniczeniach wyniku. |
+| `language` | Znormalizowany język odpowiedzi: `pl` albo `en`. |
 | `candidates_considered` | Liczba kandydatów bez pierwszego POI; nie liczba odwiedzanych miejsc. |
 | `attribution` | Informacja o źródle danych i routingu. |
 
@@ -296,10 +334,11 @@ i czasem `retry_after_s`. Nie zakładaj jednego typu `detail` dla wszystkich 422
 
 | HTTP | Kod / rodzaj | Znaczenie |
 |---|---|---|
+| 405 | `detail="Method Not Allowed"` | Niewłaściwa metoda, np. GET zamiast POST planera. |
 | 422 | tablica walidacji | Nieznane pola, złe zakresy lub sprzeczne dane startu. |
 | 422 | `poi_access_restricted` | Pierwszy POI wskazany przez ID nie spełnia filtrów dostępu/profilu. |
 | 404 | `poi_not_found` | Nieznane ID. |
-| 404 | `no_start_poi` | Brak kwalifikującego się pierwszego POI do 2 km od startu. |
+| 404 | `no_start_poi` | Brak kwalifikującego się pierwszego POI w promieniu wyszukiwania zależnym od budżetu. |
 | 404 | `no_candidate_pois` | Brak innych celów w kategorii i obszarze wyszukiwania. |
 | 404 | `no_route_within_budget` | Żaden sprawdzony wariant nie został zaakceptowany. |
 | 503 | `routing_profile_not_configured` | Wybrany profil nie ma ustawionego backendu; nie zawiera Retry-After. |

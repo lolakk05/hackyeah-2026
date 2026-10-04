@@ -8,6 +8,7 @@ from collections import OrderedDict
 from fastapi import HTTPException
 
 from config import Settings
+from localization import localized_poi, message
 from models import (
     POI,
     Accessibility,
@@ -21,7 +22,7 @@ from models import (
     SnappedWaypoint,
 )
 from routing import OSRMRouter, RoutingUnavailable
-from spatial import POIIndex
+from spatial import POIIndex, same_attraction
 
 
 def fail(status: int, code: str, message: str):
@@ -50,12 +51,12 @@ class Planner:
         if request.start_poi_id is not None:
             poi = self.index.by_id.get(request.start_poi_id)
             if poi is None:
-                fail(404, "poi_not_found", "Startowy POI nie istnieje. Sprawdź GET /pois.")
+                fail(404, "poi_not_found", message("poi_not_found", request.language))
             if not self._eligible(poi, request):
                 fail(
                     422,
                     "poi_access_restricted",
-                    "Dane OSM oznaczają startowy POI jako niedostępny.",
+                    message("poi_access_restricted", request.language),
                 )
             return poi
         lat, lon = (
@@ -63,25 +64,32 @@ class Planner:
             if request.user_location
             else (50.0617, 19.9373)
         )
-        nearby = self.index.within(lat, lon, 2000)
+        # Broad spatial prefilter only: OSRM must still confirm the complete time budget.
+        radius = min(50_000, request.duration_minutes * 60 * 2)
+        nearby = self.index.within(lat, lon, radius)
         for poi, _ in nearby:
             if self._eligible(poi, request):
                 return poi
-        fail(404, "no_start_poi", "Brak dostępnego startowego POI w promieniu 2 km.")
+        fail(404, "no_start_poi", message("no_start_poi", request.language))
 
     def _candidates(self, start: POI, request: PlanRequest) -> list[POI]:
         radius = min(50_000, request.duration_minutes * 60 * 2)
         nearby = self.index.within(start.latitude, start.longitude, radius, request.category)
-        pool = [
-            poi
-            for poi, distance in nearby
-            if poi.id != start.id and distance >= 20 and self._eligible(poi, request)
-        ]
+        # Deduplicate before sampling/search so duplicate map objects cannot be visited twice.
+        unique = [start]
+        for poi, distance in nearby:
+            if (
+                distance >= 20
+                and self._eligible(poi, request)
+                and not any(same_attraction(poi, previous) for previous in unique)
+            ):
+                unique.append(poi)
+        pool = unique[1:]
         if not pool:
             fail(
                 404,
                 "no_candidate_pois",
-                "Brak innych dostępnych POI dla podanej kategorii i obszaru.",
+                message("no_candidate_pois", request.language),
             )
         limit = self.settings.candidate_limit
         if request.randomize:
@@ -157,8 +165,7 @@ class Planner:
             fail(
                 503,
                 exc.reason,
-                f"Profil {request.routing_profile} wymaga konfiguracji backendu. "
-                "Sprawdź GET /capabilities; nie użyto zastępczej trasy pieszej.",
+                message("profile_unavailable", request.language, profile=request.routing_profile),
             )
         key = request.model_dump_json()
         cached = self._cache.get(key) if not request.randomize else None
@@ -172,7 +179,7 @@ class Planner:
                 503,
                 detail={
                     "code": "planner_busy",
-                    "message": "Trwa inne planowanie. Ponów żądanie za chwilę.",
+                    "message": message("planner_busy", request.language),
                     "retry_after_s": 2,
                 },
                 headers={"Retry-After": "2"},
@@ -186,7 +193,7 @@ class Planner:
                     503,
                     detail={
                         "code": "planning_timeout",
-                        "message": "Przekroczono limit czasu planowania.",
+                        "message": message("planning_timeout", request.language),
                         "retry_after_s": 2,
                     },
                     headers={"Retry-After": "2"},
@@ -196,8 +203,7 @@ class Planner:
                     503,
                     detail={
                         "code": exc.reason,
-                        "message": "Nie można potwierdzić trasy pieszej w OSRM. "
-                        "Spróbuj ponownie później.",
+                        "message": message("routing_unavailable", request.language),
                         "retry_after_s": exc.retry_after_s,
                     },
                     headers={"Retry-After": str(exc.retry_after_s)},
@@ -221,21 +227,16 @@ class Planner:
         prefix = (0, 1) if approach else (0,)
         radiuses = [self.settings.origin_snap_radius_m] + [100] * (len(nodes) - 1)
         profile = request.routing_profile
-        warnings = ["Czas podróży nie uwzględnia zwiedzania!"]
+        warnings = [message("sightseeing", request.language)]
         if profile != "walking":
-            warnings.append(
-                "Ograniczenia uwzględniono w profilu grafu OSM; nie zweryfikowano "
-                "terenowo kompletności barier i dostępności wejść."
-            )
+            warnings.append(message("accessibility", request.language))
         try:
             matrix = await self.router.table(nodes, profile=profile, radiuses=radiuses)
             paths = await asyncio.to_thread(self._paths, matrix, request, prefix)
         except RoutingUnavailable as exc:
             if exc.reason not in {"osrm_no_route", "osrm_http_error"}:
                 raise
-            warnings.append(
-                "Tabela OSRM niedostępna; sprawdzono ograniczoną liczbę tras bez przystanków."
-            )
+            warnings.append(message("table_unavailable", request.language))
             nearby_distances = await asyncio.to_thread(
                 self.index.within, start.latitude, start.longitude, 50_000, request.category
             )
@@ -251,8 +252,7 @@ class Planner:
             fail(
                 404,
                 "no_route_within_budget",
-                "Żadna sprawdzona trasa nie mieści się w budżecie. "
-                "Zwiększ czas albo zmień punkt startowy/kategorię.",
+                message("no_route_within_budget", request.language),
             )
         budget = request.duration_minutes * 60
         for path in paths[: self.settings.route_attempts]:
@@ -273,9 +273,8 @@ class Planner:
                 continue
             matches = budget - route.duration <= budget * request.tolerance_percent / 100
             if not matches:
-                warnings.append(
-                    "Znaleziono krótszą trasę; niedobór czasu przekracza zadaną tolerancję."
-                )
+                warnings.append(message("short_route", request.language))
+            ordered = [localized_poi(poi, request.language) for poi in ordered]
             legs = []
             for i, leg in enumerate(route.legs):
                 coordinates = []
@@ -318,6 +317,7 @@ class Planner:
                 )
             xs, ys = zip(*route.geometry.coordinates)
             return PlanResponse(
+                language=request.language,
                 start=RouteStart(
                     mode=request.start_mode,
                     requested_location=origin,
@@ -334,7 +334,7 @@ class Planner:
                     routing_profile=profile,
                     constraints_applied=profile != "walking",
                 ),
-                start_poi=start,
+                start_poi=ordered[0],
                 end_poi=ordered[-1],
                 intermediate_pois=ordered[1:-1],
                 requested_duration_s=budget,
@@ -359,6 +359,5 @@ class Planner:
         fail(
             404,
             "no_route_within_budget",
-            "Nie udało się potwierdzić trasy w budżecie po "
-            "sprawdzeniu ograniczonej liczby wariantów. Zmień czas, kategorię lub start.",
+            message("route_attempts_exhausted", request.language),
         )

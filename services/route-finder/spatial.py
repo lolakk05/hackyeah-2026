@@ -22,6 +22,26 @@ def chord_to_meters(chord: float) -> float:
     return 2 * EARTH_RADIUS_M * math.asin(min(1.0, max(0.0, chord / 2)))
 
 
+def same_attraction(first: POI, second: POI) -> bool:
+    """Recognize nearby OSM representations of the same attraction."""
+    if first.id == second.id:
+        return True
+    distance = chord_to_meters(
+        math.dist(
+            unit_vector(first.latitude, first.longitude),
+            unit_vector(second.latitude, second.longitude),
+        )
+    )
+    if distance <= 100 and any(
+        first.tags.get(key) and first.tags[key] == second.tags.get(key)
+        for key in ("wikidata", "wikipedia")
+    ):
+        return True
+    first_name = " ".join(first.name.casefold().split())
+    second_name = " ".join(second.name.casefold().split())
+    return distance <= 50 and bool(first_name) and first_name == second_name
+
+
 class PointGeometry(BaseModel):
     type: Literal["Point"]
     coordinates: Coordinates

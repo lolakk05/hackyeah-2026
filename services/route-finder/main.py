@@ -4,6 +4,7 @@ from typing import Annotated
 
 import httpx
 from fastapi import FastAPI, HTTPException, Path, Query, Request
+from fastapi.middleware.cors import CORSMiddleware
 
 from config import Settings
 from models import (
@@ -25,9 +26,10 @@ from spatial import POIIndex
 def create_app(
     settings: Settings | None = None, *, transport: httpx.AsyncBaseTransport | None = None
 ) -> FastAPI:
+    config = settings if settings is not None else Settings.from_env()
+
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        config = settings if settings is not None else Settings.from_env()
         app.state.settings = config
         # File IO and tree construction happen once, outside the event loop.
         app.state.poi_index = await asyncio.to_thread(POIIndex.load, config.poi_file)
@@ -47,6 +49,14 @@ def create_app(
         "a odpowiedź zawiera manewry nawigacyjne. Czas nie obejmuje zwiedzania. "
         "Dane © OpenStreetMap contributors (ODbL).",
         lifespan=lifespan,
+    )
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=config.cors_allow_origins,
+        allow_credentials=False,
+        allow_methods=["GET", "POST"],
+        allow_headers=["*"],
+        expose_headers=["Retry-After"],
     )
 
     @application.get(
@@ -210,7 +220,10 @@ def create_app(
         """Wystarczy `{"duration_minutes": 45}`. start_mode=market zaczyna na Rynku
         (50.0617, 19.9373), user wymaga user_location; poi wymaga start_poi_id.
         start_location pozostaje aliasem user_location. Dojście do pierwszego POI
-        (wybranego do 2 km od startu) jest częścią czasu, geometrii i legs.
+        (wybranego w obszarze zależnym od budżetu) jest częścią czasu, geometrii i legs.
+        Pozwala to zaczynać również poza centrum, np. przy Tauron Arenie, jeśli czas wystarcza.
+        Każdy POI występuje raz w kolejności przystanków. language=pl/en (także polish/english)
+        wybiera nazwy OSM i komunikaty; nazwa bez tłumaczenia pozostaje oryginalna.
         wheelchair implikuje unikanie schodów; profile wymagają konfiguracji osobnego
         grafu OSRM. GET /capabilities podaje konfigurację. Brak profilu to 503
         routing_profile_not_configured; nie jest zastępowany zwykłym profilem pieszym.
