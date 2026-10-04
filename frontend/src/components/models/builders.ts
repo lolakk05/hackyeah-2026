@@ -11,6 +11,8 @@ import * as THREE from 'three';
 
 import type { ModelKind } from '@/api/types';
 
+import * as extra from './builders-extra';
+
 const C = {
   grass: 0x7ed957,
   grassSide: 0x58a700,
@@ -362,6 +364,26 @@ const BUILDERS: Record<ModelKind, () => THREE.Group> = {
   dragon,
   synagogue,
   bridge,
+  church: extra.church,
+  twintower: extra.twinTower,
+  domechurch: extra.domeChurch,
+  chapel: extra.chapel,
+  orthodox: extra.orthodox,
+  synagogue2: extra.synagogueMoorish,
+  synagogue3: extra.synagogueSmall,
+  museum: extra.museum,
+  gallery: extra.gallery,
+  townhouse: extra.townhouse,
+  palace: extra.palace,
+  college: extra.college,
+  gate: extra.gate,
+  wallgate: extra.wallGate,
+  statue: extra.statue,
+  rider: extra.rider,
+  bust: extra.bust,
+  theatre: extra.theatre,
+  theatre2: extra.theatreNouveau,
+  cave: extra.cave,
   generic,
 };
 
@@ -380,7 +402,50 @@ export function buildLandmarkModel(kind: ModelKind): THREE.Group {
 export function buildLandmarkForMap(kind: ModelKind): THREE.Group {
   const g = (BUILDERS[kind] ?? generic)();
   g.children.filter((c) => c.name === DECOR).forEach((c) => g.remove(c));
-  return g;
+  // The map shows many landmarks at once: one mesh per colour instead of
+  // dozens of small parts keeps the number of draw calls low.
+  return mergeByMaterial(g);
+}
+
+/**
+ * Merge all meshes of a static model into one mesh per material
+ * (same look, far fewer draw calls). The original geometry is freed.
+ */
+export function mergeByMaterial(root: THREE.Object3D): THREE.Group {
+  root.updateMatrixWorld(true);
+  const toRoot = new THREE.Matrix4().copy(root.matrixWorld).invert();
+  const local = new THREE.Matrix4();
+  const parts = new Map<THREE.Material, { pos: number[]; nor: number[] }>();
+  const v = new THREE.Vector3();
+  const n = new THREE.Vector3();
+  const normalMatrix = new THREE.Matrix3();
+  root.traverse((o) => {
+    if (!(o instanceof THREE.Mesh) || Array.isArray(o.material)) return;
+    local.multiplyMatrices(toRoot, o.matrixWorld);
+    normalMatrix.getNormalMatrix(local);
+    const geo = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry;
+    const p = geo.getAttribute('position');
+    const nn = geo.getAttribute('normal');
+    let part = parts.get(o.material);
+    if (!part) parts.set(o.material, (part = { pos: [], nor: [] }));
+    for (let i = 0; i < p.count; i++) {
+      v.fromBufferAttribute(p, i).applyMatrix4(local);
+      part.pos.push(v.x, v.y, v.z);
+      if (nn) n.fromBufferAttribute(nn, i).applyMatrix3(normalMatrix).normalize();
+      else n.set(0, 1, 0);
+      part.nor.push(n.x, n.y, n.z);
+    }
+    if (geo !== o.geometry) geo.dispose();
+  });
+  disposeModel(root);
+  const out = new THREE.Group();
+  for (const [material, { pos, nor }] of parts) {
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+    out.add(new THREE.Mesh(geo, material));
+  }
+  return out;
 }
 
 /** Hide the colours of a locked stop: everything grey. */
@@ -396,4 +461,21 @@ export function disposeModel(root: THREE.Object3D) {
   root.traverse((o) => {
     if (o instanceof THREE.Mesh) o.geometry.dispose();
   });
+}
+
+/**
+ * Give a model its own copies of the (shared) materials, so a short-lived
+ * renderer doesn't stay in memory through listeners on shared materials.
+ * Dispose the returned materials together with the model.
+ */
+export function ownMaterials(root: THREE.Object3D): THREE.Material[] {
+  const copies = new Map<THREE.Material, THREE.Material>();
+  root.traverse((o) => {
+    if (o instanceof THREE.Mesh && !Array.isArray(o.material)) {
+      let copy = copies.get(o.material);
+      if (!copy) copies.set(o.material, (copy = o.material.clone()));
+      o.material = copy;
+    }
+  });
+  return [...copies.values()];
 }

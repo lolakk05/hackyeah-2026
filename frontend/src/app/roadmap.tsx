@@ -6,6 +6,7 @@ import type { Landmark } from '@/api/types';
 import { DuoButton } from '@/components/duo/duo-button';
 import { DuoText } from '@/components/duo/duo-text';
 import { TopBar } from '@/components/home/top-bar';
+import { Pinek } from '@/components/pinek';
 import { Roadmap } from '@/components/roadmap/roadmap';
 import { UnitBanner } from '@/components/roadmap/unit-banner';
 import { Brand, formatDuration } from '@/constants/duo-theme';
@@ -51,6 +52,7 @@ export default function RoadmapScreen() {
           actionLabel={plan ? `⚙️ ${s.roadmap.edit}` : undefined}
           onAction={openSetup}
         />
+
 
         {skipped > 0 ? (
           <View style={styles.notice} accessibilityRole="text">
@@ -126,7 +128,7 @@ export default function RoadmapScreen() {
 
         {j.isFinished ? (
           <View style={styles.finish}>
-            <DuoText style={styles.trophy}>🏆</DuoText>
+            <Pinek pose="cheer" size={150} bounce />
             <DuoText variant="title" color={Brand.primary}>
               {s.roadmap.complete}
             </DuoText>

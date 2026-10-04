@@ -2,7 +2,7 @@ import Slider from '@react-native-community/slider';
 import { Pressable, View } from 'react-native';
 
 import { DuoText } from '@/components/duo/duo-text';
-import { tapFeedback } from '@/components/duo/haptics';
+import { selectionFeedback, tapFeedback } from '@/components/duo/haptics';
 import { Brand, formatDuration } from '@/constants/duo-theme';
 import { useI18n } from '@/i18n/language-context';
 import { themedStyles, useDuo } from '@/state/theme-context';
@@ -41,7 +41,11 @@ export function TripLengthSlider({ value, onChange }: { value: number; onChange:
         maximumValue={MAX_TRIP}
         step={STEP}
         value={value}
-        onValueChange={(v) => set(Math.round(v))}
+        onValueChange={(v) => {
+          const next = Math.round(v);
+          if (next !== value) selectionFeedback();
+          set(next);
+        }}
         minimumTrackTintColor={Brand.primary}
         maximumTrackTintColor={t.border}
         thumbTintColor={Brand.primary}
