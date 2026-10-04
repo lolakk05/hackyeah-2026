@@ -95,7 +95,11 @@ class PlanRequest(BaseModel):
     start_mode: Literal["market", "user", "poi"] | None = Field(
         default=None, description="Domyślnie market; user wymaga user_location, poi start_poi_id."
     )
-    user_location: Location | None = None
+    user_location: Location | None = Field(
+        default=None,
+        description="Pozycja użytkownika. Ponad 1500 m w linii prostej od Rynku "
+        "(50.0617, 19.9373) jest pomijana; trasa zaczyna się wtedy na Rynku z ostrzeżeniem.",
+    )
     wheelchair: bool = Field(
         default=False, description="Wymaga backendu wheelchair; implikuje brak schodów."
     )
@@ -212,6 +216,9 @@ class RouteStart(BaseModel):
     snapped_location: Coordinates
     distance_to_network_m: float
     approach_included: bool
+    fallback_reason: Literal["user_too_far_from_market"] | None = Field(
+        default=None, description="Powód zmiany początku na Rynek; null bez zmiany."
+    )
 
 
 class RouteStop(BaseModel):

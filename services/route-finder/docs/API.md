@@ -70,6 +70,16 @@ Bool wysyłaj jako `true`/`false`; Pydantic akceptuje również liczby 0/1.
 - Pominięcie/null trybu: ID → `poi`, lokalizacja → `user`, brak obu → `market`.
 - Sprzeczne dane lub brak pola wymaganego dla jawnego trybu dają 422.
 
+**Użytkownik poza centrum:** jeśli poprawna lokalizacja w trybie `user` jest
+**ponad 1500 m w linii prostej od Rynku** `(50.0617, 19.9373)`, API pomija ją
+i planuje od Rynku. Przy dokładnie 1500 m lokalizacja pozostaje. Reguła działa
+także dla `start_location` i wywnioskowanego trybu `user`; nie zmienia jawnego wyboru POI.
+Budżet, kategoria, język i preferencje dostępności pozostają bez zmian.
+Udane planowanie zwraca 200, `start.mode="market"`,
+`start.fallback_reason="user_too_far_from_market"` i ostrzeżenie w wybranym języku.
+Dotarcie użytkownika na Rynek nie jest częścią czasu, geometrii ani nawigacji.
+Pozostałe błędy planowania nadal obowiązują — zmiana startu nie gwarantuje sukcesu OSRM.
+
 Dla Rynku i użytkownika pierwszy POI jest wybierany w promieniu
 `min(50000, duration_minutes * 60 * 2)` metrów od startu. To filtr przestrzenny,
 nie szacowany czas przejścia. OSRM musi potwierdzić zmieszczenie całej trasy w budżecie.
@@ -121,7 +131,7 @@ Rynek, standardowy spacer:
 {"duration_minutes":30,"start_mode":"market","language":"polish"}
 ```
 
-Start przy Tauron Arenie, odpowiedź po angielsku, dojście wliczone w 90 minut:
+Lokalizacja przy Tauron Arenie: odpowiedź po angielsku, automatyczna trasa od Rynku:
 
 ```json
 {
@@ -137,8 +147,9 @@ Start przy Tauron Arenie, odpowiedź po angielsku, dojście wliczone w 90 minut:
 
 Współrzędne okolic parkingu przy arenie pochodzą z
 [serwisu miasta Krakowa](https://www.krakow.pl/instcbi/260498/inst/54386/2261/ul-Stanislawa-Lema-7.html).
-W aplikacji używaj rzeczywistej pozycji GPS. Za krótki budżet daje 404, a brak
-dopasowania GPS do sieci nie powoduje przeniesienia początku na Rynek.
+W aplikacji używaj rzeczywistej pozycji GPS. W tym przykładzie przekroczony jest
+limit odległości od Rynku, więc 90 minut dotyczy spaceru od Rynku. Sam brak
+dopasowania GPS do sieci w dozwolonym promieniu nie uruchamia tej zmiany startu.
 
 Ponowne losowanie atrakcji dla spaceru z Rynku:
 
@@ -214,9 +225,14 @@ Poprawna walidacja nie gwarantuje znalezienia trasy ani dostępności serwera OS
 
 #### `RouteStart`
 
-`mode` jest rozstrzygniętym trybem startu. `requested_location` zachowuje wejściowe
-współrzędne, `snapped_location` wskazuje punkt sieci, `distance_to_network_m` podaje
+`mode` jest faktycznym trybem startu. `requested_location` zawiera współrzędne
+wybrane do routingu przed dopasowaniem do sieci: lokalizację użytkownika, POI lub
+Rynek (również po automatycznej zmianie startu). `snapped_location` wskazuje punkt
+sieci, `distance_to_network_m` podaje
 przesunięcie. `approach_included` oznacza dodanie odcinka przed pierwszym POI.
+`fallback_reason` to `user_too_far_from_market` po pominięciu odległej lokalizacji,
+w pozostałych przypadkach null. Nie interpretuj `approach_included` jako dojścia
+od pominiętej lokalizacji: po zmianie startu oznacza dojście od Rynku do pierwszego POI.
 Limit dopasowania pierwszej lokalizacji podaje `/capabilities`; pozostałe POI
 są dopasowywane do 100 m. W trybie `poi` nie ma dodatkowego odcinka dojścia.
 

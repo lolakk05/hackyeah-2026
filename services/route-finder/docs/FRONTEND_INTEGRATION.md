@@ -73,6 +73,12 @@ opcjonalne tagi i brak linku źródłowego nie powinny blokować renderowania.
 
 ## Oczekiwanie na wynik
 
+Po sukcesie sprawdź `start.fallback_reason`. Dla `user_too_far_from_market`
+pokaż komunikat z `warnings` o zmianie początku na Rynek. Rysuj trasę od
+zwróconego `start.snapped_location`; nie dodawaj łącznika od GPS użytkownika.
+Wyjaśnij, że pokazany czas nie obejmuje dotarcia na Rynek. Warunek zmiany startu
+i znaczenie pól są opisane w [kontrakcie](API.md).
+
 Przycisk planowania rozpoczyna jedno żądanie, kończące się planem albo błędem.
 Zablokuj wielokrotne kliknięcia. Nie pokazuj procentowego postępu, którego backend
 nie dostarcza, i nie odpytuj planera w pętli. Timeout klienta uzgodnij z limitem

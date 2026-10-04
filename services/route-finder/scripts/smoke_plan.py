@@ -40,7 +40,13 @@ async def run(
             assert abs(data["duration_s"] - sum(leg["duration_s"] for leg in data["legs"])) < 1
             assert data["geometry"]["coordinates"][0] == data["start"]["snapped_location"]
             assert data["geometry"]["coordinates"][-1] == data["stops"][-1]["snapped_location"]
-            if request.user_location:
+            if data["start"]["fallback_reason"] == "user_too_far_from_market":
+                assert data["start"]["mode"] == "market"
+                assert data["start"]["requested_location"] == {
+                    "latitude": 50.0617,
+                    "longitude": 19.9373,
+                }
+            elif request.user_location:
                 assert data["start"]["requested_location"] == request.user_location.model_dump()
                 assert data["start"]["mode"] == "user"
             if output:

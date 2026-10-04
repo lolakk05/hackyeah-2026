@@ -42,7 +42,7 @@ Content-Type: application/json
   "randomize": true
 }
 
-### Start near Tauron Arena: approach to central POIs included in the 90-minute budget
+### User near Tauron Arena: location ignored, route starts at Main Square with a warning
 POST {{baseUrl}}/routes/plan
 Content-Type: application/json
 

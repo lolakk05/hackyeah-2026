@@ -221,7 +221,9 @@ def create_app(
         (50.0617, 19.9373), user wymaga user_location; poi wymaga start_poi_id.
         start_location pozostaje aliasem user_location. Dojście do pierwszego POI
         (wybranego w obszarze zależnym od budżetu) jest częścią czasu, geometrii i legs.
-        Pozwala to zaczynać również poza centrum, np. przy Tauron Arenie, jeśli czas wystarcza.
+        Jeśli użytkownik jest ponad 1,5 km w linii prostej od Rynku, jego lokalizacja jest
+        pomijana: trasa zaczyna się na Rynku, a warnings i start.fallback_reason informują
+        o zmianie. Dotarcie użytkownika na Rynek nie wchodzi wtedy do czasu ani geometrii.
         Każdy POI występuje raz w kolejności przystanków. language=pl/en (także polish/english)
         wybiera nazwy OSM i komunikaty; nazwa bez tłumaczenia pozostaje oryginalna.
         wheelchair implikuje unikanie schodów; profile wymagają konfiguracji osobnego

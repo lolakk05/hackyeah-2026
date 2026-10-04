@@ -39,8 +39,12 @@ służy do wyboru kandydatów; odległość spaceru pochodzi później z sieci O
 2. Planer szuka poprawnego cache, a przy jego braku rezerwuje blokadę nowego planowania.
    Tryb losowania omija cache i zawsze rezerwuje nowe planowanie.
 3. Pierwszy POI pochodzi z podanego ID albo wyszukiwania blisko punktu wejściowego.
+   Przed wyszukiwaniem planer mierzy odległość sferyczną użytkownika od Rynku.
+   Przekroczenie promienia startu opisanego w kontrakcie zamienia lokalną kopię
+   requestu na tryb Rynku i usuwa z niej lokalizację. Dodaje kod zmiany startu oraz
+   przetłumaczone ostrzeżenie; pominięty punkt nie trafia do OSRM.
    Promień tego wyszukiwania wynosi `min(50000, duration_minutes * 60 * 2)` metrów;
-   start użytkownika może leżeć poza obszarem centralnych atrakcji.
+   jest liczony względem faktycznie wybranego początku.
    POI z `access=private/no` lub `foot=no` są pomijane. Dla wózka dodatkowo odrzucane
    są `wheelchair=no/limited`; oba ograniczone profile odrzucają POI z `highway=steps`.
    To tylko filtr POI — wykluczanie odcinków ulic należy do grafu wybranego backendu.
@@ -115,6 +119,9 @@ Sposób oznaczania tej odpowiedzi i statusy błędów określa [kontrakt](API.md
 Cache udanych planów ma ograniczoną pojemność, TTL i klucz znormalizowanego requestu,
 w tym flagi profilu i język. Aliasy języka są normalizowane przed obliczeniem klucza.
 Nazwy POI są lokalizowane na kopiach odpowiedzi, bez zmiany katalogu w RAM.
+Klucz zachowuje oryginalny znormalizowany request sprzed zastąpienia lokalizacji
+Rynkiem, więc cache odległego użytkownika zachowuje ostrzeżenie, a jawny start
+z Rynku go nie dziedziczy.
 Cache działa też podczas czasowej awarii OSRM, ale nie używa wygasłych
 wpisów. Nowy plan powstaje jeden na proces; odczyty katalogu i trafienia cache nie
 muszą czekać na jego zakończenie. Wszystkie te mechanizmy są lokalne dla procesu.

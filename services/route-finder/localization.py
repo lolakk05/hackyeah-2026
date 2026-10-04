@@ -3,6 +3,14 @@
 from models import POI, Language
 
 MESSAGES = {
+    "user_too_far_from_market": (
+        "Jesteś za daleko od ważnych historycznych punktów Krakowa "
+        "(ponad 1,5 km od Rynku). Pominięto Twoją lokalizację i wyznaczono trasę od Rynku. "
+        "Czas podróży nie obejmuje dotarcia na Rynek.",
+        "You are too far from Krakow's major historic attractions "
+        "(over 1.5 km from the Main Square). Your location was ignored and the route starts "
+        "at the Main Square. Travel time does not include getting to the Main Square.",
+    ),
     "poi_not_found": (
         "Startowy POI nie istnieje. Sprawdź GET /pois.",
         "The starting POI does not exist. Check GET /pois.",

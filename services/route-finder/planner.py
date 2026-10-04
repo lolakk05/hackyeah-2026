@@ -1,6 +1,7 @@
 """Bounded time-budget search over local POIs and OSRM walking durations."""
 
 import asyncio
+import math
 import random
 import time
 from collections import OrderedDict
@@ -22,7 +23,26 @@ from models import (
     SnappedWaypoint,
 )
 from routing import OSRMRouter, RoutingUnavailable
-from spatial import POIIndex, same_attraction
+from spatial import POIIndex, chord_to_meters, same_attraction, unit_vector
+
+MARKET_LATITUDE = 50.0617
+MARKET_LONGITUDE = 19.9373
+USER_START_RADIUS_M = 1500
+
+
+def user_start_too_far(request: PlanRequest) -> bool:
+    if request.start_mode != "user" or request.user_location is None:
+        return False
+    distance = chord_to_meters(
+        math.dist(
+            unit_vector(request.user_location.latitude, request.user_location.longitude),
+            unit_vector(MARKET_LATITUDE, MARKET_LONGITUDE),
+        )
+    )
+    # Avoid moving a point exactly on the boundary due to floating-point roundoff.
+    return distance > USER_START_RADIUS_M and not math.isclose(
+        distance, USER_START_RADIUS_M, rel_tol=0, abs_tol=1e-6
+    )
 
 
 def fail(status: int, code: str, message: str):
@@ -62,7 +82,7 @@ class Planner:
         lat, lon = (
             (request.user_location.latitude, request.user_location.longitude)
             if request.user_location
-            else (50.0617, 19.9373)
+            else (MARKET_LATITUDE, MARKET_LONGITUDE)
         )
         # Broad spatial prefilter only: OSRM must still confirm the complete time budget.
         radius = min(50_000, request.duration_minutes * 60 * 2)
@@ -215,12 +235,15 @@ class Planner:
         return result
 
     async def _plan(self, request: PlanRequest) -> PlanResponse:
+        fallback = user_start_too_far(request)
+        if fallback:
+            request = request.model_copy(update={"start_mode": "market", "user_location": None})
         start = await asyncio.to_thread(self._start, request)
         pois = await asyncio.to_thread(self._candidates, start, request)
         origin = request.user_location or (
             Location(latitude=start.latitude, longitude=start.longitude)
             if request.start_mode == "poi"
-            else Location(latitude=50.0617, longitude=19.9373)
+            else Location(latitude=MARKET_LATITUDE, longitude=MARKET_LONGITUDE)
         )
         approach = (origin.longitude, origin.latitude) != (start.longitude, start.latitude)
         nodes = [origin, *pois] if approach else pois
@@ -228,6 +251,8 @@ class Planner:
         radiuses = [self.settings.origin_snap_radius_m] + [100] * (len(nodes) - 1)
         profile = request.routing_profile
         warnings = [message("sightseeing", request.language)]
+        if fallback:
+            warnings.append(message("user_too_far_from_market", request.language))
         if profile != "walking":
             warnings.append(message("accessibility", request.language))
         try:
@@ -324,6 +349,7 @@ class Planner:
                     snapped_location=waypoints[0].location,
                     distance_to_network_m=waypoints[0].distance,
                     approach_included=approach,
+                    fallback_reason="user_too_far_from_market" if fallback else None,
                 ),
                 stops=stops,
                 bbox=(min(xs), min(ys), max(xs), max(ys)),

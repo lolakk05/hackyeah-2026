@@ -123,7 +123,7 @@ def test_request_validation(client_factory, body):
         ({"duration_minutes": 10, "start_poi_id": "missing"}, "poi_not_found"),
         ({"duration_minutes": 10, "category": "zoo"}, "no_candidate_pois"),
         (
-            {"duration_minutes": 10, "start_location": {"latitude": 0, "longitude": 0}},
+            {"duration_minutes": 5, "start_location": {"latitude": 50.073, "longitude": 19.9373}},
             "no_start_poi",
         ),
     ],
