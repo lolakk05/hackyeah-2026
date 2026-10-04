@@ -1,0 +1,71 @@
+# Run: uv run python -m uvicorn main:app --reload
+@baseUrl = http://127.0.0.1:8000
+
+### Service metadata
+GET {{baseUrl}}/
+Accept: application/json
+
+### Process readiness and local POI count
+GET {{baseUrl}}/health
+
+### Dataset source, dates, license and exact export query
+GET {{baseUrl}}/dataset
+
+### Categories present in RAM
+GET {{baseUrl}}/categories
+
+### Find a start POI; copy its id into a request below if desired
+GET {{baseUrl}}/pois?q=Sukiennice&limit=10
+
+### Paginated museums
+GET {{baseUrl}}/pois?category=museum&offset=0&limit=20
+
+### Unknown POI: expected 404
+GET {{baseUrl}}/pois/does-not-exist
+
+### Time-only request: defaults to a POI near the Main Square
+POST {{baseUrl}}/routes/plan
+Content-Type: application/json
+
+{
+  "duration_minutes": 30
+}
+
+### Museum walk with up to two intermediate stops
+POST {{baseUrl}}/routes/plan
+Content-Type: application/json
+
+{
+  "duration_minutes": 60,
+  "start_location": {"latitude": 50.0617, "longitude": 19.9373},
+  "category": "museum",
+  "max_intermediate_stops": 2,
+  "tolerance_percent": 10
+}
+
+### Direct POI-to-POI route, without intermediate stops
+POST {{baseUrl}}/routes/plan
+Content-Type: application/json
+
+{
+  "duration_minutes": 15,
+  "max_intermediate_stops": 0
+}
+
+### Invalid time: expected 422
+POST {{baseUrl}}/routes/plan
+Content-Type: application/json
+
+{"duration_minutes": 0}
+
+### Legacy nearest-POI route (does not optimize time)
+GET {{baseUrl}}/route?latitude=50.0617&longitude=19.9373&category=museum&radius_m=2000
+
+### OpenAPI schema
+GET {{baseUrl}}/openapi.json
+
+### Interactive documentation
+GET {{baseUrl}}/docs
+
+### Schema reference UI
+GET {{baseUrl}}/redoc

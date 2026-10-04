@@ -1,19 +1,21 @@
 [project]
 name = "ai-service"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
-authors = [
-    { name = "Karol Stolarczyk", email = "k.stolar2005@gmail.com" }
-]
-requires-python = ">=3.14"
+description = "FastAPI endpoint for questions to a local Ollama model"
+requires-python = ">=3.12"
 dependencies = [
-    "fastapi[standard]>=0.142.2",
+    "fastapi>=0.142.2",
+    "httpx>=0.28.1",
+    "ollama>=0.6.3",
+    "pydantic>=2.13.5",
+    "uvicorn>=0.54.0",
 ]
 
-[project.scripts]
-ai-service = "ai_service:main"
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
 
-[build-system]
-requires = ["uv_build>=0.12.22,<0.13.0"]
-build-backend = "uv_build"
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
