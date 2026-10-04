@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { AuthLayout, authErrorMessage, EMAIL_RE } from '@/components/account/auth-layout';
 import { DuoInput } from '@/components/duo/duo-input';
-import { successFeedback } from '@/components/duo/haptics';
+import { errorFeedback, successFeedback } from '@/components/duo/haptics';
 import { useI18n } from '@/i18n/language-context';
 import { useAccount } from '@/state/account-context';
 
@@ -35,6 +35,7 @@ export default function LoginScreen() {
       successFeedback();
       router.replace('/welcome');
     } catch (e) {
+      errorFeedback();
       setError(authErrorMessage(e, s, fmt));
       setLoading(false);
     }
@@ -42,7 +43,7 @@ export default function LoginScreen() {
 
   return (
     <AuthLayout
-      icon="🧭"
+      pose="wave"
       title={s.auth.loginTitle}
       text={s.auth.loginText}
       error={error}

@@ -28,6 +28,8 @@ interface MockUser extends AccountUser {
   redemptions: Redemption[];
   /** Event ids already counted (re-sent events give no extra XP). */
   seenEvents: string[];
+  /** Session tokens from the real sign-in server linked to this user. */
+  tokens?: string[];
 }
 
 interface Db {
@@ -88,7 +90,7 @@ const tokenFor = (u: MockUser) => `mock.${u.id}`;
 
 async function userFor(token: string | null): Promise<MockUser> {
   const data = await load();
-  const user = data.users.find((u) => tokenFor(u) === token);
+  const user = data.users.find((u) => tokenFor(u) === token || (!!token && u.tokens?.includes(token)));
   if (!user) throw new AccountError('Session expired', 'unauthorized', 401);
   return user;
 }
@@ -156,7 +158,7 @@ export async function ranking(token: string | null, limit: number): Promise<Rank
     ...data.users.map((u) => ({ userId: u.id, username: u.username, xp: u.xp })),
   ].sort((a, b) => b.xp - a.xp);
   const entries: RankingEntry[] = players.map((p, i) => ({ ...p, rank: i + 1 }));
-  const meUser = token ? data.users.find((u) => tokenFor(u) === token) : undefined;
+  const meUser = token ? data.users.find((u) => tokenFor(u) === token || u.tokens?.includes(token)) : undefined;
   return { entries: entries.slice(0, limit), me: entries.find((e) => e.userId === meUser?.id) };
 }
 
@@ -194,4 +196,22 @@ export async function redemptions(token: string): Promise<Redemption[]> {
 function randomBlock() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   return Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
+
+/**
+ * A user signed in on the real sign-in server: keep their XP, coins and codes
+ * here (on the phone) until the backend has its own XP endpoints.
+ */
+export async function linkUser(token: string, u: { id: string; username: string; email: string }): Promise<AccountUser> {
+  const data = await load();
+  let user = data.users.find((x) => x.id === u.id);
+  if (!user) {
+    user = { ...u, xp: 0, coins: 0, passwordHash: '', redemptions: [], seenEvents: [], tokens: [] };
+    data.users.push(user);
+  }
+  user.username = u.username;
+  user.email = u.email;
+  user.tokens = [...(user.tokens ?? []).filter((t) => t !== token).slice(-4), token];
+  save();
+  return publicUser(user);
 }

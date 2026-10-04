@@ -7,17 +7,22 @@ import { fetchWalkingRoute } from '@/api/client';
 import type { LatLng, WalkingRoute } from '@/api/types';
 import { DuoButton } from '@/components/duo/duo-button';
 import { DuoText } from '@/components/duo/duo-text';
-import { tapFeedback } from '@/components/duo/haptics';
-import { CityMap3D, type CityMapHandle, type StopState } from '@/components/map/city-map-3d';
+import { arriveFeedback, tapFeedback } from '@/components/duo/haptics';
+import { CityMap3D, type CityMapHandle, type MapIssue, type StopState } from '@/components/map/city-map-3d';
+import { IssueCard } from '@/components/reports/issue-card';
+import { ReportSheet, type ReportPlace } from '@/components/reports/report-sheet';
 import { Brand } from '@/constants/duo-theme';
 import { useUserLocation } from '@/hooks/use-user-location';
 import { useI18n } from '@/i18n/language-context';
 import { bearingDegrees, distanceMeters, formatDistance } from '@/map/geo';
 import { useJourney } from '@/state/journey-context';
+import { useReports } from '@/state/reports-context';
 import { themedStyles, useDuo } from '@/state/theme-context';
 
 /** Within this distance you can tap "I'm here". */
 const ARRIVED_METERS = 40;
+/** Demo position for the first leg when GPS isn't available: the Main Square. */
+const MAIN_SQUARE: LatLng = { latitude: 50.0614, longitude: 19.9366 };
 
 /** 3D map with navigation from your position to the next stop of the route. */
 export default function MapScreen() {
@@ -32,9 +37,46 @@ export default function MapScreen() {
   const nextIndex = nextStop ? stops.indexOf(nextStop) : -1;
   // Fallback position when GPS isn't available or you're not in Kraków:
   // the previous stop (or a spot on the Main Square for the first leg).
-  const previous = nextIndex > 0 ? stops[nextIndex - 1].coordinates : { latitude: 50.0614, longitude: 19.9366 };
-  const location = useUserLocation(previous);
+  const previousStop = nextIndex > 0 ? stops[nextIndex - 1] : null;
+  const location = useUserLocation(previousStop?.coordinates ?? MAIN_SQUARE);
   const me = location.position;
+
+  // ── Problem reports on the map ──
+  const reports = useReports();
+  const [selectedIssue, setSelectedIssue] = useState<string | null>(null);
+  const [reportPlace, setReportPlace] = useState<ReportPlace | null>(null);
+  useEffect(() => {
+    reports.refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const mapIssues = useMemo<MapIssue[]>(
+    () =>
+      reports.issues
+        .filter((i) => i.location && Number.isFinite(i.location.latitude))
+        .map((i) => ({
+          id: i.id,
+          coordinates: i.location,
+          severity: i.severity === 'blocked' || i.severity === 'info' ? i.severity : 'hard',
+        })),
+    [reports.issues],
+  );
+  const selected = reports.issues.find((i) => i.id === selectedIssue) ?? null;
+
+  const openReport = () => {
+    if (!me) return;
+    const gps = location.source === 'gps';
+    // The stop you are at (within 80 m), if any.
+    const nearStop = stops.find((st) => distanceMeters(st.coordinates, me) < 80);
+    setSelectedIssue(null);
+    setReportPlace({
+      location: me,
+      locationSource: gps ? 'gps' : 'map',
+      landmarkId: nearStop?.id,
+      landmarkName: nearStop?.name,
+      segment: nextStop ? { fromStopId: previousStop?.id ?? null, toStopId: nextStop.id } : undefined,
+      label: gps ? s.issues.myLocation : previousStop ? fmt(s.issues.near, { name: previousStop.name }) : s.issues.mapCenter,
+    });
+  };
 
   // The planner's walking path into the next stop (Route Finder legs), if any.
   const plannedLeg = j.plan?.route?.legs.find((l) => l.toId === nextStop?.id && l.path.length > 1);
@@ -42,6 +84,10 @@ export default function MapScreen() {
   // ── Walking route from me to the next stop ──
   const [route, setRoute] = useState<WalkingRoute | null>(null);
   const routeFrom = useRef<typeof me>(null);
+  /** Stop id of the routing request in flight (one at a time, never cancelled by GPS updates). */
+  const routing = useRef<string | null>(null);
+  const currentStopId = useRef<string | null>(null);
+  currentStopId.current = nextStop?.id ?? null;
   useEffect(() => {
     if (!me || !nextStop) {
       setRoute(null);
@@ -58,7 +104,9 @@ export default function MapScreen() {
       routeFrom.current = null;
       return;
     }
-    // Only re-route when we moved more than 25 m (or the stop changed).
+    // Only re-route when we moved more than 25 m (or the stop changed),
+    // and never while a request for this stop is still running.
+    if (routing.current === nextStop.id) return;
     if (
       route &&
       routeFrom.current &&
@@ -67,17 +115,16 @@ export default function MapScreen() {
     )
       return;
     routeFrom.current = me;
-    let cancelled = false;
-    fetchWalkingRoute(me, nextStop.coordinates, j.preferences.needs).then((r) => {
-      if (cancelled) return;
-      const path = [...r.path.slice(0, -1), nextStop.coordinates];
+    const stop = nextStop;
+    routing.current = stop.id;
+    fetchWalkingRoute(me, stop.coordinates, j.preferences.needs).then((r) => {
+      if (routing.current === stop.id) routing.current = null;
+      if (currentStopId.current !== stop.id) return; // the next stop changed meanwhile
+      const path = [...r.path.slice(0, -1), stop.coordinates];
       setRoute({ ...r, path });
       // Remember the walked section, for the accessibility question on arrival.
-      j.setLegPath(nextStop.id, path);
+      j.setLegPath(stop.id, path);
     });
-    return () => {
-      cancelled = true;
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [me?.latitude, me?.longitude, nextStop?.id, plannedLeg?.toId]);
 
@@ -114,6 +161,14 @@ export default function MapScreen() {
       ? Math.max(1, Math.round((route.durationMinutes * remaining) / route.distanceMeters))
       : route?.durationMinutes;
   const arrived = straight !== null && straight < ARRIVED_METERS;
+  // Buzz once when you get close to the next stop
+  const buzzedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (arrived && nextStop && buzzedFor.current !== nextStop.id) {
+      buzzedFor.current = nextStop.id;
+      arriveFeedback();
+    }
+  }, [arrived, nextStop]);
   const bearing = me && nextStop ? bearingDegrees(me, nextStop.coordinates) : 0;
   const direction = s.map.directions[Math.round(bearing / 45) % 8];
   const close = () => (router.canGoBack() ? router.back() : router.replace('/roadmap'));
@@ -131,7 +186,9 @@ export default function MapScreen() {
         user={me}
         route={route?.path ?? null}
         fullRoute={j.plan?.route?.path ?? null}
+        issues={mapIssues}
         onPressLandmark={openStop}
+        onPressIssue={setSelectedIssue}
       />
 
       {/* Top: navigation card */}
@@ -177,10 +234,16 @@ export default function MapScreen() {
           onPress={() => nextStop && mapRef.current?.flyTo(nextStop.coordinates, 260)}
         />
         <RoundButton label="🗺️" a11y={s.map.showRoute} onPress={() => mapRef.current?.overview()} />
+        <RoundButton label="⚠️" a11y={s.issues.report} onPress={openReport} />
       </View>
 
       {/* Bottom: main action */}
       <SafeAreaView edges={['bottom']} style={styles.bottom}>
+        {selected ? (
+          <View style={styles.issue}>
+            <IssueCard report={selected} onClose={() => setSelectedIssue(null)} />
+          </View>
+        ) : null}
         {nextStop ? (
           <DuoButton
             title={s.map.arrivedButton}
@@ -189,9 +252,11 @@ export default function MapScreen() {
             onPress={() => openStop(nextStop.id)}
           />
         ) : (
-          <DuoButton title={s.map.backToRoadmap} onPress={() => router.replace('/roadmap')} />
+          <DuoButton title={s.map.backToRoadmap} onPress={close} />
         )}
       </SafeAreaView>
+
+      {reportPlace ? <ReportSheet place={reportPlace} onClose={() => setReportPlace(null)} /> : null}
     </View>
   );
 }
@@ -265,7 +330,8 @@ const useStyles = themedStyles((t) => ({
   },
   arrowIcon: { fontSize: 26, lineHeight: 32, fontWeight: '800' },
   navTexts: { flex: 1 },
-  side: { position: 'absolute', right: 12, top: '36%', gap: 12 },
+  side: { position: 'absolute', right: 12, top: '30%', gap: 12 },
+  issue: { marginBottom: 12 },
   round: {
     width: 56,
     height: 56,

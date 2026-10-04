@@ -9,7 +9,7 @@ import type { Redemption, Reward } from '@/api/types';
 import { ScreenHeader } from '@/components/account/screen-header';
 import { DuoButton } from '@/components/duo/duo-button';
 import { DuoText } from '@/components/duo/duo-text';
-import { successFeedback } from '@/components/duo/haptics';
+import { celebrateFeedback, errorFeedback } from '@/components/duo/haptics';
 import { Brand } from '@/constants/duo-theme';
 import { formatCoins } from '@/game/progression';
 import { useI18n } from '@/i18n/language-context';
@@ -53,12 +53,13 @@ export default function RewardsScreen() {
       setCoins(res.coins);
       setCodes((prev) => [res.redemption, ...prev]);
       setNewCodeId(res.redemption.id);
-      successFeedback();
+      celebrateFeedback();
     } catch (e) {
       const msg =
         e instanceof AccountError && e.code === 'not_enough_coins'
           ? s.rewards.notEnough
           : fmt(s.rewards.redeemError, { msg: e instanceof Error ? e.message : String(e) });
+      errorFeedback();
       Alert.alert(s.rewards.title, msg);
     } finally {
       setBusyId(null);

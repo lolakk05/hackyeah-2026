@@ -1,22 +1,20 @@
 {
   "expo": {
-    "name": "Kraków Quest",
+    "name": "Spacer.io",
     "slug": "frontend",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "krakowquest",
+    "icon": "./assets/images/spacer-icon.png",
+    "scheme": "spacerio",
     "userInterfaceStyle": "dark",
     "ios": {
-      "icon": "./assets/expo.icon",
+      "icon": "./assets/images/spacer-icon.png",
       "bundleIdentifier": "com.hackyeah.krakowquest"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0F1724",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#16233A",
+        "foregroundImage": "./assets/images/spacer-android-foreground.png"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.hackyeah.krakowquest"
@@ -31,14 +29,14 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#0F1724",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "image": "./assets/images/spacer-splash.png",
+          "imageWidth": 180
         }
       ],
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Kraków Quest uses your location to guide you to the next landmark on your route."
+          "locationWhenInUsePermission": "Spacer.io uses your location to guide you to the next stop on your route."
         }
       ],
       [

@@ -7,16 +7,18 @@ import { REPORT_QUESTION_CHANCE } from '@/api/config';
 import type { ReportCategory } from '@/api/types';
 import { DuoButton } from '@/components/duo/duo-button';
 import { DuoText } from '@/components/duo/duo-text';
-import { successFeedback } from '@/components/duo/haptics';
+import { arriveFeedback, celebrateFeedback } from '@/components/duo/haptics';
 import { LandmarkModel } from '@/components/models/landmark-model';
 import { AccessibilityCard } from '@/components/place/accessibility-card';
 import { AskAiChat } from '@/components/place/ask-ai-chat';
 import { FactsList } from '@/components/place/facts-list';
 import { PhotoCarousel } from '@/components/place/photo-carousel';
+import { RewardBurst } from '@/components/account/reward-burst';
 import { pickReportCategory, ReportQuestion } from '@/components/place/report-question';
+import { ReportSheet } from '@/components/reports/report-sheet';
 import { SectionCard } from '@/components/place/section-card';
 import { Brand, formatDuration } from '@/constants/duo-theme';
-import { formatCoins } from '@/game/progression';
+import { formatCoins, levelInfo } from '@/game/progression';
 import { useLandmark } from '@/hooks/use-landmark';
 import { useI18n } from '@/i18n/language-context';
 import { useJourney, type StopReward } from '@/state/journey-context';
@@ -32,8 +34,9 @@ export default function PlaceScreen() {
   const j = useJourney();
 
   const [completing, setCompleting] = useState(false);
-  const [earned, setEarned] = useState<StopReward | null>(null);
   const [report, setReport] = useState<ReportCategory | null>(null);
+  const [burst, setBurst] = useState<StopReward | null>(null);
+  const [reporting, setReporting] = useState(false);
 
   const close = () => (router.canGoBack() ? router.back() : router.replace('/roadmap'));
 
@@ -60,16 +63,27 @@ export default function PlaceScreen() {
   const markVisited = async () => {
     setCompleting(true);
     const reward = await j.completeStop(landmark.id);
-    successFeedback();
+    if (reward.route) celebrateFeedback(); // whole trip done!
+    else arriveFeedback();
     setCompleting(false);
-    setEarned(reward);
-    const showFor = reward.route ? 2200 : 1200;
-    if (Math.random() < REPORT_QUESTION_CHANCE) {
-      setTimeout(() => setReport(pickReportCategory(j.preferences.needs)), showFor);
-    } else {
-      setTimeout(close, showFor);
-    }
+    // Only a level-up gets a celebration; otherwise carry straight on.
+    const last = reward.route ?? reward.visit;
+    const gained = reward.visit.xp + (reward.route?.xp ?? 0);
+    const levelUp =
+      last.totalXp !== undefined && levelInfo(last.totalXp).level > levelInfo(last.totalXp - gained).level;
+    if (levelUp) setBurst(reward);
+    else afterBurst();
   };
+
+  // After the celebration: sometimes one yes/no accessibility question, else back to the map.
+  const afterBurst = () => {
+    setBurst(null);
+    // iOS can't open a new modal while the previous one is still closing: wait a moment.
+    if (Math.random() < REPORT_QUESTION_CHANCE) setTimeout(() => setReport(pickReportCategory(j.preferences.needs)), 450);
+    else close();
+  };
+
+  const stopIndex = j.plan ? j.plan.stopIds.indexOf(landmark.id) : -1;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -127,32 +141,23 @@ export default function PlaceScreen() {
             <DuoText variant="body">{landmark.description}</DuoText>
           </SectionCard>
 
+          <AskAiChat landmark={landmark} />
+
           <AccessibilityCard info={landmark.accessibility} needs={j.preferences.needs} />
 
           <FactsList facts={landmark.facts} />
 
-          <AskAiChat landmark={landmark} />
+          <DuoButton
+            title={`⚠️ ${s.issues.reportHere}`}
+            variant="secondary"
+            size="md"
+            onPress={() => setReporting(true)}
+          />
         </ScrollView>
       </KeyboardAvoidingView>
 
       <View style={styles.footer}>
-        {earned !== null && !report ? (
-          <View style={styles.earned} accessibilityLiveRegion="polite">
-            <DuoText variant="title" color={Brand.primary}>
-              ⭐ {fmt(s.place.pointsEarned, { n: earned.visit.xp, coins: formatCoins(earned.visit.coins, lang) })}
-            </DuoText>
-            {earned.route ? (
-              <DuoText variant="heading" color={Brand.success}>
-                {fmt(s.place.routeBonus, { n: earned.route.xp, coins: formatCoins(earned.route.coins, lang) })}
-              </DuoText>
-            ) : null}
-            {earned.visit.offline ? (
-              <DuoText variant="caption" color={t.textMuted}>
-                {s.place.offline}
-              </DuoText>
-            ) : null}
-          </View>
-        ) : status === 'current' ? (
+        {status === 'current' ? (
           <DuoButton title={s.place.markVisited} onPress={markVisited} loading={completing} />
         ) : status === 'locked' ? (
           <DuoButton title={s.place.backToMap} subtitle={s.place.visitEarlier} variant="secondary" onPress={close} />
@@ -162,6 +167,35 @@ export default function PlaceScreen() {
           <DuoButton title={s.place.planTrip} onPress={() => router.replace('/setup')} />
         )}
       </View>
+
+      {burst ? (
+        <RewardBurst
+          awards={burst.route ? [burst.visit, burst.route] : [burst.visit]}
+          bonusLabel={
+            burst.route
+              ? fmt(s.place.routeBonus, { n: burst.route.xp, coins: formatCoins(burst.route.coins, lang) })
+              : undefined
+          }
+          onClose={afterBurst}
+        />
+      ) : null}
+
+      {reporting ? (
+        <ReportSheet
+          place={{
+            location: landmark.coordinates,
+            locationSource: 'landmark',
+            landmarkId: landmark.id,
+            landmarkName: landmark.name,
+            segment:
+              j.plan && stopIndex >= 0
+                ? { fromStopId: stopIndex > 0 ? j.plan.stopIds[stopIndex - 1] : null, toStopId: landmark.id }
+                : undefined,
+            label: landmark.name,
+          }}
+          onClose={() => setReporting(false)}
+        />
+      ) : null}
 
       {report ? (
         <ReportQuestion

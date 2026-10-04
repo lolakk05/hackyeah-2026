@@ -52,6 +52,24 @@ export const ENDPOINTS = {
   reports: undefined as string | undefined, // POST AccessibilityReport
 };
 
+// ─── Sign-in server (Better Auth) ────────────────────────────
+
+/**
+ * EXPO_PUBLIC_AUTH_API_URL in `.env`: the server with /api/auth/… (register,
+ * sign in, sign out, session). Without it, sign-in uses the account backend
+ * below (or the sample one on the phone).
+ */
+const authUrl = process.env.EXPO_PUBLIC_AUTH_API_URL?.trim().replace(/\/+$/, '').replace(/\/api\/auth.*$/, '');
+export const AUTH_API_URL = authUrl || '';
+export const USE_AUTH_SERVER = !!authUrl;
+
+export const AUTH_ENDPOINTS = {
+  signUp: '/api/auth/sign-up/email',
+  signIn: '/api/auth/sign-in/email',
+  signOut: '/api/auth/sign-out',
+  session: '/api/auth/get-session',
+};
+
 // ─── Accounts: login, XP, coins, ranking, rewards ───────────
 
 /**
@@ -73,4 +91,6 @@ export const ACCOUNT_ENDPOINTS = {
   ranking: '/ranking', // GET ?limit=50 → Ranking
   rewards: '/rewards', // GET → Reward[]
   redeem: (rewardId: string) => `/rewards/${encodeURIComponent(rewardId)}/redeem`, // POST → { redemption, coins }
+  issues: '/reports/issues', // GET ?south&west&north&east → IssueReport[] · POST IssueReportInput → IssueReport
+  confirmIssue: (id: string) => `/reports/issues/${encodeURIComponent(id)}/confirm`, // POST → { confirmations }
 };

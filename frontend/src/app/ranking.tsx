@@ -9,6 +9,7 @@ import { useLevelTitle } from '@/components/account/level-card';
 import { ScreenHeader } from '@/components/account/screen-header';
 import { DuoButton } from '@/components/duo/duo-button';
 import { DuoText } from '@/components/duo/duo-text';
+import { PodiumModel } from '@/components/models/statue-views';
 import { Brand } from '@/constants/duo-theme';
 import { levelInfo } from '@/game/progression';
 import { useI18n } from '@/i18n/language-context';
@@ -66,9 +67,12 @@ export default function RankingScreen() {
           keyExtractor={(e) => e.userId}
           contentContainerStyle={styles.list}
           ListHeaderComponent={
-            <DuoText variant="body" color={t.textMuted} style={styles.subtitle}>
-              {s.ranking.subtitle}
-            </DuoText>
+            <View style={styles.header}>
+              <DuoText variant="body" color={t.textMuted} style={styles.subtitle}>
+                {s.ranking.subtitle}
+              </DuoText>
+              {ranking && ranking.entries.length > 0 ? <Podium top={ranking.entries.slice(0, 3)} meId={user?.id} /> : null}
+            </View>
           }
           ListEmptyComponent={
             <DuoText variant="body" color={t.textMuted} style={styles.centerText}>
@@ -98,6 +102,35 @@ export default function RankingScreen() {
         </View>
       ) : null}
     </SafeAreaView>
+  );
+}
+
+/** 3D podium (2nd · 1st · 3rd) with statues, names and XP under each step. */
+function Podium({ top, meId }: { top: RankingEntry[]; meId?: string }) {
+  const t = useDuo();
+  const styles = useStyles();
+  const { s } = useI18n();
+  const order = [top[1], top[0], top[2]];
+  return (
+    <View style={styles.podium}>
+      <PodiumModel players={top.length} backgroundColor={t.surface} style={styles.podiumModel} />
+      <View style={styles.podiumNames}>
+        {order.map((e, i) => (
+          <View key={e?.userId ?? i} style={styles.podiumName}>
+            {e ? (
+              <>
+                <DuoText variant="caption" style={styles.bold} numberOfLines={1} color={e.userId === meId ? Brand.primary : t.text}>
+                  {MEDALS[e.rank - 1]} {e.userId === meId ? s.ranking.you : e.username}
+                </DuoText>
+                <DuoText variant="caption" color={t.textMuted}>
+                  {e.xp} {s.common.xp}
+                </DuoText>
+              </>
+            ) : null}
+          </View>
+        ))}
+      </View>
+    </View>
   );
 }
 
@@ -145,7 +178,13 @@ const useStyles = themedStyles((t) => ({
   safe: { flex: 1, backgroundColor: t.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 },
   centerText: { textAlign: 'center' },
-  subtitle: { textAlign: 'center', marginBottom: 8 },
+  subtitle: { textAlign: 'center' },
+  header: { gap: 12, marginBottom: 8 },
+  podium: { borderRadius: t.radius.xl, backgroundColor: t.surface, overflow: 'hidden', paddingBottom: 12 },
+  podiumModel: { height: 200 },
+  podiumNames: { flexDirection: 'row', paddingHorizontal: 8 },
+  podiumName: { flex: 1, alignItems: 'center' },
+  bold: { fontWeight: '700' },
   list: { padding: 16, gap: 8, maxWidth: 600, width: '100%', alignSelf: 'center' },
   flex: { flex: 1 },
   row: {

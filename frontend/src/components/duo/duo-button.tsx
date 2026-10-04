@@ -45,10 +45,8 @@ export function DuoButton({
 
   return (
     <Pressable
-      onPress={() => {
-        tapFeedback(size === 'lg');
-        onPress?.();
-      }}
+      onPressIn={() => tapFeedback(size === 'lg')}
+      onPress={() => onPress?.()}
       disabled={isDisabled}
       accessibilityRole="button"
       accessibilityLabel={subtitle ? `${title}. ${subtitle}` : title}
