@@ -1,71 +1,95 @@
-import type { AdminPlace, WheelchairAccess } from '../data/types'
-
-const accessCopy: Record<WheelchairAccess, string> = {
-  full: 'Dostępne',
-  partial: 'Częściowo',
-  none: 'Niedostępne',
-}
+import type { AdminPlace } from '../data/types'
 
 export function PlaceList({
   places,
+  total,
   selectedId,
-  filter,
-  onFilter,
+  page,
+  pageSize,
+  onPage,
   onSelect,
+  onCreate,
+  creating,
   loading,
 }: {
   places: AdminPlace[]
+  total: number
   selectedId: string | null
-  filter: string
-  onFilter: (value: string) => void
+  page: number
+  pageSize: number
+  onPage: (value: number) => void
   onSelect: (id: string) => void
+  onCreate: () => void
+  creating: boolean
   loading: boolean
 }) {
+  const pageCount = Math.max(1, Math.ceil(total / pageSize))
+  const firstItem = total === 0 ? 0 : (page - 1) * pageSize + 1
+  const lastItem = Math.min(page * pageSize, total)
+
   return (
     <section className="panel place-list-panel">
       <div className="section-heading list-heading">
         <div>
-          <p className="eyebrow">BAZA LOKALIZACJI</p>
-          <h2>Wszystkie miejsca <span className="count-badge">{places.length}</span></h2>
+          <p className="eyebrow">MIEJSCA W KRAKOWIE</p>
+          <h2>Miejsca w Krakowie <span className="count-badge">{total.toLocaleString('pl-PL')}</span></h2>
         </div>
-        <select
-          aria-label="Filtruj według dostępności"
-          className="filter-select"
-          onChange={(event) => onFilter(event.target.value)}
-          value={filter}
-        >
-          <option value="all">Wszystkie</option>
-          <option value="full">Dostępne</option>
-          <option value="partial">Częściowo</option>
-          <option value="none">Niedostępne</option>
-        </select>
+        <button className="secondary-button add-place-button" onClick={onCreate} type="button">
+          {creating ? 'Anuluj dodawanie' : 'Dodaj miejsce'}
+        </button>
       </div>
       <div className="place-list">
         {loading && places.length === 0 ? (
-          <div className="empty-state">Pobieranie miejsc…</div>
+          <div className="empty-state">Pobieranie listy miejsc…</div>
         ) : places.length === 0 ? (
-          <div className="empty-state">Nie znaleziono miejsc dla tego filtra.</div>
+          <div className="empty-state">Nie znaleziono miejsc.</div>
         ) : (
-          places.map((place, index) => (
-            <button
-              aria-pressed={selectedId === place.id}
-              className={`place-row ${selectedId === place.id ? 'selected' : ''}`}
-              key={place.id}
-              onClick={() => onSelect(place.id)}
-              type="button"
-            >
-              <span className={`place-number ${place.accessibility.wheelchair}`}>{String(index + 1).padStart(2, '0')}</span>
-              <span className="place-row-main">
-                <strong>{place.name}</strong>
-                <span>{place.tagline || place.id}</span>
-              </span>
-              <span className={`access-badge ${place.accessibility.wheelchair}`}>
-                <i />{accessCopy[place.accessibility.wheelchair]}
-              </span>
-              <span className="place-report-count">{place.reportCounts.total} zgł.</span>
-            </button>
-          ))
+          places.map((place, index) => {
+            return (
+              <button
+                aria-pressed={selectedId === place.id}
+                className={`place-row ${selectedId === place.id ? 'selected' : ''}`}
+                key={place.id}
+                onClick={() => onSelect(place.id)}
+                type="button"
+              >
+                <span className="place-number poi-number">
+                  {String((page - 1) * pageSize + index + 1).padStart(2, '0')}
+                </span>
+                <span className="place-row-main">
+                  <strong>{place.name}</strong>
+                  <span>{place.address || place.descriptionPL}</span>
+                </span>
+                <span className={`access-badge ${place.wheelchairAccessible ? 'full' : 'none'}`}>
+                  <i />
+                  {place.wheelchairAccessible ? 'Dostępne' : 'Niedostępne'}
+                </span>
+              </button>
+            )
+          })
         )}
+      </div>
+      <div className="pagination">
+        <span>{firstItem}–{lastItem} z {total.toLocaleString('pl-PL')}</span>
+        <div>
+          <button
+            aria-label="Poprzednia strona"
+            disabled={page <= 1 || loading}
+            onClick={() => onPage(page - 1)}
+            type="button"
+          >
+            ‹
+          </button>
+          <span>Strona {page} / {pageCount}</span>
+          <button
+            aria-label="Następna strona"
+            disabled={page >= pageCount || loading}
+            onClick={() => onPage(page + 1)}
+            type="button"
+          >
+            ›
+          </button>
+        </div>
       </div>
     </section>
   )

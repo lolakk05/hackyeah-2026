@@ -32,12 +32,13 @@ A release build bakes this address in when you build, so rebuild after you chang
 Sent from the setup screen:
 
 ```json
-{ "duration_minutes": 60, "max_intermediate_stops": 2, "tolerance_percent": 15 }
+{ "duration_minutes": 120, "max_intermediate_stops": 4, "tolerance_percent": 15 }
 ```
 
 - **Start point:** "My location" adds `start_location` (from the phone's GPS). "Main Square" leaves it out.
 - **Accessibility:** wheelchair and no-stairs choices are **not sent**, because the planner doesn't support them yet and they would cause a 422. The app warns the user instead.
-- **Trip length:** limited to 5–360 minutes (up to 6 hours).
+- **Trip length:** limited to the planner's `duration_minutes` range from `GET /capabilities` (5–240 in the current Route Finder; 5–360 if the backend has no /capabilities).
+- **Number of stops:** `max_intermediate_stops` = about one per 30 minutes, at least 1 (so 3 places in total): 30 min → 3, 2 h → 6, 4 h → 10. Capped by `max_intermediate_stops` from `GET /capabilities` (10 now; 2 for older backends). The planner may return fewer if they don't fit the time.
 
 The response is converted by `planResponseToTrip()` in `route-finder.ts`:
 
@@ -69,11 +70,14 @@ Refreshes a place's details when its page opens.
 
 ## Not in Route Finder yet (local fallbacks)
 
+- `landmarks: '/pois?limit=200'`: every place for the **Places** screen (Route Finder `GET /pois` → `{ items: [RfPoi] }`). If it fails, the 8 sample landmarks are shown. Visited places are counted on the phone per user (from the stops reached).
+
+
 Set these in `ENDPOINTS` in `config.ts` once your other services exist:
 
 | Endpoint | Fallback until it exists |
 | --- | --- |
-| `ask: (id) => '/landmarks/' + id + '/ask'`: AI guide, `{ question, history } → { answer }` | Sample answers |
+| Pinek's AI chat: set `EXPO_PUBLIC_AI_GUIDE_URL` (AI service `POST /guide`, `{ question } → { answer }`, see `api/ai-guide.ts`). The place name and the last exchange are written into `question`; timeout 150 s | Sample answers |
 | `reports: '/reports'`: yes/no accessibility answers (`AccessibilityReport` in `types.ts`, includes the walked path) | Kept on the phone |
 
 Walking directions to a stop when the visitor is away from the planned line (for example, walking to the start) come from free OpenStreetMap foot routing.

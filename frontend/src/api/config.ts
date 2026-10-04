@@ -22,7 +22,14 @@ export const USE_MOCK_API = !process.env.EXPO_PUBLIC_API_URL;
 export const MOCK_DELAY_MS = 400;
 
 /** Route Finder planning options (see FRONTEND_INTEGRATION.md). */
-export const MAX_INTERMEDIATE_STOPS: 0 | 1 | 2 = 2;
+/**
+ * How many stops a trip gets: about one every 30 minutes, at least 3 in total
+ * (2 h → 6, 4 h → 10). The planner treats this as a maximum, so it can return fewer.
+ * Capped by the backend's own limit from GET /capabilities.
+ */
+export const MINUTES_PER_STOP = 30;
+/** Used when the backend has no /capabilities (older version: 0–2 extra stops, up to 6 h). */
+export const FALLBACK_CAPABILITIES = { maxIntermediateStops: 2, minMinutes: 5, maxMinutes: 360 };
 export const TOLERANCE_PERCENT = 15;
 /** The backend may work up to 40 s; allow for network overhead. */
 export const PLAN_TIMEOUT_MS = 50_000;
@@ -42,6 +49,8 @@ export const MAP_DATA_URL: string | undefined = undefined;
 export const ENDPOINTS = {
   /** Route Finder: POST { duration_minutes, start_location?, max_intermediate_stops?, tolerance_percent? } */
   planTrip: '/routes/plan',
+  /** Route Finder: GET limits (max_intermediate_stops, duration_minutes {min,max}) */
+  capabilities: '/capabilities',
   /** Route Finder: GET one place */
   poi: (id: string) => `/pois/${encodeURIComponent(id)}`,
   /**
@@ -50,6 +59,8 @@ export const ENDPOINTS = {
    */
   ask: undefined as ((id: string) => string) | undefined, // POST { question, history } → { answer }
   reports: undefined as string | undefined, // POST AccessibilityReport
+  /** All places for the "Places" screen: Route Finder GET /pois → { items: RfPoi[] } (or a plain list). */
+  landmarks: '/pois?limit=200' as string | undefined,
 };
 
 // ─── Sign-in server (Better Auth) ────────────────────────────

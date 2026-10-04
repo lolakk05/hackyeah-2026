@@ -53,7 +53,8 @@ export interface RfPlanRequest {
   start_location?: { latitude: number; longitude: number };
   start_poi_id?: string;
   category?: string;
-  max_intermediate_stops?: 0 | 1 | 2;
+  /** 0–10 (older backends: 0–2; see GET /capabilities) */
+  max_intermediate_stops?: number;
   tolerance_percent?: number;
 }
 

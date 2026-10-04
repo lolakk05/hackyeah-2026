@@ -17,6 +17,7 @@ import { CITY_PALETTE, createCityScene, type CityScene } from '@/map/city-scene'
 import { MAP_EXTENT, toLocal, type LatLng } from '@/map/geo';
 import { allLandmarkNamePatterns, placeLandmarks, type Placement } from '@/map/landmark-placement';
 import { EMPTY_MAP_DATA, loadMapData, type MapData, type OsmBuilding } from '@/map/osm';
+import { buildPresentation } from '@/map/presentation';
 
 export type StopState = 'done' | 'next' | 'later';
 
@@ -33,6 +34,15 @@ export interface CityMapHandle {
   /** Turn the camera to look along a compass bearing. */
   lookAlong: (bearingDegrees: number) => void;
   overview: () => void;
+  /** Glide to a reported problem and make its sign bigger (null = none). */
+  focusIssue: (id: string | null) => void;
+  /**
+   * Presentation mode: a 40 s camera show (fly-overs, orbits, zooms) along the
+   * route stops, then back to the previous view. onEnd runs when it finishes or
+   * is stopped (touching the map stops it).
+   */
+  playPresentation: (onEnd: () => void) => void;
+  stopPresentation: () => void;
 }
 
 interface Props {
@@ -92,6 +102,8 @@ export function CityMap3D({
   };
 
   const [rig] = useState(() => new CameraRig());
+  /** Camera view before zooming to a reported problem. */
+  const savedView = useRef<CameraRig['goal'] | null>(null);
   const size = useRef({ w: 1, h: 1 });
   const city = useRef<CityScene | null>(null);
   const camera = useRef<THREE.PerspectiveCamera | null>(null);
@@ -168,6 +180,30 @@ export function CityMap3D({
     flyTo: (p, distance) => rig.flyTo(toLocal(p), distance),
     lookAlong: (b) => rig.headingTo(b),
     overview: () => rig.flyTo(MAP_EXTENT.center, 2500, 0.35, THREE.MathUtils.degToRad(55)),
+    playPresentation: (onEnd) => {
+      city.current?.highlightIssue(null);
+      savedView.current = null;
+      const before = rig.saveView();
+      const stopsInOrder = latest.current.stops.map((st) => st.landmark.coordinates);
+      rig.playShow(buildPresentation(stopsInOrder, rig.azimuth), (finished) => {
+        if (finished) rig.restoreView(before); // glide back to where you were
+        onEnd();
+      });
+    },
+    stopPresentation: () => rig.stopShow(),
+    focusIssue: (id) => {
+      city.current?.highlightIssue(id);
+      const issue = id ? latest.current.issues.find((i) => i.id === id) : null;
+      if (issue) {
+        // remember the view from before the first zoom (not when hopping between signs)
+        savedView.current ??= rig.saveView();
+        // close enough to see it well; a steeper tilt so the card at the bottom doesn't hide it
+        rig.flyTo(toLocal(issue.coordinates), 230, undefined, THREE.MathUtils.degToRad(52));
+      } else if (savedView.current) {
+        rig.restoreView(savedView.current); // back to where you were
+        savedView.current = null;
+      }
+    },
   }));
 
   // Stop drawing while a place page covers the map; start again when it's back.
@@ -183,6 +219,7 @@ export function CityMap3D({
     running.current = true;
     return () => {
       running.current = false;
+      rig.stopShow();
       resume.current(); // a paused loop runs once more to free the renderer
       city.current?.dispose();
       city.current = null;

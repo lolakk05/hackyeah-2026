@@ -76,6 +76,7 @@ export default function WelcomeScreen() {
         <View style={styles.stats}>
           <LevelCard onPress={openProfile} />
           <View style={styles.row}>
+            <Tile icon="🏛️" label={s.places.title} onPress={() => router.push('/places')} />
             <Tile icon="🏆" label={s.profile.ranking} onPress={() => router.push('/ranking')} />
             <Tile icon="🎟️" label={s.profile.rewards} onPress={() => router.push('/rewards')} />
             <Tile icon="⚠️" label={s.issues.title} onPress={() => router.push('/reports')} />
@@ -179,7 +180,7 @@ const useStyles = themedStyles((t) => ({
   model: { flex: 1 },
   center: { textAlign: 'center' },
   stats: { gap: 12 },
-  row: { flexDirection: 'row', gap: 10 },
+  row: { flexDirection: 'row', gap: 8 },
   flex: { flex: 1 },
   buttons: { gap: 12, paddingTop: 8, paddingBottom: 16, width: '100%', maxWidth: 520, alignSelf: 'center' },
 }));
