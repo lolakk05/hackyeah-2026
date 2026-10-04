@@ -12,6 +12,20 @@ wózek, unikanie schodów), odpowiedź i aktualny stan realizacji opisuje
 
 ## Uruchomienie
 
+### Docker / VPS
+
+Z katalogu `services/route-finder`:
+
+```bash
+docker compose up -d --build --wait --wait-timeout 120
+```
+
+API: `http://ADRES_VPS:8000/docs`. Konfiguracja `.env`, aktualizacje, logi i limity
+dla VPS z 2 GB RAM: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+Instrukcja krok po kroku dla osoby wdrażającej: [docker.md](docker.md).
+
+### Lokalnie bez Dockera
+
 Wymagania: Python 3.12+ oraz `uv`. Polecenia wykonuj w `services/route-finder`:
 
 ```powershell
@@ -37,18 +51,19 @@ Invoke-RestMethod -Method Post -Uri 'http://127.0.0.1:8000/routes/plan' `
 
 Wystarczy podać czas. Domyślny start to najbliższy dostępny POI w okolicy Rynku
 Głównego. Można też wskazać `start_poi_id` z `/pois` albo `start_location`.
-Budżet obejmuje **sam marsz między punktami sieci OSRM**, bez zwiedzania i dojścia
-do startu. API nie przedłuża czasu sztucznie: zwraca rzeczywisty szacunek OSRM,
-niewykorzystany czas oraz `matches_target`. Maksymalnie dwa pośrednie POI są opcjonalne.
+Budżet obejmuje **sam marsz między punktami sieci OSRM**, w tym dojście od wybranego
+startu do pierwszego POI, bez zwiedzania. API zwraca rzeczywisty szacunek OSRM,
+niewykorzystany czas oraz `matches_target`. Domyślnie wybiera do ośmiu pośrednich POI.
 
 ## Jak działa dobór trasy
 
-1. Wybór startowego POI z RAM; dla lokalizacji limit odległości wynosi 2 km.
+1. Wybór startowego POI z RAM; lokalizacja użytkownika ponad 1,5 km od Rynku
+   jest pomijana na rzecz początku na Rynku, z ostrzeżeniem w odpowiedzi.
 2. Wyszukiwanie kandydatów w promieniu `min(50000, czas_w_sekundach * 2)` metrów.
    Odrzucane są cele bliższe niż 20 m od startu oraz `access=private/no`, `foot=no`.
 3. Próbkowanie do 24 celów z całego zakresu odległości, aby ograniczyć koszt publicznego API.
 4. Jedno zapytanie `/table/v1/foot/` o macierz czasów pieszych.
-5. Ocena kolejności z 0–2 przystankami, bez powtarzania ID. Preferowane są warianty
+5. Ocena kolejności z dodatkowymi przystankami, bez powtarzania ID. Preferowane są warianty
    mieszczące się w tolerancji, następnie więcej POI, następnie dłuższy marsz.
 6. Potwierdzenie finalnego czasu i geometrii przez `/route/v1/foot/`; domyślnie do 3 prób.
    Czas zaakceptowanej trasy nie przekracza budżetu.

@@ -186,6 +186,8 @@ zweryfikować działanie obu usług Table/Route oraz przetestować znane bariery
 
 ## Uruchomienie i sprawdzanie
 
+Uruchomienie w Dockerze, w tym na małym VPS, opisuje [DEPLOYMENT.md](DEPLOYMENT.md).
+
 Polecenia z katalogu `services/route-finder`, Python 3.12+ i `uv`:
 
 ```powershell
@@ -239,6 +241,7 @@ ograniczonych. Znaczenie historycznego przykładu opisuje [spis dokumentacji](RE
 | `tests/__init__.py` | Oznaczenie pakietu testów. |
 | `hardcoded-zgloszenie/` | Niezależne API symulacji; własną strukturę opisuje jego README. |
 | `pyproject.toml`, `uv.lock` | Zależności, konfiguracja narzędzi i przypięte wersje. |
+| `Dockerfile`, `.dockerignore`, `compose.yaml`, `.env.example` | Budowanie i konfiguracja kontenera; opis w `DEPLOYMENT.md`. |
 | `test_main.http` | Ręczne żądania HTTP. |
 | `AGENTS.md` | Zasady pracy nad serwisem. |
 | `README.md` | Szybkie wejście do repozytorium. |
