@@ -1,40 +1,39 @@
-export type WheelchairAccess = 'full' | 'partial' | 'none'
-
-export interface PlaceAccessibility {
-  wheelchair: WheelchairAccess
-  stepFree: boolean
-  accessibleToilet: boolean
-  audioGuide: boolean
-  hearingSupport: boolean
-  notes: string
-}
-
-export interface PlaceReportCounts {
-  accessible: number
-  inaccessible: number
-  total: number
-}
-
 export interface AdminPlace {
   id: string
   name: string
-  tagline: string
-  description: string
-  coordinates: { latitude: number; longitude: number }
-  accessibility: PlaceAccessibility
-  reportCounts: PlaceReportCounts
+  descriptionPL: string
+  descriptionEN: string
+  timeToVisit: number
+  photos: string[]
+  hasStairs: boolean
+  wheelchairAccessible: boolean
+  hasAccessibleToilet: boolean
+  price: string
+  address: string
+  latitude: number
+  longitude: number
+  openingHours: PlaceOpeningHour[]
+}
+
+export interface PlaceOpeningHour {
+  id: string
+  dayOfWeek: number
+  openTime: string | null
+  closeTime: string | null
+  isClosed: boolean
 }
 
 export interface PlaceFormValues {
   name: string
-  tagline: string
-  description: string
+  descriptionPL: string
+  descriptionEN: string
+  timeToVisit: number
+  photos: string[]
+  hasStairs: boolean
+  wheelchairAccessible: boolean
+  hasAccessibleToilet: boolean
+  price: string
+  address: string
   latitude: number
   longitude: number
-  wheelchair: WheelchairAccess
-  stepFree: boolean
-  accessibleToilet: boolean
-  audioGuide: boolean
-  hearingSupport: boolean
-  notes: string
 }

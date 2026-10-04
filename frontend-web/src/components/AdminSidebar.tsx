@@ -5,15 +5,18 @@ type Section = 'places' | 'reports'
 export function AdminSidebar({
   activeSection,
   onNavigate,
+  onSignOut,
+  signingOut,
 }: {
   activeSection: Section
   onNavigate: (section: Section) => void
+  onSignOut: () => void
+  signingOut: boolean
 }) {
   return (
     <aside className="sidebar">
       <a className="brand" href="#" aria-label="Dostępny Kraków, strona główna">
-        <span className="brand-mark"><Icon name="wheelchair" size={21} /></span>
-        <span className="brand-name">otwarty<span>Kraków</span></span>
+        <img className="brand-logo" src="/logo_spacerniak.svg" alt="Spacer.io" />
       </a>
 
       <div className="sidebar-caption">ZARZĄDZANIE</div>
@@ -37,12 +40,25 @@ export function AdminSidebar({
       </nav>
 
       <div className="sidebar-bottom">
-        <div className="admin-avatar">AK</div>
-        <div className="admin-meta">
-          <strong>Administrator</strong>
-          <span>Panel miasta</span>
+        <div className="sidebar-admin-info">
+          <div className="admin-avatar">AD</div>
+          <div className="admin-meta">
+            <strong>Administrator</strong>
+            <span>Zarządzanie miejscami</span>
+          </div>
+          <span className="online-indicator" aria-label="Aktywne połączenie" />
         </div>
-        <span className="online-indicator" aria-label="Aktywne połączenie" />
+        <button
+          aria-label="Wyloguj się"
+          className="sidebar-logout"
+          disabled={signingOut}
+          onClick={onSignOut}
+          title="Wyloguj się"
+          type="button"
+        >
+          <Icon name="logout" size={15} />
+          <span>Wyloguj się</span>
+        </button>
       </div>
     </aside>
   )
