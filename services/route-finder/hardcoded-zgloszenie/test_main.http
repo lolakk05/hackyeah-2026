@@ -1,0 +1,43 @@
+@baseUrl = http://127.0.0.1:8010
+
+### JSON service metadata
+GET {{baseUrl}}/
+
+### Both recorded Rynek-Wawel routes and active reports
+GET {{baseUrl}}/demo/scenario
+
+### Reset before starting the presentation
+POST {{baseUrl}}/demo/reset
+
+### Baseline: Grodzka, 934.1 m and 747.4 s
+POST {{baseUrl}}/demo/routes
+Content-Type: application/json
+
+{"mobility":"walking"}
+
+### Simulate stairs at the fixed Grodzka obstacle
+POST {{baseUrl}}/demo/reports
+Content-Type: application/json
+
+{"kind":"stairs","description":"Schody bez podjazdu — symulacja"}
+
+### Wheelchair rules choose Planty; 20 minutes is insufficient (within_budget=false)
+POST {{baseUrl}}/demo/routes
+Content-Type: application/json
+
+{"mobility":"wheelchair","duration_minutes":20}
+
+### Walking ignores stairs; adding a road block changes both profiles
+POST {{baseUrl}}/demo/reports
+Content-Type: application/json
+
+{"kind":"blocked_road","description":"Remont — symulacja"}
+
+### List reports; copy an id to delete a single report
+GET {{baseUrl}}/demo/reports
+
+### Optional type filter
+GET {{baseUrl}}/demo/reports?kind=stairs
+
+### Replace the placeholder with an id from POST/GET reports (204, no body)
+DELETE {{baseUrl}}/demo/reports/REPORT_ID
