@@ -1,6 +1,6 @@
 import { createContext, use, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 
-import { fetchLandmarks, planTrip, submitAccessibilityReport } from '@/api/client';
+import { fetchAllLandmarks, fetchLandmarks, planTrip, submitAccessibilityReport } from '@/api/client';
 import { MAP_DATA_URL } from '@/api/config';
 import type { AccessibilityReport, Landmark, LatLng, ReportCategory, TripPlan, TripPreferences } from '@/api/types';
 import { useI18n } from '@/i18n/language-context';
@@ -31,6 +31,11 @@ interface JourneyState {
   /** XP earned on the current trip. */
   tripXp: number;
   isFinished: boolean;
+
+  /** Every place for the "Places" screen. */
+  allPlaces: Landmark[];
+  placesState: 'idle' | 'loading' | 'ready' | 'error';
+  loadAllPlaces: () => Promise<void>;
 
   /** Landmarks shown on the roadmap: the planned stops, or every landmark before planning. */
   roadmap: Landmark[];
@@ -68,10 +73,24 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
   const [catalog, setLandmarks] = useState<Landmark[]>([]);
   /** Places returned with the current plan (from the route planner). */
   const [planLandmarks, setPlanLandmarks] = useState<Landmark[]>([]);
+  /** Every place (the "Places" screen), loaded when that screen opens. */
+  const [allPlaces, setAllPlaces] = useState<Landmark[]>([]);
+  const [placesState, setPlacesState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const landmarks = useMemo(() => {
     const ids = new Set(planLandmarks.map((l) => l.id));
-    return [...planLandmarks, ...catalog.filter((l) => !ids.has(l.id))];
-  }, [catalog, planLandmarks]);
+    const rest = [...catalog, ...allPlaces].filter((l) => !ids.has(l.id) && (ids.add(l.id), true));
+    return [...planLandmarks, ...rest];
+  }, [catalog, planLandmarks, allPlaces]);
+
+  const loadAllPlaces = useCallback(async () => {
+    setPlacesState('loading');
+    try {
+      setAllPlaces(await fetchAllLandmarks());
+      setPlacesState('ready');
+    } catch {
+      setPlacesState('error');
+    }
+  }, []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -96,6 +115,11 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
       cancelled = true;
     };
   }, [reloadKey, lang]);
+
+  useEffect(() => {
+    setAllPlaces([]);
+    setPlacesState('idle');
+  }, [lang]);
 
   // Start downloading the 3D map's buildings early, so the map opens fast later.
   useEffect(() => {
@@ -218,6 +242,9 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
 
   const value: JourneyState = {
     landmarks,
+    allPlaces,
+    placesState,
+    loadAllPlaces,
     loading,
     error,
     reload: () => setReloadKey((k) => k + 1),

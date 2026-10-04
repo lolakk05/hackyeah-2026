@@ -49,6 +49,7 @@ export default function RootLayout() {
                   <Stack.Screen name="ranking" />
                   <Stack.Screen name="rewards" />
                   <Stack.Screen name="reports" />
+                  <Stack.Screen name="places" />
                   <Stack.Screen name="setup" />
                   <Stack.Screen name="roadmap" />
                   {/* no swipe-back on the map: one-finger drags rotate the camera */}

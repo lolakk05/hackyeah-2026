@@ -5,7 +5,7 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { RouteFinderError } from '@/api/client';
-import { USE_MOCK_API } from '@/api/config';
+import { USE_MOCK_API, MINUTES_PER_STOP } from '@/api/config';
 import { planTripLocally } from '@/api/trip-planner';
 import type { TripPreferences } from '@/api/types';
 import { DuoButton } from '@/components/duo/duo-button';
@@ -134,7 +134,10 @@ export default function SetupScreen() {
           ) : (
             <>
               <DuoText variant="heading">
-                🗺️ {fmt(s.setup.walkPreview, { time: formatDuration(prefs.durationMinutes) })}
+                🗺️ {fmt(s.setup.walkPreview, {
+                  time: formatDuration(prefs.durationMinutes),
+                  n: 2 + Math.min(10, Math.max(1, Math.round(prefs.durationMinutes / MINUTES_PER_STOP))),
+                })}
               </DuoText>
               <DuoText variant="caption" color={t.textMuted}>
                 {s.setup.walkOnlyNote}
