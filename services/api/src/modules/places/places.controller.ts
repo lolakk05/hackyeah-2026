@@ -10,27 +10,32 @@ import {
 import { PlacesService } from './places.service';
 import { CreatePlaceDto } from './dto/create-place.dto';
 import { UpdatePlaceDto } from './dto/update-place.dto';
+import { AllowAnonymous, Roles } from '@thallesp/nestjs-better-auth';
 
 @Controller('places')
 export class PlacesController {
   constructor(private readonly placesService: PlacesService) {}
 
   @Post()
+  @Roles(['admin'])
   async create(@Body() createPlaceDto: CreatePlaceDto) {
     return await this.placesService.create(createPlaceDto);
   }
 
   @Get()
+  @AllowAnonymous()
   async findAll() {
     return await this.placesService.findAll();
   }
 
   @Get(':id')
+  @AllowAnonymous()
   async findOne(@Param('id') id: string) {
     return await this.placesService.findOne(id);
   }
 
   @Patch(':id')
+  @Roles(['admin'])
   async update(
     @Param('id') id: string,
     @Body() updatePlaceDto: UpdatePlaceDto,
@@ -39,6 +44,7 @@ export class PlacesController {
   }
 
   @Delete(':id')
+  @Roles(['admin'])
   async remove(@Param('id') id: string) {
     return await this.placesService.remove(id);
   }

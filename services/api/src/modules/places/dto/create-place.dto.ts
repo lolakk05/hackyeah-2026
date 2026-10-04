@@ -12,23 +12,20 @@ import { Type } from 'class-transformer';
 
 export class CreatePlaceDto {
   @IsString()
-  name: string;
-
-  @IsString()
-  description: string;
+  name!: string;
 
   @IsInt()
-  timeToVisit: number;
+  timeToVisit!: number;
 
   @IsArray()
   @IsString({ each: true })
-  photos: string[];
+  photos!: string[];
 
   @IsString()
-  descriptionPL: string;
+  descriptionPL!: string;
 
   @IsString()
-  descriptionEN: string;
+  descriptionEN!: string;
 
   @IsBoolean()
   @IsOptional()
@@ -43,16 +40,16 @@ export class CreatePlaceDto {
   hasAccessibleToilet?: boolean;
 
   @IsString()
-  price: string;
+  price!: string;
 
   @IsString()
-  address: string;
+  address!: string;
 
   @IsNumber()
-  latitude: number;
+  latitude!: number;
 
   @IsNumber()
-  longitude: number;
+  longitude!: number;
 
   @IsArray()
   @ValidateNested({ each: true })

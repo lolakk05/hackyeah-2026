@@ -95,7 +95,7 @@ const seedPlaces: Landmark[] = [
     suggestedQuestions: [],
   },
   {
-    id: 'wawel-castle',
+    id: 'wawel-castle', 
     name: 'Zamek Królewski na Wawelu',
     tagline: 'Królewski zamek na wzgórzu',
     description: 'Dawna siedziba polskich królów z renesansowym dziedzińcem, komnatami i skarbcem.',

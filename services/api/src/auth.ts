@@ -2,9 +2,8 @@ import "dotenv/config";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "@better-auth/prisma-adapter";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from '../generated/prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { admin } from "better-auth/plugins";
-import { adminClient } from "better-auth/client/plugins";
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL,
@@ -31,7 +30,6 @@ export const auth = betterAuth({
     ],
 
   plugins: [
-    admin(),
-    adminClient()
+    admin()
   ]
 });
