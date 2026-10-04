@@ -32,5 +32,6 @@ Każdy temat ma jedno miejsce utrzymania; pozostałe pliki odsyłają do niego.
 [example-plan.json](example-plan.json) jest **historyczną odpowiedzią poprzedniego
 kontraktu**. Nie zawiera wszystkich obecnych pól, w szczególności `start`, `stops`,
 `accessibility`, `bbox` i rozszerzonych odcinków nawigacji. Nie używaj go jako
-kompletnego mocka aktualnego `PlanResponse`. Aktualne typy opisuje `API.md` i
+kompletnego mocka aktualnego `PlanResponse`. Zawiera też POI usunięte przy selekcji
+atrakcji centrum opisanej w `DATA.md`. Aktualne typy opisuje `API.md` i
 generowany `/openapi.json`; sposób pozyskania nowej odpowiedzi podaje `OPIS_API.md`.

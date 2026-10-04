@@ -40,7 +40,7 @@ JSON jest kodowany w UTF-8. Nieznane pola modeli żądań są odrzucane.
 
 | Pole | Typ i domyślnie | Reguły |
 |---|---|---|
-| `duration_minutes` | number, wymagane | Skończona liczba 5–240; dopuszcza ułamki. |
+| `duration_minutes` | number, wymagane | Skończona liczba 5–360 (do 6 godzin); dopuszcza ułamki. |
 | `start_mode` | `market` / `user` / `poi` / null, domyślnie null | Bez wartości tryb jest wywnioskowany z pól startu. |
 | `user_location` | Location/null, domyślnie null | Wymagane dla `user`. |
 | `start_poi_id` | string/null, domyślnie null | ID z katalogu, 1–100 znaków; wymagane dla `poi`. |
@@ -48,8 +48,9 @@ JSON jest kodowany w UTF-8. Nieznane pola modeli żądań są odrzucane.
 | `wheelchair` | boolean, domyślnie false | Wybiera profil `wheelchair`, także przy `avoid_stairs=false`. |
 | `avoid_stairs` | boolean, domyślnie false | Bez wózka wybiera profil `step_free`. |
 | `category` | string/null, domyślnie null | 1–100 znaków po obcięciu spacji; filtruje cele i przystanki, nie pierwszy POI. |
-| `max_intermediate_stops` | integer, domyślnie 5 | **0–10**, maksimum dodatkowych POI między pierwszym a ostatnim. |
+| `max_intermediate_stops` | integer, domyślnie 8 | **0–10**, maksimum dodatkowych POI między pierwszym a ostatnim. |
 | `tolerance_percent` | number, domyślnie 15 | Skończona liczba 0–50; dozwolony niedobór czasu, nie przekroczenie budżetu. |
+| `randomize` | boolean, domyślnie true | Losowy dobór kandydatów i podobnie ocenionych wariantów; omija odczyt i zapis cache. |
 
 `Location` wymaga skończonych liczb: `latitude` −90..90, `longitude` −180..180.
 Bool wysyłaj jako `true`/`false`; Pydantic akceptuje również liczby 0/1.
@@ -67,6 +68,20 @@ Odcinek od startu dopasowanego do sieci do tego POI jest częścią planu. Odleg
 od surowej pozycji GPS do sieci nie jest dodawana jako sztuczny odcinek.
 `max_intermediate_stops=10` pozwala na do 12 POI; start użytkownika nie jest POI.
 Nie ma gwarancji uzyskania maksymalnej liczby miejsc ani powrotu do początku.
+
+**Losowanie (domyślne):** pominięcie pola lub `randomize=true` wykonuje nowe planowanie
+również dla identycznego requestu. Początek, kategoria, limity i preferencje dostępności
+pozostają zachowane.
+Udany wynik tego trybu ma `source=osrm`. Powtórzenie trasy jest możliwe, szczególnie
+przy małej liczbie dostępnych wariantów; nie prowadzimy historii poprzednich losowań.
+Żądanie wymaga dostępnego OSRM i nadal podlega limiterowi oraz błędom 503.
+Przy `randomize=false` identyczne żądania mogą korzystać z cache.
+
+Wyłączenie losowania i korzystanie z cache:
+
+```json
+{"duration_minutes":45,"randomize":false}
+```
 
 **Wybór profilu:**
 
@@ -86,6 +101,12 @@ Rynek, standardowy spacer:
 
 ```json
 {"duration_minutes":30,"start_mode":"market"}
+```
+
+Ponowne losowanie atrakcji dla spaceru z Rynku:
+
+```json
+{"duration_minutes":45,"start_mode":"market","randomize":true}
 ```
 
 Pozycja użytkownika, więcej miejsc po drodze:

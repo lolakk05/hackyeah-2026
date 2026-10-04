@@ -12,7 +12,7 @@ from main import create_app
 from tests.conftest import POINTS, osrm_response
 
 
-def test_plan_time_only_and_cache(client_factory):
+def test_plan_with_randomization_disabled_and_cache(client_factory):
     calls = []
 
     def handle(request):
@@ -20,8 +20,9 @@ def test_plan_time_only_and_cache(client_factory):
         return osrm_response(request)
 
     with client_factory(handle) as client:
-        first = client.post("/routes/plan", json={"duration_minutes": 10}).json()
-        second = client.post("/routes/plan", json={"duration_minutes": 10}).json()
+        body = {"duration_minutes": 10, "randomize": False}
+        first = client.post("/routes/plan", json=body).json()
+        second = client.post("/routes/plan", json=body).json()
     assert first["start_poi"]["id"] == "p0"
     assert first["end_poi"]["id"] == "p2"
     assert [p["id"] for p in first["intermediate_pois"]] == ["p1"]
@@ -68,12 +69,37 @@ def test_final_route_cannot_exceed_budget(client_factory):
     assert response.json()["detail"]["code"] == "no_route_within_budget"
 
 
+@pytest.mark.parametrize("minutes", [241, 360])
+def test_extended_duration_budget_is_accepted(client_factory, minutes):
+    with client_factory() as client:
+        response = client.post("/routes/plan", json={"duration_minutes": minutes})
+    assert response.status_code == 200
+    assert response.json()["requested_duration_s"] == minutes * 60
+    assert response.json()["duration_s"] <= minutes * 60
+
+
+def test_planner_limits_are_published_in_capabilities_and_openapi(client_factory):
+    with client_factory() as client:
+        capabilities = client.get("/capabilities").json()
+        schema = client.get("/openapi.json").json()
+    assert capabilities["duration_minutes"] == {"min": 5, "max": 360}
+    assert capabilities["default_intermediate_stops"] == 8
+    assert capabilities["max_intermediate_stops"] == 10
+    duration = schema["components"]["schemas"]["PlanRequest"]["properties"]["duration_minutes"]
+    assert duration["minimum"] == 5
+    assert duration["maximum"] == 360
+    stops = schema["components"]["schemas"]["PlanRequest"]["properties"]["max_intermediate_stops"]
+    assert stops["default"] == 8
+    assert stops["maximum"] == 10
+
+
 @pytest.mark.parametrize(
     "body",
     [
         {},
         {"duration_minutes": 4},
-        {"duration_minutes": 241},
+        {"duration_minutes": 361},
+        {"duration_minutes": 360.01},
         {"duration_minutes": 10, "max_intermediate_stops": 11},
         {"duration_minutes": 10, "tolerance_percent": -1},
         {"duration_minutes": 10, "start_location": {"latitude": 100, "longitude": 19}},
@@ -279,15 +305,16 @@ def test_cache_expiry_and_rate_limited_fallback(client_factory):
         return osrm_response(request)
 
     with client_factory(handler) as client:
-        assert client.post("/routes/plan", json={"duration_minutes": 10}).status_code == 200
-        assert client.post("/routes/plan", json={"duration_minutes": 11}).status_code == 503
-        cached = client.post("/routes/plan", json={"duration_minutes": 10})
+        body = {"duration_minutes": 10, "randomize": False}
+        assert client.post("/routes/plan", json=body).status_code == 200
+        assert client.post("/routes/plan", json={**body, "duration_minutes": 11}).status_code == 503
+        cached = client.post("/routes/plan", json=body)
         assert cached.json()["source"] == "cache"
         assert len(calls) == 3
         cache = client.app.state.planner._cache
         key = next(iter(cache))
         cache[key] = (time.monotonic() - 4000, cache[key][1])
-        assert client.post("/routes/plan", json={"duration_minutes": 10}).status_code == 503
+        assert client.post("/routes/plan", json=body).status_code == 503
         assert len(calls) == 3
 
 

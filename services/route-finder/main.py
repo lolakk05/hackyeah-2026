@@ -74,8 +74,8 @@ def create_app(
         config = request.app.state.settings
         return {
             "max_intermediate_stops": 10,
-            "default_intermediate_stops": 5,
-            "duration_minutes": {"min": 5, "max": 240},
+            "default_intermediate_stops": 8,
+            "duration_minutes": {"min": 5, "max": 360},
             "origin_snap_radius_m": config.origin_snap_radius_m,
             "navigation_steps": True,
             "profiles": {
@@ -216,16 +216,18 @@ def create_app(
         routing_profile_not_configured; nie jest zastępowany zwykłym profilem pieszym.
 
         Planer wybiera do 24 kandydatów z RAM, pobiera macierz czasów OSRM i sprawdza
-        warianty z 0–10 punktami pośrednimi (domyślnie 5) przez ograniczone beam search.
+        warianty z 0–10 punktami pośrednimi (domyślnie 8) przez ograniczone beam search.
         Preferuje trasy w tolerancji, potem więcej POI,
         następnie dłuższy marsz. Finalną geometrię i czas potwierdza /route/v1/foot/.
+        Domyślnie randomize=true losuje kandydatów i podobnie ocenione warianty, pomijając cache;
+        punkt startowy, kategoria, budżet i ograniczenia dostępności są zachowane.
         steps=true dostarcza manewry, geometrię kroków i odcinków. stops ma kolejność,
         dopasowane lokalizacje i narastające czasy dotarcia. Punkt wejściowy może zostać
         dopasowany do sieci (domyślnie do 25 m); przesunięcie jest jawne w start.
         Zwrócony czas nigdy nie przekracza budżetu. Gdy trasa jest zbyt krótka,
         matches_target=false. Dobór jest heurystyczny, bez gwarancji globalnego optimum.
 
-        Udane plany są przechowywane w cache RAM (domyślnie 1 h); source=cache oznacza
+        Udane plany bez randomize są przechowywane w cache RAM (domyślnie 1 h); source=cache oznacza
         ponowne użycie planu dla identycznego żądania. Po 429 respektowany jest Retry-After.
         Bez potwierdzonej trasy lub cache zwracane jest 503, a nie geometria w linii prostej.
         Jednocześnie może powstawać jeden nowy plan na proces; inny otrzymuje 503 planner_busy.
