@@ -1,7 +1,7 @@
 import { IsString, IsInt, IsBoolean, IsOptional } from 'class-validator';
 export class CreatePlaceOpeningHoursDto {
   @IsInt()
-  dayOfWeek: number;
+  dayOfWeek!: number;
 
   @IsString()
   @IsOptional()
