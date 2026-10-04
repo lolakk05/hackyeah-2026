@@ -1,0 +1,32 @@
+services:
+  route-finder:
+    build:
+      context: .
+      target: runtime
+    image: krakow-route-finder:local
+    restart: unless-stopped
+    init: true
+    ports:
+      - "${ROUTE_FINDER_BIND:-0.0.0.0}:${ROUTE_FINDER_PORT:-8000}:8000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      CACHE_SIZE: "${CACHE_SIZE:-32}"
+      CORS_ALLOW_ORIGINS: "${CORS_ALLOW_ORIGINS-*}"
+    mem_limit: "${ROUTE_FINDER_MEMORY_LIMIT:-512m}"
+    memswap_limit: "${ROUTE_FINDER_MEMORY_LIMIT:-512m}"
+    pids_limit: 128
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

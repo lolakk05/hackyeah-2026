@@ -10,12 +10,14 @@ Każdy temat ma jedno miejsce utrzymania; pozostałe pliki odsyłają do niego.
 | [FRONTEND_INTEGRATION.md](FRONTEND_INTEGRATION.md) | Frontend: ekrany, stany, mapa, roadmapa, prowadzenie i prezentacja błędów. | Zachowanie klienta. |
 | [OPIS_API.md](OPIS_API.md) | Backend i utrzymanie: architektura, algorytmy, konfiguracja, uruchomienie i pliki. | Obliczenia oraz ustawienia procesu. |
 | [DATA.md](DATA.md) | Dane: źródło POI, zakres eksportu, transformacje, odświeżanie i licencja. | Informacje o zbiorze. |
+| [DEPLOYMENT.md](DEPLOYMENT.md) | Operator VPS: konfiguracja Docker/Compose, limity zasobów i cykl życia. | Techniczne ustawienia kontenera. |
+| [docker.md](../docker.md) | Osoba wdrażająca: od SSH do działającego API, aktualizacje i diagnostyka. | Komendy wdrożenia krok po kroku. |
 
 ## Zasady utrzymania
 
 - Pełne requesty, tabele pól, wartości domyślne i kody błędów są tylko w `API.md`.
-- Zmienne środowiskowe i polecenia uruchomienia są tylko w `OPIS_API.md`;
-  import POI jest opisany w `DATA.md`.
+- Ustawienia aplikacji i lokalne uruchomienie są w `OPIS_API.md`; konfiguracja
+  kontenera w `DEPLOYMENT.md`, komendy wdrożenia w `../docker.md`, import POI w `DATA.md`.
 - Opis ekranu może wskazać nazwę pola, ale odsyła do kontraktu po jego zakres i typ.
 - Zmiana funkcjonalności wymaga aktualizacji dokumentu odpowiedzialnego za ten temat,
   a nie kopiowania całego opisu do pozostałych plików.

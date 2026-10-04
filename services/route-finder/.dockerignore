@@ -1,0 +1,14 @@
+# Only runtime sources, the dataset and locked dependency manifests enter the build.
+**
+!Dockerfile
+!.dockerignore
+!pyproject.toml
+!uv.lock
+!main.py
+!config.py
+!models.py
+!spatial.py
+!routing.py
+!planner.py
+!localization.py
+!krakow_pois.geojson
