@@ -37,6 +37,7 @@ służy do wyboru kandydatów; odległość spaceru pochodzi później z sieci O
 1. Model normalizuje tryb startu i starszy alias lokalizacji. Router sprawdza,
    czy istnieje konfiguracja żądanego profilu.
 2. Planer szuka poprawnego cache, a przy jego braku rezerwuje blokadę nowego planowania.
+   Tryb losowania omija cache i zawsze rezerwuje nowe planowanie.
 3. Pierwszy POI pochodzi z podanego ID albo wyszukiwania blisko punktu wejściowego.
    POI z `access=private/no` lub `foot=no` są pomijane. Dla wózka dodatkowo odrzucane
    są `wheelchair=no/limited`; oba ograniczone profile odrzucają POI z `highway=steps`.
@@ -44,6 +45,8 @@ służy do wyboru kandydatów; odległość spaceru pochodzi później z sieci O
 4. Promień kandydatów wynosi `min(50000, duration_minutes * 60 * 2)` metrów.
    Odrzucane są identyczne ID i cele bliższe niż 20 m od pierwszego POI. Jeśli zbiór
    jest większy od limitu, wybierana jest próbka z całego uporządkowanego zakresu.
+   Przy losowaniu zamiast niej wybierana jest losowa próbka bez zwracania, najwyżej
+   do limitu kandydatów. Pierwszy POI nie jest losowany.
 5. Gdy wejściowy start różni się współrzędnymi od pierwszego POI, staje się osobnym
    pierwszym węzłem obliczeń. Obowiązkowy początek ścieżki to wtedy origin → pierwszy POI.
 6. OSRM Table dostarcza macierz czasów dla wszystkich wybranych węzłów w tym samym
@@ -54,6 +57,10 @@ służy do wyboru kandydatów; odległość spaceru pochodzi później z sieci O
    Osobno przechowywane są najwyżej 256 najlepiej ocenionych wyników.
 8. Ranking preferuje wariant w tolerancji, potem większą liczbę POI, potem dłuższy
    czas. Poza tolerancją preferuje najdłuższy wariant mieszczący się w budżecie.
+   W trybie losowania tasowana jest grupa podobnych wyników: z tym samym statusem
+   dopasowania czasu i czasem co najmniej 90% najlepszego wariantu. Jeśli najlepszy
+   wariant mieści się w tolerancji, grupa zachowuje również jego liczbę POI.
+   Pozostałe warianty są zachowane za tą grupą jako kolejne opcje do sprawdzenia.
 9. Ograniczona liczba najlepszych wariantów trafia do OSRM Route z `steps=true`,
    `overview=full`, `geometries=geojson`. Akceptowany jest dodatni czas nieprzekraczający budżetu.
 10. Planer buduje odcinki z geometrii kroków, przypisuje waypointy do POI,
@@ -103,6 +110,10 @@ Cache udanych planów ma ograniczoną pojemność, TTL i klucz znormalizowanego 
 w tym flagi profilu. Działa też podczas czasowej awarii OSRM, ale nie używa wygasłych
 wpisów. Nowy plan powstaje jeden na proces; odczyty katalogu i trafienia cache nie
 muszą czekać na jego zakończenie. Wszystkie te mechanizmy są lokalne dla procesu.
+Losowe plany nie są odczytywane ani zapisywane w cache. Po awarii nie podstawiamy
+wcześniejszej trasy zamiast żądanego losowania; limity zapytań pozostają wspólne.
+Awaryjne warianty bez Table nadal są rankowane według heurystyki odległości,
+choć pochodzą z wylosowanej puli kandydatów.
 
 ## Konfiguracja
 
@@ -184,7 +195,9 @@ ograniczonych. Znaczenie historycznego przykładu opisuje [spis dokumentacji](RE
 | `scripts/smoke_plan.py` | Opcjonalny test planera z żywym OSRM. |
 | `tests/conftest.py` | Tymczasowe POI i odpowiedzi transportu testowego. |
 | `tests/test_api.py` | Integracja HTTP, routing, budżet, cache, błędy i współbieżność. |
-| `tests/test_spatial.py` | Odległości, walidacja zbioru, ścieżki i import danych. |
+| `tests/test_random_planning.py` | Losowanie kandydatów i wariantów, zachowanie filtrów i pomijanie cache. |
+| `tests/test_spatial.py` | Odległości, walidacja zbioru, ścieżki i metadane importu. |
+| `tests/test_import_pois.py` | Promień selekcji, filtrowanie atrakcji, duplikaty i bezpieczny zapis. |
 | `tests/__init__.py` | Oznaczenie pakietu testów. |
 | `hardcoded-zgloszenie/` | Niezależne API symulacji; własną strukturę opisuje jego README. |
 | `pyproject.toml`, `uv.lock` | Zależności, konfiguracja narzędzi i przypięte wersje. |

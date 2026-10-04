@@ -29,15 +29,55 @@ export interface OsmBuilding {
   kind: 'church' | 'public' | 'house' | 'roof';
 }
 
+/** A flat polygon with optional holes (local metres). */
+export interface Area {
+  ring: P[];
+  holes: P[][];
+}
+
+export type GreenKind = 'park' | 'wood' | 'garden' | 'cemetery' | 'grass';
+
+export interface Road {
+  path: P[];
+  /** Drawn width in metres. */
+  width: number;
+}
+
 export interface MapData {
   buildings: OsmBuilding[];
-  water: P[][];
-  green: P[][];
+  water: Area[];
+  green: (Area & { kind: GreenKind })[];
+  /** Streets drawn on the ground. */
+  roads: Road[];
+  /** Squares and pedestrian areas (Main Square…). */
+  plazas: Area[];
+  /** Tree positions, planted in parks and green areas when the data is parsed. */
+  trees: P[];
   /** Named non-building features (statues, bridges) used to place landmarks. */
   named: { name: string; points: P[] }[];
 }
 
-export const EMPTY_MAP_DATA: MapData = { buildings: [], water: [], green: [], named: [] };
+export const EMPTY_MAP_DATA: MapData = { buildings: [], water: [], green: [], roads: [], plazas: [], trees: [], named: [] };
+
+/** Most trees drawn (one instanced mesh, so this stays cheap). */
+const MAX_TREES = 3500;
+
+const ROAD_WIDTH: Record<string, number> = {
+  motorway: 16,
+  trunk: 15,
+  primary: 14,
+  secondary: 12,
+  tertiary: 10,
+  motorway_link: 8,
+  trunk_link: 8,
+  primary_link: 8,
+  secondary_link: 8,
+  tertiary_link: 8,
+  unclassified: 8,
+  residential: 8,
+  living_street: 6,
+  pedestrian: 7,
+};
 
 const OVERPASS_SERVERS = [
   'https://overpass-api.de/api/interpreter',
@@ -49,15 +89,20 @@ const OVERPASS_SERVERS = [
 function overpassQuery(namePatterns: string[]): string {
   const b = `${MAP_BOUNDS.south},${MAP_BOUNDS.west},${MAP_BOUNDS.north},${MAP_BOUNDS.east}`;
   const names = namePatterns.join('|');
-  // Only ways (plus the river relation): relations are slow to assemble on the server.
-  return `[out:json][timeout:30];
+  const roads = Object.keys(ROAD_WIDTH).join('|');
+  // Mostly ways (relations are slow to assemble on the server): only the river and big parks.
+  return `[out:json][timeout:60];
 (
   way["building"](${b});
   way["natural"="water"](${b});
   relation["natural"="water"](${b});
   way["waterway"="riverbank"](${b});
-  way["leisure"="park"](${b});
-  way["landuse"="grass"](${b});
+  way["leisure"~"^(park|garden)$"](${b});
+  relation["leisure"="park"](${b});
+  way["landuse"~"^(grass|forest|cemetery|meadow|recreation_ground|village_green|allotments)$"](${b});
+  way["natural"~"^(wood|scrub|grassland)$"](${b});
+  way["highway"~"^(${roads})$"](${b});
+  way["place"="square"](${b});
   node["name"~"${names}",i](${b});
   way["name"~"${names}",i](${b});
 );
@@ -76,7 +121,7 @@ export function loadMapData(namePatterns: string[], customUrl?: string): Promise
     cache = (async () => {
       const saved = await readMapCache();
       if (saved) return saved;
-      const data = parseOverpass(await fetchRaw(namePatterns, customUrl));
+      const data = parseOverpass(await fetchRaw(namePatterns, customUrl), namePatterns);
       if (data.buildings.length > 0) writeMapCache(data);
       return data;
     })().catch((e) => {
@@ -95,7 +140,7 @@ async function fetchRaw(namePatterns: string[], customUrl?: string): Promise<Ove
   }
   const body = `data=${encodeURIComponent(overpassQuery(namePatterns))}`;
   const controllers = OVERPASS_SERVERS.map(() => new AbortController());
-  const timer = setTimeout(() => controllers.forEach((c) => c.abort()), 45_000);
+  const timer = setTimeout(() => controllers.forEach((c) => c.abort()), 70_000);
 
   // Ask every mirror at once; the first good answer wins, the rest are cancelled.
   return new Promise<OverpassResponse>((resolve, reject) => {
@@ -148,22 +193,37 @@ interface OverpassResponse {
   elements: OverpassElement[];
 }
 
-export function parseOverpass(data: OverpassResponse): MapData {
+export function parseOverpass(data: OverpassResponse, namePatterns?: string[]): MapData {
   const buildings: OsmBuilding[] = [];
-  const water: P[][] = [];
-  const green: P[][] = [];
+  const water: Area[] = [];
+  const green: MapData['green'] = [];
+  const roads: Road[] = [];
+  const plazas: Area[] = [];
   const named: MapData['named'] = [];
+  // Keep only names a landmark could match (the data also has every street name).
+  const patterns = namePatterns?.map((n) => n.toLowerCase());
+  const wanted = (name: string) => !patterns || patterns.some((n) => name.toLowerCase().includes(n));
 
   for (const el of data.elements ?? []) {
     const tags = el.tags ?? {};
     if (el.type === 'node') {
-      if (tags.name && el.lat !== undefined && el.lon !== undefined)
+      if (tags.name && el.lat !== undefined && el.lon !== undefined && wanted(tags.name))
         named.push({ name: tags.name, points: [toLocal({ latitude: el.lat, longitude: el.lon })] });
       continue;
     }
-    if (tags.name && !tags.building && el.type === 'way' && el.geometry) {
+    if (tags.name && !tags.building && el.type === 'way' && el.geometry && wanted(tags.name)) {
       named.push({ name: tags.name, points: toPath(el.geometry) });
     }
+
+    // Streets (lines) and pedestrian areas / squares (polygons)
+    const isArea = tags.area === 'yes' || tags.place === 'square';
+    if (tags.highway && !isArea && el.type === 'way' && el.geometry) {
+      const width = ROAD_WIDTH[tags.highway];
+      const path = toPath(el.geometry);
+      if (width && path.length >= 2) roads.push({ path, width });
+      continue;
+    }
+
     let outers: P[][] = [];
     let holes: P[][] = [];
 
@@ -175,9 +235,13 @@ export function parseOverpass(data: OverpassResponse): MapData {
     }
     outers = outers.filter((r) => r.length >= 3);
     if (outers.length === 0) continue;
+    const areas = outers.map((ring) => ({
+      ring,
+      holes: holes.filter((h) => h.length >= 3 && pointInRing(h[0], ring)),
+    }));
 
     if (tags.building) {
-      for (const ring of outers) {
+      for (const { ring, holes: inner } of areas) {
         const area = signedArea(ring);
         if (Math.abs(area) < 4) continue; // skip tiny sheds / kiosks
         buildings.push({
@@ -185,22 +249,126 @@ export function parseOverpass(data: OverpassResponse): MapData {
           name: tags.name,
           wikidata: tags.wikidata,
           ring: area < 0 ? ring.slice().reverse() : ring,
-          holes: holes.filter((h) => h.length >= 3 && pointInRing(h[0], ring)),
+          holes: inner,
           height: buildingHeight(tags),
           kind: buildingKind(tags),
         });
       }
     } else if (tags.natural === 'water' || tags.waterway === 'riverbank') {
-      water.push(...outers);
-    } else if (tags.leisure === 'park' || tags.landuse === 'grass') {
-      green.push(...outers);
+      water.push(...areas);
+    } else if (tags.highway || tags.place === 'square') {
+      plazas.push(...areas);
+    } else {
+      const kind = greenKind(tags);
+      if (kind) green.push(...areas.map((a) => ({ ...a, kind })));
     }
   }
-  return { buildings, water, green, named };
+  return { buildings, water, green, roads, plazas, trees: plantTrees(green, buildings, plazas), named };
 }
 
+function greenKind(tags: Record<string, string>): GreenKind | null {
+  const v = tags.leisure ?? tags.landuse ?? tags.natural;
+  switch (v) {
+    case 'park':
+    case 'recreation_ground':
+    case 'village_green':
+      return 'park';
+    case 'forest':
+    case 'wood':
+    case 'scrub':
+      return 'wood';
+    case 'garden':
+    case 'allotments':
+      return 'garden';
+    case 'cemetery':
+      return 'cemetery';
+    case 'grass':
+    case 'meadow':
+    case 'grassland':
+      return 'grass';
+    default:
+      return null;
+  }
+}
+
+/** Distance between trees for each kind of green area (metres). */
+const TREE_SPACING: Record<GreenKind, number> = { wood: 9, park: 12, cemetery: 12, garden: 15, grass: 24 };
+
+/**
+ * Plant trees on a jittered grid inside green areas, never inside a building
+ * or on a square. Deterministic, so the map looks the same every time.
+ */
+function plantTrees(green: MapData['green'], buildings: OsmBuilding[], plazas: Area[]): P[] {
+  // Buildings in a 40 m grid, so each tree only checks the buildings near it.
+  const CELL = 40;
+  const grid = new Map<string, P[][]>();
+  const add = (ring: P[]) => {
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minZ = Infinity;
+    let maxZ = -Infinity;
+    for (const p of ring) {
+      minX = Math.min(minX, p.x);
+      maxX = Math.max(maxX, p.x);
+      minZ = Math.min(minZ, p.z);
+      maxZ = Math.max(maxZ, p.z);
+    }
+    for (let gx = Math.floor(minX / CELL); gx <= Math.floor(maxX / CELL); gx++)
+      for (let gz = Math.floor(minZ / CELL); gz <= Math.floor(maxZ / CELL); gz++) {
+        const key = `${gx},${gz}`;
+        const list = grid.get(key);
+        if (list) list.push(ring);
+        else grid.set(key, [ring]);
+      }
+  };
+  buildings.forEach((b) => add(b.ring));
+  plazas.forEach((a) => add(a.ring));
+  const blocked = (p: P) =>
+    (grid.get(`${Math.floor(p.x / CELL)},${Math.floor(p.z / CELL)}`) ?? []).some((r) => pointInRing(p, r));
+
+  const trees: P[] = [];
+  green.forEach((area, index) => {
+    const spacing = TREE_SPACING[area.kind];
+    let seed = (index + 1) * 2654435761;
+    const rand = () => {
+      seed = (seed + 0x6d2b79f5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minZ = Infinity;
+    let maxZ = -Infinity;
+    for (const p of area.ring) {
+      minX = Math.min(minX, p.x);
+      maxX = Math.max(maxX, p.x);
+      minZ = Math.min(minZ, p.z);
+      maxZ = Math.max(maxZ, p.z);
+    }
+    for (let x = minX; x < maxX; x += spacing)
+      for (let z = minZ; z < maxZ; z += spacing) {
+        const p = { x: x + rand() * spacing * 0.8, z: z + rand() * spacing * 0.8 };
+        if (!pointInRing(p, area.ring) || area.holes.some((h) => pointInRing(p, h)) || blocked(p)) continue;
+        trees.push({ x: Math.round(p.x * 10) / 10, z: Math.round(p.z * 10) / 10 });
+      }
+  });
+  if (trees.length <= MAX_TREES) return trees;
+  // Too many: keep an even spread.
+  const step = trees.length / MAX_TREES;
+  return Array.from({ length: MAX_TREES }, (_, i) => trees[Math.floor(i * step)]);
+}
+
+/** Round to 10 cm (keeps the saved file small and quick to write). */
+const r10 = (n: number) => Math.round(n * 10) / 10;
+
 function toPath(geometry: (OverpassLatLon | null)[]): P[] {
-  return geometry.filter((g): g is OverpassLatLon => !!g).map((g) => toLocal({ latitude: g.lat, longitude: g.lon }));
+  return geometry
+    .filter((g): g is OverpassLatLon => !!g)
+    .map((g) => {
+      const p = toLocal({ latitude: g.lat, longitude: g.lon });
+      return { x: r10(p.x), z: r10(p.z) };
+    });
 }
 
 function toRing(geometry: (OverpassLatLon | null)[]): P[] {

@@ -9,12 +9,11 @@ import { useI18n } from '@/i18n/language-context';
 import { useAccount } from '@/state/account-context';
 import { themedStyles } from '@/state/theme-context';
 
-/** Top bar: city, trip progress, level/XP and coins (tap → profile). */
+/** Top bar: city, trip progress and coins (tap → profile, where XP and level are). */
 export function TopBar({ progress }: { progress?: string }) {
   const styles = useStyles();
-  const { s, fmt, lang } = useI18n();
-  const { user, level } = useAccount();
-  const xp = user?.xp ?? 0;
+  const { s, lang } = useI18n();
+  const { user } = useAccount();
   const coins = formatCoins(user?.coins ?? 0, lang);
 
   return (
@@ -37,14 +36,9 @@ export function TopBar({ progress }: { progress?: string }) {
             router.push('/profile');
           }}
           accessibilityRole="button"
-          accessibilityLabel={`${fmt(s.profile.level, { n: level.level })}, ${xp} ${s.common.xp}, ${coins} ${s.common.coins}`}
+          accessibilityLabel={`${coins} ${s.common.coins}. ${s.profile.open}`}
           hitSlop={6}
           style={styles.right}>
-          <View style={[styles.pill, styles.xpPill]}>
-            <DuoText variant="caption" color={Brand.primary} style={styles.pillText}>
-              ⭐ {level.level} · {xp} {s.common.xp}
-            </DuoText>
-          </View>
           <View style={styles.pill}>
             <DuoText variant="caption" style={styles.pillText}>
               🪙 {coins}

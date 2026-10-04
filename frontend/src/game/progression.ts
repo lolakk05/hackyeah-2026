@@ -22,6 +22,8 @@ export const XP_RULES = {
   routeBase: 20,
   /** …plus this much per km of the route. */
   routePerKm: 10,
+  /** Reporting a problem (path blocked, broken lift…). */
+  issue: 20,
 } as const;
 
 /** Virtual coins earned per XP point. */
@@ -37,6 +39,8 @@ export function xpForEvent(event: Pick<XpEvent, 'type' | 'distanceMeters'>): num
       return XP_RULES.visitBase + Math.round((meters / 100) * XP_RULES.visitPer100m);
     case 'route_complete':
       return XP_RULES.routeBase + Math.round((meters / 1000) * XP_RULES.routePerKm);
+    case 'issue_report':
+      return XP_RULES.issue;
   }
 }
 

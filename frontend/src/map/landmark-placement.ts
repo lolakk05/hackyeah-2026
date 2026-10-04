@@ -29,7 +29,8 @@ export const KIND_CONFIG: Record<ModelKind, KindConfig> = {
   // The Barbican is a round fortress, about 30 m across.
   barbican: { names: ['Barbakan', 'Barbican'], heightMeters: 18, fallback: { length: 30, width: 30, axisBearing: 0 }, front: 180 },
   basilica: {
-    names: ['Mariack', 'Najświętszej Marii Panny', "St. Mary's", 'Wniebowzięcia'],
+    // (not every "Najświętszej Marii Panny" church: only St Mary's on the Main Square)
+    names: ['Mariack', "St. Mary's Basilica", 'Bazylika Wniebowzięcia Najświętszej'],
     heightMeters: 81,
     fallback: { length: 80, width: 30, axisBearing: 90 },
     front: 270, // towers face west, onto the Main Square
@@ -60,6 +61,28 @@ export const KIND_CONFIG: Record<ModelKind, KindConfig> = {
     fallback: { length: 145, width: 16, axisBearing: 0 },
     noBuilding: true,
   },
+  // Variants for places returned by the route planner (matched by OSM id or name).
+  church: { names: [], heightMeters: 45, fallback: { length: 50, width: 20, axisBearing: 0 } },
+  twintower: { names: [], heightMeters: 48, fallback: { length: 55, width: 26, axisBearing: 0 } },
+  domechurch: { names: [], heightMeters: 40, fallback: { length: 40, width: 32, axisBearing: 0 } },
+  chapel: { names: [], heightMeters: 14, fallback: { length: 14, width: 9, axisBearing: 0 } },
+  orthodox: { names: [], heightMeters: 26, fallback: { length: 26, width: 15, axisBearing: 0 } },
+  synagogue2: { names: [], heightMeters: 22, fallback: { length: 30, width: 22, axisBearing: 0 } },
+  synagogue3: { names: [], heightMeters: 14, fallback: { length: 22, width: 16, axisBearing: 0 } },
+  museum: { names: [], heightMeters: 20, fallback: { length: 45, width: 26, axisBearing: 0 } },
+  gallery: { names: [], heightMeters: 18, fallback: { length: 40, width: 30, axisBearing: 0 } },
+  townhouse: { names: [], heightMeters: 18, fallback: { length: 26, width: 16, axisBearing: 0 } },
+  palace: { names: [], heightMeters: 20, fallback: { length: 50, width: 26, axisBearing: 0 } },
+  college: { names: [], heightMeters: 20, fallback: { length: 40, width: 32, axisBearing: 0 } },
+  gate: { names: [], heightMeters: 34, fallback: { length: 14, width: 12, axisBearing: 0 } },
+  wallgate: { names: [], heightMeters: 15, fallback: { length: 32, width: 9, axisBearing: 0 } },
+  // Statues are small in real life: shown a bit bigger so they can be seen on the map.
+  statue: { names: [], heightMeters: 14, fallback: { length: 8, width: 8, axisBearing: 0 }, noBuilding: true },
+  rider: { names: [], heightMeters: 14, fallback: { length: 12, width: 7, axisBearing: 90 }, noBuilding: true },
+  bust: { names: [], heightMeters: 11, fallback: { length: 7, width: 7, axisBearing: 0 }, noBuilding: true },
+  theatre: { names: [], heightMeters: 28, fallback: { length: 50, width: 36, axisBearing: 0 } },
+  theatre2: { names: [], heightMeters: 20, fallback: { length: 40, width: 26, axisBearing: 0 } },
+  cave: { names: ['Smocza Jama'], heightMeters: 12, fallback: { length: 18, width: 16, axisBearing: 0 }, noBuilding: true },
   generic: { names: [], heightMeters: 30, fallback: { length: 12, width: 12, axisBearing: 0 }, noBuilding: true },
 };
 
@@ -100,12 +123,24 @@ export function placeLandmarks(
     const nameMatches = (name?: string) =>
       !!name && cfg.names.some((n) => name.toLowerCase().includes(n.toLowerCase()));
 
+    // Places from the route planner carry their OpenStreetMap id ("way-123"): use that exact building.
+    const osm = /^(way|relation)[-/](\d+)$/.exec(lm.id);
+    const osmId = osm ? `${osm[1]}/${osm[2]}` : null;
+    const ownName = lm.name.toLowerCase();
+
     let points: P[] = [];
     let matched = false;
     let matchedIds: string[] = [];
+    let trusted = false;
 
     if (!cfg.noBuilding) {
-      const hits = data.buildings.filter((b) => nameMatches(b.name) && near(centroid(b.ring)));
+      let hits = osmId ? data.buildings.filter((b) => b.id === osmId) : [];
+      trusted = hits.length > 0;
+      if (!trusted) {
+        hits = data.buildings.filter(
+          (b) => (nameMatches(b.name) || b.name?.toLowerCase() === ownName) && near(centroid(b.ring)),
+        );
+      }
       if (hits.length) {
         // keep only the buildings right next to the one closest to the anchor
         const closest = hits.reduce((a, b) => (dist(centroid(a.ring), anchor) < dist(centroid(b.ring), anchor) ? a : b));
@@ -135,7 +170,7 @@ export function placeLandmarks(
     // landmark (a wrong feature with a similar name), don't trust it.
     const maxLength = cfg.fallback.length * 1.6;
     const maxWidth = Math.max(cfg.fallback.width, cfg.fallback.length) * 1.6;
-    if (box && (box.length > maxLength || box.width > maxWidth || dist(box.center, anchor) > 120)) {
+    if (!trusted && box && (box.length > maxLength || box.width > maxWidth || dist(box.center, anchor) > 120)) {
       box = null;
       points = [];
       matched = false;

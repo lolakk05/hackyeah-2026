@@ -4,9 +4,9 @@ import { Modal, Pressable, View } from 'react-native';
 import type { AccessibilityNeeds, ReportCategory } from '@/api/types';
 import { DuoButton } from '@/components/duo/duo-button';
 import { DuoText } from '@/components/duo/duo-text';
-import { successFeedback } from '@/components/duo/haptics';
+import { Pinek } from '@/components/pinek';
+import { answerFeedback } from '@/components/duo/haptics';
 import { Brand } from '@/constants/duo-theme';
-import { formatCoins } from '@/game/progression';
 import type { XpAward } from '@/state/account-context';
 import { useI18n } from '@/i18n/language-context';
 import { themedStyles, useDuo } from '@/state/theme-context';
@@ -39,35 +39,23 @@ export function ReportQuestion({
 }) {
   const t = useDuo();
   const styles = useStyles();
-  const { s, fmt, lang } = useI18n();
+  const { s } = useI18n();
   const [sending, setSending] = useState<boolean | null>(null);
-  const [thanks, setThanks] = useState<XpAward | null>(null);
 
   const answer = async (accessible: boolean) => {
     setSending(accessible);
-    const earned = await onAnswer(accessible);
-    successFeedback();
+    await onAnswer(accessible);
+    answerFeedback();
     setSending(null);
-    setThanks(earned);
-    setTimeout(onDone, 1100);
+    onDone();
   };
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onDone}>
       <View style={styles.backdrop}>
         <View style={styles.sheet} accessibilityViewIsModal>
-          {thanks !== null ? (
-            <View style={styles.thanks}>
-              <DuoText style={styles.bigIcon}>🙌</DuoText>
-              <DuoText variant="title" style={styles.center}>
-                {fmt(s.report.thanks, { n: thanks.xp, coins: formatCoins(thanks.coins, lang) })}
-              </DuoText>
-            </View>
-          ) : (
-            <>
-              <View style={styles.iconBubble}>
-                <DuoText style={styles.bigIcon}>♿</DuoText>
-              </View>
+          <>
+              <Pinek pose="sign" size={100} style={styles.pinek} />
               <DuoText variant="label" color={Brand.primary} style={styles.center}>
                 {s.report.title}
               </DuoText>
@@ -101,7 +89,7 @@ export function ReportQuestion({
                 </DuoText>
               </Pressable>
             </>
-          )}
+
         </View>
       </View>
     </Modal>
@@ -127,6 +115,7 @@ const useStyles = themedStyles((t) => ({
     alignSelf: 'center',
     marginBottom: 12,
   },
+  pinek: { alignSelf: 'center' },
   iconBubble: {
     alignSelf: 'center',
     width: 64,
@@ -141,5 +130,6 @@ const useStyles = themedStyles((t) => ({
   buttons: { flexDirection: 'row', gap: 12, marginTop: 8 },
   flex: { flex: 1 },
   skip: { alignSelf: 'center', paddingVertical: 8 },
-  thanks: { alignItems: 'center', gap: 8, paddingVertical: 24 },
+  thanks: { alignItems: 'center', gap: 8, paddingVertical: 16 },
+  trophy: { width: 120, height: 120, borderRadius: 24 },
 }));

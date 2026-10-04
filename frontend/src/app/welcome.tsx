@@ -1,16 +1,19 @@
 import { Redirect, router } from 'expo-router';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Image, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LevelCard } from '@/components/account/level-card';
 import { DuoButton } from '@/components/duo/duo-button';
 import { DuoText } from '@/components/duo/duo-text';
-import { LandmarkModel } from '@/components/models/landmark-model';
+import { tapFeedback } from '@/components/duo/haptics';
+import { WavingPinek } from '@/components/pinek';
 import { Brand } from '@/constants/duo-theme';
 import { useI18n } from '@/i18n/language-context';
 import { useAccount } from '@/state/account-context';
 import { useJourney } from '@/state/journey-context';
 import { themedStyles, useDuo } from '@/state/theme-context';
+
+const WORDMARK = require('../../assets/images/spacer-wordmark.png');
 
 /** Start page: level & coins, ranking/rewards, and GET STARTED or CONTINUE. */
 export default function WelcomeScreen() {
@@ -57,12 +60,14 @@ export default function WelcomeScreen() {
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
-          <View style={styles.modelTile}>
-            <LandmarkModel kind="castle" backgroundColor={t.cardRaised} interactive style={styles.model} />
-          </View>
-          <DuoText variant="hero" style={styles.center} accessibilityRole="header">
-            {s.appName}
-          </DuoText>
+          <WavingPinek size={170} />
+          <Image
+            source={WORDMARK}
+            style={styles.wordmark}
+            resizeMode="contain"
+            accessibilityRole="header"
+            accessibilityLabel={s.appName}
+          />
           <DuoText variant="body" color={t.textMuted} style={styles.center}>
             {s.welcome.text}
           </DuoText>
@@ -71,20 +76,9 @@ export default function WelcomeScreen() {
         <View style={styles.stats}>
           <LevelCard onPress={openProfile} />
           <View style={styles.row}>
-            <DuoButton
-              title={`🏆 ${s.profile.ranking}`}
-              variant="secondary"
-              size="md"
-              style={styles.flex}
-              onPress={() => router.push('/ranking')}
-            />
-            <DuoButton
-              title={`🎟️ ${s.profile.rewards}`}
-              variant="secondary"
-              size="md"
-              style={styles.flex}
-              onPress={() => router.push('/rewards')}
-            />
+            <Tile icon="🏆" label={s.profile.ranking} onPress={() => router.push('/ranking')} />
+            <Tile icon="🎟️" label={s.profile.rewards} onPress={() => router.push('/rewards')} />
+            <Tile icon="⚠️" label={s.issues.title} onPress={() => router.push('/reports')} />
           </View>
         </View>
       </ScrollView>
@@ -111,8 +105,43 @@ export default function WelcomeScreen() {
   );
 }
 
+/** Square quick-action button (icon above a short label). */
+function Tile({ icon, label, onPress }: { icon: string; label: string; onPress: () => void }) {
+  const styles = useStyles();
+  return (
+    <Pressable
+      onPress={() => {
+        tapFeedback();
+        onPress();
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={styles.flex}>
+      {({ pressed }) => (
+        <View style={[styles.tile, pressed && styles.tilePressed]}>
+          <DuoText style={styles.tileIcon}>{icon}</DuoText>
+          <DuoText variant="caption" style={styles.bold} numberOfLines={1}>
+            {label}
+          </DuoText>
+        </View>
+      )}
+    </Pressable>
+  );
+}
+
 const useStyles = themedStyles((t) => ({
   safe: { flex: 1, backgroundColor: t.background, paddingHorizontal: 20 },
+  tile: {
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 12,
+    borderRadius: t.radius.lg,
+    backgroundColor: t.card,
+    borderWidth: 1,
+    borderColor: t.border,
+  },
+  tilePressed: { backgroundColor: t.cardRaised },
+  tileIcon: { fontSize: 26, lineHeight: 32 },
   topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, paddingTop: 8 },
   profileChip: {
     flexDirection: 'row',
@@ -137,6 +166,7 @@ const useStyles = themedStyles((t) => ({
   bold: { fontWeight: '700' },
   scroll: { flexGrow: 1, justifyContent: 'center', gap: 20, paddingVertical: 16, maxWidth: 520, width: '100%', alignSelf: 'center' },
   hero: { alignItems: 'center', gap: 12 },
+  wordmark: { width: 220, height: 220 * (226 / 866), marginTop: 4 },
   modelTile: {
     width: 180,
     height: 180,
@@ -149,7 +179,7 @@ const useStyles = themedStyles((t) => ({
   model: { flex: 1 },
   center: { textAlign: 'center' },
   stats: { gap: 12 },
-  row: { flexDirection: 'row', gap: 12 },
+  row: { flexDirection: 'row', gap: 10 },
   flex: { flex: 1 },
   buttons: { gap: 12, paddingTop: 8, paddingBottom: 16, width: '100%', maxWidth: 520, alignSelf: 'center' },
 }));

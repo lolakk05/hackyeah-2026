@@ -2,7 +2,7 @@ import { Pressable, View } from 'react-native';
 
 import type { AccessibilityNeeds } from '@/api/types';
 import { DuoText } from '@/components/duo/duo-text';
-import { tapFeedback } from '@/components/duo/haptics';
+import { selectionFeedback } from '@/components/duo/haptics';
 import { Brand } from '@/constants/duo-theme';
 import { useI18n } from '@/i18n/language-context';
 import { themedStyles, useDuo } from '@/state/theme-context';
@@ -37,7 +37,7 @@ export function AccessibilityFilter({
           <Pressable
             key={opt.key}
             onPress={() => {
-              tapFeedback();
+              selectionFeedback();
               onChange({ ...value, [opt.key]: !selected });
             }}
             accessibilityRole="checkbox"

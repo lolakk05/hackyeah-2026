@@ -4,11 +4,11 @@
  * Bump CACHE_VERSION when the data format or the map area changes.
  */
 import { File, Paths } from 'expo-file-system';
-import { Platform } from 'react-native';
+import { InteractionManager, Platform } from 'react-native';
 
 import type { MapData } from './osm';
 
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4';
 /** Re-download after this many days so new buildings/edits show up. */
 const MAX_AGE_DAYS = 30;
 
@@ -31,15 +31,23 @@ export async function readMapCache(): Promise<MapData | null> {
 
 export function writeMapCache(data: MapData) {
   if (Platform.OS === 'web') return;
+  // Save after animations/touches are done, so the app doesn't stutter.
+  InteractionManager.runAfterInteractions(() => saveNow(data));
+}
+
+function saveNow(data: MapData) {
   try {
-    // round to 10 cm to keep the file small
-    const json = JSON.stringify({ savedAt: Date.now(), data }, (_k, v) =>
-      typeof v === 'number' ? Math.round(v * 10) / 10 : v,
-    );
+    // (coordinates are already rounded to 10 cm when parsed)
+    const json = JSON.stringify({ savedAt: Date.now(), data });
     const file = cacheFile();
     if (file.exists) file.delete();
     file.create();
     file.write(json);
+    // Remove the files of older versions.
+    for (const old of ['v1', 'v2', 'v3']) {
+      const f = new File(Paths.document, `krakow-map-${old}.json`);
+      if (f.exists) f.delete();
+    }
   } catch (e) {
     console.warn('[map] could not save map cache', e);
   }

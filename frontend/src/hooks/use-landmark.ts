@@ -21,7 +21,8 @@ export function useLandmark(id: string | undefined) {
     if (!id) return;
     let cancelled = false;
     fetchLandmark(id)
-      .then((data) => !cancelled && setLandmark(data))
+      // Keep the model chosen for the route (variants are spread out along it).
+      .then((data) => !cancelled && setLandmark(cached ? { ...data, model: cached.model } : data))
       .catch((e: unknown) => {
         if (!cancelled && !cached) setError(e instanceof Error ? e.message : String(e));
       })

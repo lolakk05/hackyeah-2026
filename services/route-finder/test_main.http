@@ -31,6 +31,16 @@ Content-Type: application/json
   "duration_minutes": 30
 }
 
+### Randomized walk: repeat to request a new plan instead of reading cache
+POST {{baseUrl}}/routes/plan
+Content-Type: application/json
+
+{
+  "duration_minutes": 45,
+  "start_mode": "market",
+  "randomize": true
+}
+
 ### Museum walk with up to two intermediate stops
 POST {{baseUrl}}/routes/plan
 Content-Type: application/json

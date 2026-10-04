@@ -58,13 +58,14 @@ class PlanRequest(BaseModel):
                     "user_location": {"latitude": 50.0617, "longitude": 19.9373},
                     "wheelchair": True,
                     "avoid_stairs": False,
-                    "max_intermediate_stops": 5,
+                    "max_intermediate_stops": 8,
+                    "randomize": True,
                 },
             ]
         },
     )
-    duration_minutes: Annotated[FiniteFloat, Field(ge=5, le=240)] = Field(
-        description="Maksymalny czas marszu w minutach (5–240); "
+    duration_minutes: Annotated[FiniteFloat, Field(ge=5, le=360)] = Field(
+        description="Maksymalny czas marszu w minutach (5–360); "
         "obejmuje dojście od punktu startowego do pierwszego POI, bez zwiedzania."
     )
     start_mode: Literal["market", "user", "poi"] | None = Field(
@@ -93,7 +94,7 @@ class PlanRequest(BaseModel):
         "nie ogranicza punktu startowego. Brak oznacza dowolną kategorię.",
     )
     max_intermediate_stops: int = Field(
-        default=5,
+        default=8,
         ge=0,
         le=10,
         description="Maksymalnie 0–10 dodatkowych POI między pierwszym a ostatnim POI.",
@@ -102,6 +103,11 @@ class PlanRequest(BaseModel):
         default=15,
         description="Akceptowany niedobór czasu w procentach budżetu. "
         "Nigdy nie zezwala na przekroczenie budżetu.",
+    )
+    randomize: bool = Field(
+        default=True,
+        description="Losuj kandydatów i podobnie ocenione warianty, pomijając cache. "
+        "Nie gwarantuje innego wyniku, jeśli dostępnych tras jest niewiele.",
     )
 
     @model_validator(mode="after")

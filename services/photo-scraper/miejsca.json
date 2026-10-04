@@ -1,0 +1,1510 @@
+[
+  {
+    "id": "muzeum-dominikanow",
+    "name": "Muzeum Dominikanów",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.06013,
+    "longitude": 19.939917,
+    "geocoded": {
+      "query": "Muzeum Dominikanów, Kraków",
+      "displayName": "Muzeum Dominikanów, 12, Stolarska, Stare Miasto, Kraków, województwo małopolskie, 31-043, Polska",
+      "osm": "node/10573734931"
+    }
+  },
+  {
+    "id": "brama-rzeznicza-w-krakowie",
+    "name": "Brama Rzeźnicza w Krakowie",
+    "category": "historic",
+    "aliases": [],
+    "latitude": 50.060907,
+    "longitude": 19.943275,
+    "geocoded": {
+      "query": "Brama Rzeźnicza w Krakowie, Kraków",
+      "displayName": "Brama Rzeźnicza w Krakowie, Westerplatte, Stare Miasto, Kraków, województwo małopolskie, 31-075, Polska",
+      "osm": "node/12520473032"
+    }
+  },
+  {
+    "id": "muzeum-geologiczne-ing-pan",
+    "name": "Muzeum Geologiczne ING PAN",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.057558,
+    "longitude": 19.93668,
+    "geocoded": {
+      "query": "Muzeum Geologiczne ING PAN, Kraków",
+      "displayName": "Muzeum Geologiczne PAN, Senacka, Stare Miasto, Kraków, województwo małopolskie, 31-001, Polska",
+      "osm": "node/12642845285"
+    }
+  },
+  {
+    "id": "rynek-podziemny",
+    "name": "Rynek Podziemny",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.062005,
+    "longitude": 19.937777,
+    "geocoded": {
+      "query": "Rynek Podziemny, Kraków",
+      "displayName": "Rynek Podziemny, 1, Rynek Główny, Stare Miasto, Kraków, województwo małopolskie, 31-042, Polska",
+      "osm": "node/1332080339"
+    }
+  },
+  {
+    "id": "palac-biskupa-erazma-ciolka",
+    "name": "Pałac Biskupa Erazma Ciołka",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.056302,
+    "longitude": 19.937223,
+    "geocoded": {
+      "query": "Pałac Biskupa Erazma Ciołka, Kraków",
+      "displayName": "Pałac Biskupa Erazma Ciołka, Kanonicza, Stare Miasto, Kraków, województwo małopolskie, 31-001, Polska",
+      "osm": "node/1516840253"
+    }
+  },
+  {
+    "id": "jozef-dietl",
+    "name": "Józef Dietl",
+    "category": "historic",
+    "aliases": [],
+    "latitude": 50.059086,
+    "longitude": 19.936759,
+    "geocoded": {
+      "query": "Józef Dietl, Kraków",
+      "displayName": "Józef Dietl, Franciszkańska, Stare Miasto, Kraków, województwo małopolskie, 31-004, Polska",
+      "osm": "node/1517262415"
+    }
+  },
+  {
+    "id": "stanislaw-wyspianski",
+    "name": "Stanisław Wyspiański",
+    "category": "historic",
+    "aliases": [],
+    "latitude": 50.119591,
+    "longitude": 19.976089,
+    "geocoded": {
+      "query": "Pomnik Stanisława Wyspiańskiego, Kraków",
+      "displayName": "Dom Stanisława Wyspiańskiego, A5, Węgrzce, gmina Zielonki, powiat krakowski, województwo małopolskie, 32-086, Polska",
+      "osm": "node/1741976932"
+    }
+  },
+  {
+    "id": "ignacy-jan-paderewski",
+    "name": "Ignacy Jan Paderewski",
+    "category": "historic",
+    "aliases": [],
+    "latitude": 50.066291,
+    "longitude": 19.950205,
+    "geocoded": {
+      "query": "Ignacy Jan Paderewski, Kraków",
+      "displayName": "Ignacy Jan Paderewski, Zygmunta Augusta, Wesoła II, Grzegórzki, Kraków, województwo małopolskie, 31-504, Polska",
+      "osm": "node/2290487937"
+    }
+  },
+  {
+    "id": "muzeum-ogrodu-botanicznego-uj",
+    "name": "Muzeum Ogrodu Botanicznego UJ",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.063601,
+    "longitude": 19.955969,
+    "geocoded": {
+      "query": "Muzeum Ogrodu Botanicznego UJ, Kraków",
+      "displayName": "Muzeum Ogrodu Botanicznego UJ, 29, Mikołaja Kopernika, Wesoła, Grzegórzki, Kraków, województwo małopolskie, 31-501, Polska",
+      "osm": "node/2319751946"
+    }
+  },
+  {
+    "id": "eros-spetany",
+    "name": "Eros spętany",
+    "category": "historic",
+    "aliases": [],
+    "latitude": 50.061541,
+    "longitude": 19.936191,
+    "geocoded": {
+      "query": "Eros spętany, Kraków",
+      "displayName": "Eros spętany, Rynek Główny, Stare Miasto, Kraków, województwo małopolskie, 31-008, Polska",
+      "osm": "node/2508026681"
+    }
+  },
+  {
+    "id": "piotr-skrzynecki",
+    "name": "Piotr Skrzynecki",
+    "category": "historic",
+    "aliases": [],
+    "latitude": 50.058358,
+    "longitude": 19.93429,
+    "geocoded": {
+      "query": "Pomnik Piotra Skrzyneckiego, Kraków",
+      "displayName": "Skwer Piotra Skrzyneckiego, Poselska, Stare Miasto, Kraków, województwo małopolskie, 31-101, Polska",
+      "osm": "node/11330042304"
+    }
+  },
+  {
+    "id": "muzeum-stanislawa-wyspianskiego",
+    "name": "Muzeum Stanisława Wyspiańskiego",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.061435,
+    "longitude": 19.929144,
+    "geocoded": {
+      "query": "Muzeum Stanisława Wyspiańskiego, Kraków",
+      "displayName": "Muzeum Stanisława Wyspiańskiego, 6, Plac Generała Władysława Sikorskiego, Piasek, Stare Miasto, Kraków, województwo małopolskie, 31-115, Polska",
+      "osm": "node/2616212673"
+    }
+  },
+  {
+    "id": "mikolaj-kopernik",
+    "name": "Mikołaj Kopernik",
+    "category": "historic",
+    "aliases": [],
+    "latitude": 50.061322,
+    "longitude": 19.932756,
+    "geocoded": {
+      "query": "Mikołaj Kopernik, Kraków",
+      "displayName": "Mikołaj Kopernik, Gołębia, Stare Miasto, Kraków, województwo małopolskie, 31-007, Polska",
+      "osm": "node/273492033"
+    }
+  },
+  {
+    "id": "piotr-skarga",
+    "name": "Piotr Skarga",
+    "category": "historic",
+    "aliases": [],
+    "latitude": 50.05681,
+    "longitude": 19.937821,
+    "geocoded": {
+      "query": "Piotr Skarga, Kraków",
+      "displayName": "Piotr Skarga, Plac Świętej Marii Magdaleny, Stare Miasto, Kraków, województwo małopolskie, 31-044, Polska",
+      "osm": "node/273723498"
+    }
+  },
+  {
+    "id": "pomnik-grunwaldzki",
+    "name": "Pomnik Grunwaldzki",
+    "category": "historic",
+    "aliases": [],
+    "latitude": 50.066415,
+    "longitude": 19.942144,
+    "geocoded": {
+      "query": "Pomnik Grunwaldzki, Kraków",
+      "displayName": "Pomnik Grunwaldzki, Plac Jana Matejki, Kleparz, Stare Miasto, Kraków, województwo małopolskie, 31-157, Polska",
+      "osm": "node/274088760"
+    }
+  },
+  {
+    "id": "smocza-jama",
+    "name": "Smocza Jama",
+    "category": "cave_entrance",
+    "aliases": [],
+    "latitude": 50.053422,
+    "longitude": 19.933583,
+    "geocoded": {
+      "query": "Smocza Jama, Kraków",
+      "displayName": "Smocza Jama, Stare Miasto, Kraków, województwo małopolskie, 31-003, Polska",
+      "osm": "way/309779126"
+    }
+  },
+  {
+    "id": "smok-wawelski",
+    "name": "Smok Wawelski",
+    "category": "historic",
+    "aliases": [],
+    "latitude": 50.053016,
+    "longitude": 19.933588,
+    "geocoded": {
+      "query": "Smok Wawelski, Kraków",
+      "displayName": "Smok Wawelski, Smocza Jama, Stare Miasto, Kraków, województwo małopolskie, 31-003, Polska",
+      "osm": "node/278057698"
+    }
+  },
+  {
+    "id": "pies-dzok",
+    "name": "Pies Dżok",
+    "category": "historic",
+    "aliases": [],
+    "latitude": 50.05128,
+    "longitude": 19.934896,
+    "geocoded": {
+      "query": "Pies Dżok, Kraków",
+      "displayName": "Pies Dżok, Smocza, Stradom, Stare Miasto, Kraków, województwo małopolskie, 31-069, Polska",
+      "osm": "node/278516635"
+    }
+  },
+  {
+    "id": "pomnik-marszalka-jozefa-pilsudskiego-i-legionistow",
+    "name": "Pomnik Marszałka Józefa Piłsudskiego i Legionistów",
+    "category": "historic",
+    "aliases": [],
+    "latitude": 50.060019,
+    "longitude": 19.927601,
+    "geocoded": {
+      "query": "Pomnik Marszałka Józefa Piłsudskiego i Legionistów, Kraków",
+      "displayName": "Pomnik Marszałka Józefa Piłsudskiego i Legionistów, Garncarska, Piasek, Stare Miasto, Kraków, województwo małopolskie, 31-115, Polska",
+      "osm": "node/311330840"
+    }
+  },
+  {
+    "id": "jan-matejko",
+    "name": "Jan Matejko",
+    "category": "historic",
+    "aliases": [],
+    "latitude": 50.066415,
+    "longitude": 19.942144,
+    "geocoded": {
+      "query": "Pomnik Jana Matejki, Kraków",
+      "displayName": "Pomnik Grunwaldzki, Plac Jana Matejki, Kleparz, Stare Miasto, Kraków, województwo małopolskie, 31-157, Polska",
+      "osm": "node/274088760"
+    }
+  },
+  {
+    "id": "muzeum-paleobotaniczne-uj",
+    "name": "Muzeum Paleobotaniczne UJ",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.064403,
+    "longitude": 19.95739,
+    "geocoded": {
+      "query": "Muzeum Paleobotaniczne UJ, Kraków",
+      "displayName": "Muzeum Paleobotaniczne UJ, 31, Mikołaja Kopernika, Wesoła, Grzegórzki, Kraków, województwo małopolskie, 31-501, Polska",
+      "osm": "node/3545259938"
+    }
+  },
+  {
+    "id": "muzeum-katedralne-im-jana-pawla-ii",
+    "name": "Muzeum Katedralne im. Jana Pawła II",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.054659,
+    "longitude": 19.934496,
+    "geocoded": {
+      "query": "Muzeum Katedralne im. Jana Pawła II, Kraków",
+      "displayName": "Muzeum Katedralne im. Jana Pawła II, 2, Zamek Wawel, Stare Miasto, Kraków, województwo małopolskie, 31-001, Polska",
+      "osm": "node/3988103830"
+    }
+  },
+  {
+    "id": "muzeum-geologiczne-wggios-agh",
+    "name": "Muzeum Geologiczne WGGiOŚ AGH",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.064143,
+    "longitude": 19.92314,
+    "geocoded": {
+      "query": "Muzeum Geologiczne WGGiOŚ AGH, Kraków",
+      "displayName": "Muzeum Geologiczne WGGiOŚ AGH, 30, Aleja Adama Mickiewicza, Czarna Wieś, Krowodrza, Kraków, województwo małopolskie, 30-059, Polska",
+      "osm": "node/4002989037"
+    }
+  },
+  {
+    "id": "galeria-sztuki-polskiej-xix-wieku",
+    "name": "Galeria Sztuki Polskiej XIX wieku",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.061742,
+    "longitude": 19.937588,
+    "geocoded": {
+      "query": "Galeria Sztuki Polskiej XIX wieku, Kraków",
+      "displayName": "Galeria Sztuki Polskiej XIX wieku, 3, Rynek Główny, Stare Miasto, Kraków, województwo małopolskie, 31-042, Polska",
+      "osm": "node/4031826801"
+    }
+  },
+  {
+    "id": "muzeum-i-archiwum-marii-angeli-truszkowskiej",
+    "name": "Muzeum i Archiwum Marii Angeli Truszkowskiej",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.061374,
+    "longitude": 19.941713,
+    "geocoded": {
+      "query": "Muzeum i Archiwum Marii Angeli Truszkowskiej, Kraków",
+      "displayName": "Muzeum i Archiwum Marii Angeli Truszkowskiej, 18, Mikołajska, Stare Miasto, Kraków, województwo małopolskie, 31-027, Polska",
+      "osm": "node/4281228578"
+    }
+  },
+  {
+    "id": "ulica-pomorska",
+    "name": "Ulica Pomorska",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.070688,
+    "longitude": 19.924927,
+    "geocoded": {
+      "query": "Ulica Pomorska, Kraków",
+      "displayName": "Ulica Pomorska, 2, Pomorska, Nowa Wieś, Krowodrza, Kraków, województwo małopolskie, 30-039, Polska",
+      "osm": "node/4443337491"
+    }
+  },
+  {
+    "id": "muzeum-farmacji-uj",
+    "name": "Muzeum Farmacji UJ",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.063226,
+    "longitude": 19.94033,
+    "geocoded": {
+      "query": "Muzeum Farmacji UJ, Kraków",
+      "displayName": "Muzeum Farmacji UJ, 25, Floriańska, Stare Miasto, Kraków, województwo małopolskie, 31-019, Polska",
+      "osm": "node/471557535"
+    }
+  },
+  {
+    "id": "muzeum-uniwersytetu-jagiellonskiego",
+    "name": "Muzeum Uniwersytetu Jagiellońskiego",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.061562,
+    "longitude": 19.933737,
+    "geocoded": {
+      "query": "Muzeum Uniwersytetu Jagiellońskiego, Kraków",
+      "displayName": "Muzeum Uniwersytetu Jagiellońskiego, Jagiellońska, Stare Miasto, Kraków, województwo małopolskie, 31-007, Polska",
+      "osm": "node/471557583"
+    }
+  },
+  {
+    "id": "palac-krzysztofory",
+    "name": "Pałac Krzysztofory",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.062889,
+    "longitude": 19.936369,
+    "geocoded": {
+      "query": "Pałac Krzysztofory, Kraków",
+      "displayName": "Pałac Pod Krzysztofory, 35, Rynek Główny, Stare Miasto, Kraków, województwo małopolskie, 31-008, Polska",
+      "osm": "way/39357572"
+    }
+  },
+  {
+    "id": "kamienica-szolayskich",
+    "name": "Kamienica Szołayskich",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.0634,
+    "longitude": 19.935981,
+    "geocoded": {
+      "query": "Kamienica Szołayskich, Kraków",
+      "displayName": "Kamienica Szołayskich, Szczepańska, Stare Miasto, Kraków, województwo małopolskie, 31-011, Polska",
+      "osm": "way/153065678"
+    }
+  },
+  {
+    "id": "muzeum-przyrodnicze-pan",
+    "name": "Muzeum Przyrodnicze PAN",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.055475,
+    "longitude": 19.941514,
+    "geocoded": {
+      "query": "Muzeum Przyrodnicze PAN, Kraków",
+      "displayName": "Muzeum Przyrodnicze PAN, 9, Świętego Sebastiana, Stradom, Stare Miasto, Kraków, województwo małopolskie, 31-049, Polska",
+      "osm": "node/472032760"
+    }
+  },
+  {
+    "id": "zydowskie-muzeum-galicja",
+    "name": "Żydowskie Muzeum Galicja",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.050857,
+    "longitude": 19.949677,
+    "geocoded": {
+      "query": "Żydowskie Muzeum Galicja, Kraków",
+      "displayName": "Żydowskie Muzeum Galicja, 18, Dajwór, Kazimierz, Stare Miasto, Kraków, województwo małopolskie, 31-052, Polska",
+      "osm": "node/472147189"
+    }
+  },
+  {
+    "id": "bunkier-sztuki",
+    "name": "Bunkier Sztuki",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.063581,
+    "longitude": 19.934447,
+    "geocoded": {
+      "query": "Bunkier Sztuki, Kraków",
+      "displayName": "Bunkier Sztuki, 3a, Plac Szczepański, Stare Miasto, Kraków, województwo małopolskie, 31-011, Polska",
+      "osm": "node/475387282"
+    }
+  },
+  {
+    "id": "muzeum-witrazu-w-krakowie",
+    "name": "Muzeum Witrażu w Krakowie",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.059008,
+    "longitude": 19.925705,
+    "geocoded": {
+      "query": "Muzeum Witrażu w Krakowie, Kraków",
+      "displayName": "Muzeum Witrażu w Krakowie, Aleja Zygmunta Krasińskiego, Półwsie Zwierzynieckie, Zwierzyniec, Kraków, województwo małopolskie, 31-111, Polska",
+      "osm": "node/4817320821"
+    }
+  },
+  {
+    "id": "zywe-muzeum-obwarzanka",
+    "name": "Żywe Muzeum Obwarzanka",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.066631,
+    "longitude": 19.940814,
+    "geocoded": {
+      "query": "Żywe Muzeum Obwarzanka, Kraków",
+      "displayName": "Żywe Muzeum Obwarzanka, 4, Ignacego Jana Paderewskiego, Kleparz, Stare Miasto, Kraków, województwo małopolskie, 31-157, Polska",
+      "osm": "node/5199949834"
+    }
+  },
+  {
+    "id": "muzeum-anatomii",
+    "name": "Muzeum Anatomii",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.061797,
+    "longitude": 19.94595,
+    "geocoded": {
+      "query": "Muzeum Anatomii, Kraków",
+      "displayName": "Muzeum Anatomii, 12, Mikołaja Kopernika, Wesoła, Stare Miasto, Kraków, województwo małopolskie, 31-034, Polska",
+      "osm": "node/5751039807"
+    }
+  },
+  {
+    "id": "muzeum-agh",
+    "name": "Muzeum AGH",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.066034,
+    "longitude": 19.922203,
+    "geocoded": {
+      "query": "Muzeum AGH, Kraków",
+      "displayName": "Muzeum AGH, 30, Aleja Adama Mickiewicza, Czarna Wieś, Krowodrza, Kraków, województwo małopolskie, 30-059, Polska",
+      "osm": "node/6958500807"
+    }
+  },
+  {
+    "id": "cerkiew-zasniecia-najswietszej-marii-panny",
+    "name": "Cerkiew Zaśnięcia Najświętszej Marii Panny",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.063029,
+    "longitude": 19.941289,
+    "geocoded": {
+      "query": "Cerkiew Zaśnięcia Najświętszej Marii Panny, Kraków",
+      "displayName": "Cerkiew Zaśnięcia Najświętszej Marii Panny, 24, Szpitalna, Stare Miasto, Kraków, województwo małopolskie, 31-024, Polska",
+      "osm": "node/7913718188"
+    }
+  },
+  {
+    "id": "wawel-zaginiony",
+    "name": "Wawel Zaginiony",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.054089,
+    "longitude": 19.936305,
+    "geocoded": {
+      "query": "Wawel Zaginiony, Kraków",
+      "displayName": "Wawel Zaginiony, Dziedziniec Arkadowy, Stare Miasto, Kraków, województwo małopolskie, 31-003, Polska",
+      "osm": "node/9015266574"
+    }
+  },
+  {
+    "id": "skarbiec-koronny",
+    "name": "Skarbiec Koronny",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.054815,
+    "longitude": 19.936933,
+    "geocoded": {
+      "query": "Skarbiec Koronny, Kraków",
+      "displayName": "Skarbiec Koronny, Dziedziniec Arkadowy, Stare Miasto, Kraków, województwo małopolskie, 31-003, Polska",
+      "osm": "node/9845902947"
+    }
+  },
+  {
+    "id": "barbakan",
+    "name": "Barbakan",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.065458,
+    "longitude": 19.941451,
+    "geocoded": {
+      "query": "Barbakan, Kraków",
+      "displayName": "Barbakan, Basztowa, Stare Miasto, Kraków, województwo małopolskie, 31-157, Polska",
+      "osm": "relation/13562708"
+    }
+  },
+  {
+    "id": "muzeum-fotografii-w-krakowie",
+    "name": "Muzeum Fotografii w Krakowie",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.07045,
+    "longitude": 19.95353,
+    "geocoded": {
+      "query": "Muzeum Fotografii w Krakowie, Kraków",
+      "displayName": "MuFo Rakowicka, 22A, Rakowicka, Osiedle Oficerskie, Grzegórzki, Kraków, województwo małopolskie, 31-510, Polska",
+      "osm": "way/1025803982"
+    }
+  },
+  {
+    "id": "muzeum-armii-krajowej",
+    "name": "Muzeum Armii Krajowej",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.072406,
+    "longitude": 19.948931,
+    "geocoded": {
+      "query": "Muzeum Armii Krajowej, Kraków",
+      "displayName": "Muzeum Armii Krajowej, 12, Wita Stwosza, Przedmieście Warszawskie, Stare Miasto, Kraków, województwo małopolskie, 31-141, Polska",
+      "osm": "relation/1765210"
+    }
+  },
+  {
+    "id": "muzeum-archeologiczne",
+    "name": "Muzeum Archeologiczne",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.057549,
+    "longitude": 19.935936,
+    "geocoded": {
+      "query": "Muzeum Archeologiczne, Kraków",
+      "displayName": "Muzeum Archeologiczne, Poselska, Stare Miasto, Kraków, województwo małopolskie, 31-001, Polska",
+      "osm": "relation/1863002"
+    }
+  },
+  {
+    "id": "collegium-maius",
+    "name": "Collegium Maius",
+    "category": "historic",
+    "aliases": [],
+    "latitude": 50.061563,
+    "longitude": 19.933409,
+    "geocoded": {
+      "query": "Collegium Maius, Kraków",
+      "displayName": "Collegium Maius, Gołębia, Stare Miasto, Kraków, województwo małopolskie, 31-007, Polska",
+      "osm": "way/781854753"
+    }
+  },
+  {
+    "id": "zamek-krolewski-na-wawelu",
+    "name": "Zamek Królewski na Wawelu",
+    "category": "historic",
+    "aliases": [],
+    "latitude": 50.054405,
+    "longitude": 19.936022,
+    "geocoded": {
+      "query": "Zamek Królewski na Wawelu, Kraków",
+      "displayName": "Zamek Królewski na Wawelu, Zamek Wawel, Stare Miasto, Kraków, województwo małopolskie, 31-003, Polska",
+      "osm": "relation/2270819"
+    }
+  },
+  {
+    "id": "palac-zbaraskich",
+    "name": "Pałac Zbaraskich",
+    "category": "historic",
+    "aliases": [],
+    "latitude": 50.060702,
+    "longitude": 19.936716,
+    "geocoded": {
+      "query": "Pałac Zbaraskich, Kraków",
+      "displayName": "Pałac Zbaraskich, Bracka, Stare Miasto, Kraków, województwo małopolskie, 31-005, Polska",
+      "osm": "relation/2702585"
+    }
+  },
+  {
+    "id": "palac-wielopolskich",
+    "name": "Pałac Wielopolskich",
+    "category": "historic",
+    "aliases": [],
+    "latitude": 50.058532,
+    "longitude": 19.937124,
+    "geocoded": {
+      "query": "Pałac Wielopolskich, Kraków",
+      "displayName": "Pałac Wielopolskich, Poselska, Stare Miasto, Kraków, województwo małopolskie, 31-001, Polska",
+      "osm": "relation/8027535"
+    }
+  },
+  {
+    "id": "kosciol-pw-swietych-apostolow-piotra-i-pawla",
+    "name": "Kościół pw. Świętych Apostołów Piotra i Pawła",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.056927,
+    "longitude": 19.939064,
+    "geocoded": {
+      "query": "Kościół pw. Świętych Apostołów Piotra i Pawła, Kraków",
+      "displayName": "Kościół pw. Świętych Apostołów Piotra i Pawła, 52a, Grodzka, Stare Miasto, Kraków, województwo małopolskie, 31-044, Polska",
+      "osm": "way/104374972"
+    }
+  },
+  {
+    "id": "kosciol-swietego-marcina",
+    "name": "Kościół Świętego Marcina",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.055898,
+    "longitude": 19.938623,
+    "geocoded": {
+      "query": "Kościół Świętego Marcina, Kraków",
+      "displayName": "Kościół Świętego Marcina, 56, Grodzka, Stare Miasto, Kraków, województwo małopolskie, 31-044, Polska",
+      "osm": "way/124787717"
+    }
+  },
+  {
+    "id": "domek-loretanski",
+    "name": "Domek Loretański",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.062114,
+    "longitude": 19.930247,
+    "geocoded": {
+      "query": "Domek Loretański, Kraków",
+      "displayName": "Domek Loretański, 11, Loretańska, Piasek, Stare Miasto, Kraków, województwo małopolskie, 31-114, Polska",
+      "osm": "way/125099334"
+    }
+  },
+  {
+    "id": "muzeum-narodowe-w-krakowie",
+    "name": "Muzeum Narodowe w Krakowie",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.060437,
+    "longitude": 19.92361,
+    "geocoded": {
+      "query": "Muzeum Narodowe w Krakowie, Kraków",
+      "displayName": "Muzeum Narodowe w Krakowie, 1, Aleja 3 Maja, Błonia, Zwierzyniec, Kraków, województwo małopolskie, 30-062, Polska",
+      "osm": "way/1284375894"
+    }
+  },
+  {
+    "id": "muzeum-ksiazat-czartoryskich-w-krakowie",
+    "name": "Muzeum Książąt Czartoryskich w Krakowie",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.064799,
+    "longitude": 19.940338,
+    "geocoded": {
+      "query": "Muzeum Książąt Czartoryskich w Krakowie, Kraków",
+      "displayName": "Muzeum Książąt Czartoryskich w Krakowie, Pijarska, Stare Miasto, Kraków, województwo małopolskie, 31-015, Polska",
+      "osm": "way/1334317116"
+    }
+  },
+  {
+    "id": "kosciol-pw-swietego-krzyza",
+    "name": "Kościół pw. Świętego Krzyża",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.063362,
+    "longitude": 19.943341,
+    "geocoded": {
+      "query": "Kościół pw. Świętego Krzyża, Kraków",
+      "displayName": "Kościół pw. Świętego Krzyża, 2, Plac Świętego Ducha, Stare Miasto, Kraków, województwo małopolskie, 31-023, Polska",
+      "osm": "way/138025140"
+    }
+  },
+  {
+    "id": "kosciol-pw-matki-boskiej-snieznej",
+    "name": "Kościół pw. Matki Boskiej Śnieżnej",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.061155,
+    "longitude": 19.9432,
+    "geocoded": {
+      "query": "Kościół pw. Matki Boskiej Śnieżnej, Kraków",
+      "displayName": "Kościół pw. Matki Boskiej Śnieżnej, Mikołajska, Stare Miasto, Kraków, województwo małopolskie, 31-033, Polska",
+      "osm": "way/138326573"
+    }
+  },
+  {
+    "id": "kosciol-pw-swietej-barbary",
+    "name": "Kościół pw. Świętej Barbary",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.061312,
+    "longitude": 19.939829,
+    "geocoded": {
+      "query": "Kościół pw. Świętej Barbary, Kraków",
+      "displayName": "Kościół pw. Świętej Barbary, 9, Mały Rynek, Stare Miasto, Kraków, województwo małopolskie, 31-045, Polska",
+      "osm": "way/138365337"
+    }
+  },
+  {
+    "id": "kosciol-pw-swietego-tomasza-apostola",
+    "name": "Kościół pw. Świętego Tomasza Apostoła",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.062474,
+    "longitude": 19.940754,
+    "geocoded": {
+      "query": "Kościół pw. Świętego Tomasza Apostoła, Kraków",
+      "displayName": "Kościół pw. Świętego Tomasza Apostoła, Szpitalna, Stare Miasto, Kraków, województwo małopolskie, 31-024, Polska",
+      "osm": "way/138515650"
+    }
+  },
+  {
+    "id": "synagoga-wolfa-poppera",
+    "name": "Synagoga Wolfa Poppera",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.052427,
+    "longitude": 19.94881,
+    "geocoded": {
+      "query": "Synagoga Wolfa Poppera, Kraków",
+      "displayName": "Synagoga Wolfa Poppera, Dajwór, Kazimierz, Stare Miasto, Kraków, województwo małopolskie, 31-052, Polska",
+      "osm": "way/152104744"
+    }
+  },
+  {
+    "id": "stara-synagoga",
+    "name": "Stara Synagoga",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.051367,
+    "longitude": 19.948638,
+    "geocoded": {
+      "query": "Stara Synagoga, Kraków",
+      "displayName": "Stara Synagoga, Plac Bawół, Kazimierz, Stare Miasto, Kraków, województwo małopolskie, 31-053, Polska",
+      "osm": "way/152104775"
+    }
+  },
+  {
+    "id": "bazylika-najswietszego-serca-pana-jezusa",
+    "name": "Bazylika Najświętszego Serca Pana Jezusa",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.0621,
+    "longitude": 19.948838,
+    "geocoded": {
+      "query": "Bazylika Najświętszego Serca Pana Jezusa, Kraków",
+      "displayName": "Bazylika Najświętszego Serca Pana Jezusa, 26, Mikołaja Kopernika, Wesoła II, Grzegórzki, Kraków, województwo małopolskie, 31-501, Polska",
+      "osm": "way/152330075"
+    }
+  },
+  {
+    "id": "palac-rzewuskich-w-krakowie",
+    "name": "Pałac Rzewuskich w Krakowie",
+    "category": "historic",
+    "aliases": [],
+    "latitude": 50.061867,
+    "longitude": 19.944914,
+    "geocoded": {
+      "query": "Pałac Rzewuskich w Krakowie, Kraków",
+      "displayName": "Pałac Rzewuskich w Krakowie, 11, Westerplatte, Stare Miasto, Kraków, województwo małopolskie, 31-033, Polska",
+      "osm": "way/152334095"
+    }
+  },
+  {
+    "id": "kosciol-pw-przemienienia-panskiego",
+    "name": "Kościół pw. Przemienienia Pańskiego",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.064942,
+    "longitude": 19.939889,
+    "geocoded": {
+      "query": "Kościół pw. Przemienienia Pańskiego, Kraków",
+      "displayName": "Kościół pw. Przemienienia Pańskiego, 4, Pijarska, Stare Miasto, Kraków, województwo małopolskie, 31-015, Polska",
+      "osm": "way/153033978"
+    }
+  },
+  {
+    "id": "dom-jana-matejki",
+    "name": "Dom Jana Matejki",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.063835,
+    "longitude": 19.941001,
+    "geocoded": {
+      "query": "Dom Jana Matejki, Kraków",
+      "displayName": "Dom Jana Matejki, 41, Floriańska, Stare Miasto, Kraków, województwo małopolskie, 31-019, Polska",
+      "osm": "way/153158172"
+    }
+  },
+  {
+    "id": "teatr-im-juliusza-slowackiego",
+    "name": "Teatr im. Juliusza Słowackiego",
+    "category": "theatre",
+    "aliases": [],
+    "latitude": 50.063947,
+    "longitude": 19.943066,
+    "geocoded": {
+      "query": "Teatr im. Juliusza Słowackiego, Kraków",
+      "displayName": "Teatr im. Juliusza Słowackiego, 1, Plac Świętego Ducha, Stare Miasto, Kraków, województwo małopolskie, 31-023, Polska",
+      "osm": "way/153942974"
+    }
+  },
+  {
+    "id": "kosciol-pw-swietego-franciszka-z-asyzu-w-krakowie",
+    "name": "Kościół pw. Świętego Franciszka z Asyżu w Krakowie",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.059219,
+    "longitude": 19.936092,
+    "geocoded": {
+      "query": "Kościół pw. Świętego Franciszka z Asyżu w Krakowie, Kraków",
+      "displayName": "Bazylika Świętego Franciszka z Asyżu, 5, Plac Wszystkich Świętych, Stare Miasto, Kraków, województwo małopolskie, 31-045, Polska",
+      "osm": "way/200358351"
+    }
+  },
+  {
+    "id": "arsenal-miejski",
+    "name": "Arsenał Miejski",
+    "category": "historic",
+    "aliases": [],
+    "latitude": 50.065125,
+    "longitude": 19.940299,
+    "geocoded": {
+      "query": "Arsenał Miejski, Kraków",
+      "displayName": "Arsenał Miejski, Zaułek Książąt Czartoryskich, Stare Miasto, Kraków, województwo małopolskie, 31-015, Polska",
+      "osm": "way/200499484"
+    }
+  },
+  {
+    "id": "kosciol-pw-swietego-idziego",
+    "name": "Kościół pw. Świętego Idziego",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.055182,
+    "longitude": 19.938149,
+    "geocoded": {
+      "query": "Kościół pw. Świętego Idziego, Kraków",
+      "displayName": "Kościół pw. Świętego Idziego, Grodzka, Stare Miasto, Kraków, województwo małopolskie, 31-048, Polska",
+      "osm": "way/201589921"
+    }
+  },
+  {
+    "id": "bazylika-nawiedzenia-najswietszej-maryi-panny",
+    "name": "Bazylika Nawiedzenia Najświętszej Maryi Panny",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.065145,
+    "longitude": 19.931922,
+    "geocoded": {
+      "query": "Bazylika Nawiedzenia Najświętszej Maryi Panny, Kraków",
+      "displayName": "Bazylika Nawiedzenia Najświętszej Maryi Panny, 19, Karmelicka, Piasek, Stare Miasto, Kraków, województwo małopolskie, 31-131, Polska",
+      "osm": "way/203495624"
+    }
+  },
+  {
+    "id": "kosciol-zwiastowania-najswietszej-maryi-panny",
+    "name": "Kościół Zwiastowania Najświętszej Maryi Panny",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.061965,
+    "longitude": 19.92995,
+    "geocoded": {
+      "query": "Kościół Zwiastowania Najświętszej Maryi Panny, Kraków",
+      "displayName": "Kościół Zwiastowania Najświętszej Maryi Panny, 11, Loretańska, Piasek, Stare Miasto, Kraków, województwo małopolskie, 31-116, Polska",
+      "osm": "way/203500513"
+    }
+  },
+  {
+    "id": "kosciol-pw-niepokalanego-poczecia-najswietszej-maryi-panny",
+    "name": "Kościół pw. Niepokalanego Poczęcia Najświętszej Maryi Panny",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.062469,
+    "longitude": 19.95145,
+    "geocoded": {
+      "query": "Kościół pw. Niepokalanego Poczęcia Najświętszej Maryi Panny, Kraków",
+      "displayName": "Kościół pw. Niepokalanego Poczęcia Najświętszej Maryi Panny, 19, Mikołaja Kopernika, Wesoła II, Grzegórzki, Kraków, województwo małopolskie, 31-501, Polska",
+      "osm": "way/39401986"
+    }
+  },
+  {
+    "id": "sukiennice",
+    "name": "Sukiennice",
+    "category": "historic",
+    "aliases": [],
+    "latitude": 50.061701,
+    "longitude": 19.937351,
+    "geocoded": {
+      "query": "Sukiennice, Kraków",
+      "displayName": "Sukiennice, 3, Rynek Główny, Stare Miasto, Kraków, województwo małopolskie, 31-042, Polska",
+      "osm": "way/23256528"
+    }
+  },
+  {
+    "id": "dawny-hotel-cracovia",
+    "name": "Dawny Hotel \"Cracovia\"",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.058485,
+    "longitude": 19.92335,
+    "geocoded": {
+      "query": "Dawny Hotel \"Cracovia\", Kraków",
+      "displayName": "Dawny Hotel \"Cracovia\", 1, Aleja Marszałka Ferdinanda Focha, Zwierzyniec, Kraków, województwo małopolskie, 30-111, Polska",
+      "osm": "way/233092298"
+    }
+  },
+  {
+    "id": "kosciol-pw-swietego-szczepana",
+    "name": "Kościół pw. Świętego Szczepana",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.07163,
+    "longitude": 19.927133,
+    "geocoded": {
+      "query": "Kościół pw. Świętego Szczepana, Kraków",
+      "displayName": "Kościół pw. Świętego Szczepana, 17, Henryka Sienkiewicza, Nowa Wieś, Krowodrza, Kraków, województwo małopolskie, 30-033, Polska",
+      "osm": "way/233355237"
+    }
+  },
+  {
+    "id": "muzeum-sztuki-i-techniki-japonskiej-manggha",
+    "name": "Muzeum Sztuki i Techniki Japońskiej Manggha",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.050833,
+    "longitude": 19.931647,
+    "geocoded": {
+      "query": "Muzeum Sztuki i Techniki Japońskiej Manggha, Kraków",
+      "displayName": "Muzeum Sztuki i Techniki Japońskiej Manggha, 26, Marii Konopnickiej, Dębniki, Kraków, województwo małopolskie, 30-302, Polska",
+      "osm": "way/233371578"
+    }
+  },
+  {
+    "id": "kaplica-pw-swietego-piotra-i-swietego-pawla",
+    "name": "Kaplica pw. Świętego Piotra i Świętego Pawła",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.052293,
+    "longitude": 19.927941,
+    "geocoded": {
+      "query": "Kaplica pw. Świętego Piotra i Świętego Pawła, Kraków",
+      "displayName": "Kaplica pw. Świętego Piotra i Świętego Pawła, 13, Antoniego Józefa Madalińskiego, Dębniki, Kraków, województwo małopolskie, 30-303, Polska",
+      "osm": "way/233373069"
+    }
+  },
+  {
+    "id": "bazylika-przenajswietszej-trojcy",
+    "name": "Bazylika Przenajświętszej Trójcy",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.059295,
+    "longitude": 19.939428,
+    "geocoded": {
+      "query": "Bazylika Przenajświętszej Trójcy, Kraków",
+      "displayName": "Bazylika Przenajświętszej Trójcy, 12, Stolarska, Stare Miasto, Kraków, województwo małopolskie, 31-045, Polska",
+      "osm": "way/243432610"
+    }
+  },
+  {
+    "id": "wieza-ratuszowa",
+    "name": "Wieża Ratuszowa",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.061486,
+    "longitude": 19.936415,
+    "geocoded": {
+      "query": "Wieża Ratuszowa, Kraków",
+      "displayName": "Wieża Ratuszowa, 1, Rynek Główny, Stare Miasto, Kraków, województwo małopolskie, 31-001, Polska",
+      "osm": "way/25122842"
+    }
+  },
+  {
+    "id": "brama-wazow",
+    "name": "Brama Wazów",
+    "category": "historic",
+    "aliases": [],
+    "latitude": 50.054772,
+    "longitude": 19.934837,
+    "geocoded": {
+      "query": "Brama Wazów, Kraków",
+      "displayName": "Brama Wazów, Podzamcze, Nowy Świat, Stare Miasto, Kraków, województwo małopolskie, 31-003, Polska",
+      "osm": "way/25516598"
+    }
+  },
+  {
+    "id": "bazylika-wniebowziecia-najswietszej-maryi-panny",
+    "name": "Bazylika Wniebowzięcia Najświętszej Maryi Panny",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.061655,
+    "longitude": 19.939449,
+    "geocoded": {
+      "query": "Bazylika Wniebowzięcia Najświętszej Maryi Panny, Kraków",
+      "displayName": "Bazylika Wniebowzięcia Najświętszej Maryi Panny, 5, Plac Mariacki, Stare Miasto, Kraków, województwo małopolskie, 31-042, Polska",
+      "osm": "way/26195267"
+    }
+  },
+  {
+    "id": "palac-biskupi",
+    "name": "Pałac Biskupi",
+    "category": "historic",
+    "aliases": [],
+    "latitude": 50.059834,
+    "longitude": 19.934642,
+    "geocoded": {
+      "query": "Pałac Biskupi, Kraków",
+      "displayName": "Pałac Biskupi, 3, Franciszkańska, Stare Miasto, Kraków, województwo małopolskie, 31-004, Polska",
+      "osm": "way/263169972"
+    }
+  },
+  {
+    "id": "bazylika-swietego-floriana",
+    "name": "Bazylika Świętego Floriana",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.067543,
+    "longitude": 19.943269,
+    "geocoded": {
+      "query": "Bazylika Świętego Floriana, Kraków",
+      "displayName": "Bazylika Świętego Floriana, 1b, Warszawska, Kleparz, Stare Miasto, Kraków, województwo małopolskie, 31-155, Polska",
+      "osm": "way/29246492"
+    }
+  },
+  {
+    "id": "kosciol-pw-swietego-andrzeja",
+    "name": "Kościół pw. Świętego Andrzeja",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.05659,
+    "longitude": 19.938429,
+    "geocoded": {
+      "query": "Kościół pw. Świętego Andrzeja, Kraków",
+      "displayName": "Kościół pw. Świętego Andrzeja, 54, Grodzka, Stare Miasto, Kraków, województwo małopolskie, 31-155, Polska",
+      "osm": "way/29271073"
+    }
+  },
+  {
+    "id": "kosciol-pw-swietego-wojciecha-biskupa-i-meczennika",
+    "name": "Kościół pw. Świętego Wojciecha Biskupa i Męczennika",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.060888,
+    "longitude": 19.937744,
+    "geocoded": {
+      "query": "Kościół pw. Świętego Wojciecha Biskupa i Męczennika, Kraków",
+      "displayName": "Kościół pw. Świętego Wojciecha Biskupa i Męczennika, Rynek Główny, Stare Miasto, Kraków, województwo małopolskie, 31-042, Polska",
+      "osm": "way/29271113"
+    }
+  },
+  {
+    "id": "kosciol-pw-niepokalanego-serca-najswietszej-marii-panny",
+    "name": "Kościół pw. Niepokalanego Serca Najświętszej Marii Panny",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.05875,
+    "longitude": 19.930927,
+    "geocoded": {
+      "query": "Kościół pw. Niepokalanego Serca Najświętszej Marii Panny, Kraków",
+      "displayName": "Kościół pw. Niepokalanego Serca Najświętszej Marii Panny, 6, Smoleńsk, Nowy Świat, Stare Miasto, Kraków, województwo małopolskie, 31-107, Polska",
+      "osm": "way/29327540"
+    }
+  },
+  {
+    "id": "kosciol-pw-swietej-teresy-od-jezusa-i-swietego-jana-od-krzyz",
+    "name": "Kościół pw. Świętej Teresy od Jezusa i Świętego Jana od Krzyża",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.063678,
+    "longitude": 19.952846,
+    "geocoded": {
+      "query": "Kościół pw. Świętej Teresy od Jezusa i Świętego Jana od Krzyża, Kraków",
+      "displayName": "Kościół pw. Świętej Teresy od Jezusa i Świętego Jana od Krzyża, Mikołaja Kopernika, Wesoła, Grzegórzki, Kraków, województwo małopolskie, 31-501, Polska",
+      "osm": "way/302622201"
+    }
+  },
+  {
+    "id": "cerkiew-pw-podwyzszenia-krzyza-swietego",
+    "name": "Cerkiew pw. Podwyższenia Krzyża Świętego",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.060311,
+    "longitude": 19.934194,
+    "geocoded": {
+      "query": "Cerkiew pw. Podwyższenia Krzyża Świętego, Kraków",
+      "displayName": "Cerkiew pw. Podwyższenia Krzyża Świętego, 11, Wiślna, Stare Miasto, Kraków, województwo małopolskie, 31-007, Polska",
+      "osm": "way/304488625"
+    }
+  },
+  {
+    "id": "celestat",
+    "name": "Celestat",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.065469,
+    "longitude": 19.949351,
+    "geocoded": {
+      "query": "Celestat, Kraków",
+      "displayName": "Celestat, 16, Lubicz, Wesoła II, Grzegórzki, Kraków, województwo małopolskie, 31-504, Polska",
+      "osm": "way/30807865"
+    }
+  },
+  {
+    "id": "bazylika-swietego-michala-archaniola-i-swietego-stanislawa-b",
+    "name": "Bazylika Świętego Michała Archanioła i Świętego Stanisława Biskupa",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.048235,
+    "longitude": 19.937628,
+    "geocoded": {
+      "query": "Bazylika Świętego Michała Archanioła i Świętego Stanisława Biskupa, Kraków",
+      "displayName": "Bazylika Świętego Michała Archanioła i Świętego Stanisława Biskupa, 15, Skałeczna, Kazimierz, Stare Miasto, Kraków, województwo małopolskie, 31-064, Polska",
+      "osm": "way/33291026"
+    }
+  },
+  {
+    "id": "bazylika-bozego-ciala",
+    "name": "Bazylika Bożego Ciała",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.049763,
+    "longitude": 19.944829,
+    "geocoded": {
+      "query": "Bazylika Bożego Ciała, Kraków",
+      "displayName": "Bazylika Bożego Ciała, 26, Bożego Ciała, Kazimierz, Stare Miasto, Kraków, województwo małopolskie, 31-059, Polska",
+      "osm": "way/33291029"
+    }
+  },
+  {
+    "id": "synagoga-remuh",
+    "name": "Synagoga Remuh",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.052649,
+    "longitude": 19.947294,
+    "geocoded": {
+      "query": "Synagoga Remuh, Kraków",
+      "displayName": "Synagoga Remuh, Lewkowa, Kazimierz, Stare Miasto, Kraków, województwo małopolskie, 31-053, Polska",
+      "osm": "way/33291034"
+    }
+  },
+  {
+    "id": "collegium-sniadeckiego",
+    "name": "Collegium Śniadeckiego",
+    "category": "historic",
+    "aliases": [],
+    "latitude": 50.063688,
+    "longitude": 19.955945,
+    "geocoded": {
+      "query": "Collegium Śniadeckiego, Kraków",
+      "displayName": "Collegium Śniadeckiego, 29, Mikołaja Kopernika, Wesoła, Grzegórzki, Kraków, województwo małopolskie, 31-501, Polska",
+      "osm": "way/348252385"
+    }
+  },
+  {
+    "id": "adam-mickiewicz",
+    "name": "Adam Mickiewicz",
+    "category": "historic",
+    "aliases": [],
+    "latitude": 49.974728,
+    "longitude": 19.82329,
+    "geocoded": {
+      "query": "Pomnik Adama Mickiewicza, Kraków",
+      "displayName": "Pomnik Kazimierza Wielkiego, Adama Mickiewicza, Rynek, Osiedle Stare Miasto, Skawina, gmina Skawina, powiat krakowski, województwo małopolskie, 32-054, Polska",
+      "osm": "node/3925993456"
+    }
+  },
+  {
+    "id": "kosciol-pw-swietej-katarzyny-aleksandryjskiej",
+    "name": "Kościół pw. Świętej Katarzyny Aleksandryjskiej",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.049284,
+    "longitude": 19.940905,
+    "geocoded": {
+      "query": "Kościół pw. Świętej Katarzyny Aleksandryjskiej, Kraków",
+      "displayName": "Kościół pw. Świętej Katarzyny Aleksandryjskiej, 7, Augustiańska, Kazimierz, Stare Miasto, Kraków, województwo małopolskie, 31-064, Polska",
+      "osm": "way/39243627"
+    }
+  },
+  {
+    "id": "kosciol-pw-swietej-agnieszki",
+    "name": "Kościół pw. Świętej Agnieszki",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.051264,
+    "longitude": 19.939712,
+    "geocoded": {
+      "query": "Kościół pw. Świętej Agnieszki, Kraków",
+      "displayName": "Kościół pw. Świętej Agnieszki, 30, Józefa Dietla, Stradom, Stare Miasto, Kraków, województwo małopolskie, 31-070, Polska",
+      "osm": "way/39244262"
+    }
+  },
+  {
+    "id": "palac-sztuki",
+    "name": "Pałac Sztuki",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.063996,
+    "longitude": 19.934904,
+    "geocoded": {
+      "query": "Pałac Sztuki, Kraków",
+      "displayName": "Pałac Sztuki, 4, Plac Szczepański, Stare Miasto, Kraków, województwo małopolskie, 31-011, Polska",
+      "osm": "way/39357526"
+    }
+  },
+  {
+    "id": "kosciol-pw-swietego-marka",
+    "name": "Kościół pw. Świętego Marka",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.064559,
+    "longitude": 19.937699,
+    "geocoded": {
+      "query": "Kościół pw. Świętego Marka, Kraków",
+      "displayName": "Kościół pw. Świętego Marka, 10, Świętego Marka, Stare Miasto, Kraków, województwo małopolskie, 31-012, Polska",
+      "osm": "way/39357528"
+    }
+  },
+  {
+    "id": "kosciol-pw-swietego-kazimierza-krolewicza",
+    "name": "Kościół pw. Świętego Kazimierza Królewicza",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.06487,
+    "longitude": 19.936231,
+    "geocoded": {
+      "query": "Kościół pw. Świętego Kazimierza Królewicza, Kraków",
+      "displayName": "Kościół pw. Świętego Kazimierza Królewicza, 4, Reformacka, Stare Miasto, Kraków, województwo małopolskie, 31-012, Polska",
+      "osm": "way/39357530"
+    }
+  },
+  {
+    "id": "brama-florianska",
+    "name": "Brama Floriańska",
+    "category": "historic",
+    "aliases": [],
+    "latitude": 50.064856,
+    "longitude": 19.941353,
+    "geocoded": {
+      "query": "Brama Floriańska, Kraków",
+      "displayName": "Brama Floriańska, Floriańska, Stare Miasto, Kraków, województwo małopolskie, 31-019, Polska",
+      "osm": "way/39357538"
+    }
+  },
+  {
+    "id": "kosciol-pw-swietej-anny",
+    "name": "Kościół pw. Świętej Anny",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.062396,
+    "longitude": 19.933563,
+    "geocoded": {
+      "query": "Kościół pw. Świętej Anny, Kraków",
+      "displayName": "Kościół pw. Świętej Anny, 13, Świętej Anny, Stare Miasto, Kraków, województwo małopolskie, 31-008, Polska",
+      "osm": "way/39357541"
+    }
+  },
+  {
+    "id": "narodowy-stary-teatr-imienia-heleny-modrzejewskiej",
+    "name": "Narodowy Stary Teatr imienia Heleny Modrzejewskiej",
+    "category": "theatre",
+    "aliases": [],
+    "latitude": 50.063156,
+    "longitude": 19.935367,
+    "geocoded": {
+      "query": "Narodowy Stary Teatr imienia Heleny Modrzejewskiej, Kraków",
+      "displayName": "Narodowy Stary Teatr imienia Heleny Modrzejewskiej, 1, Plac Szczepański, Stare Miasto, Kraków, województwo małopolskie, 31-011, Polska",
+      "osm": "way/39357571"
+    }
+  },
+  {
+    "id": "kosciol-pw-swietego-jana-chrzciciela-i-swietego-jana-ewangel",
+    "name": "Kościół pw. Świętego Jana Chrzciciela i Świętego Jana Ewangelisty",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.063138,
+    "longitude": 19.938947,
+    "geocoded": {
+      "query": "Kościół pw. Świętego Jana Chrzciciela i Świętego Jana Ewangelisty, Kraków",
+      "displayName": "Kościół pw. Świętego Jana Chrzciciela i Świętego Jana Ewangelisty, 7, Świętego Jana, Stare Miasto, Kraków, województwo małopolskie, 31-045, Polska",
+      "osm": "way/39357573"
+    }
+  },
+  {
+    "id": "kosciol-pw-swietego-jozefa",
+    "name": "Kościół pw. Świętego Józefa",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.043274,
+    "longitude": 19.949897,
+    "geocoded": {
+      "query": "Kościół pw. Świętego Józefa, Kraków",
+      "displayName": "Kościół pw. Świętego Józefa, 2, Jana Zamoyskiego, Stare Podgórze, Podgórze, Kraków, województwo małopolskie, 30-523, Polska",
+      "osm": "way/262186756"
+    }
+  },
+  {
+    "id": "kosciol-pw-najswietszego-serca-pana-jezusa",
+    "name": "Kościół pw. Najświętszego Serca Pana Jezusa",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.0621,
+    "longitude": 19.948838,
+    "geocoded": {
+      "query": "Kościół pw. Najświętszego Serca Pana Jezusa, Kraków",
+      "displayName": "Bazylika Najświętszego Serca Pana Jezusa, 26, Mikołaja Kopernika, Wesoła II, Grzegórzki, Kraków, województwo małopolskie, 31-501, Polska",
+      "osm": "way/152330075"
+    }
+  },
+  {
+    "id": "dom-jozefa-mehoffera",
+    "name": "Dom Józefa Mehoffera",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.063277,
+    "longitude": 19.928481,
+    "geocoded": {
+      "query": "Dom Józefa Mehoffera, Kraków",
+      "displayName": "Dom Józefa Mehoffera, 26, Krupnicza, Piasek, Stare Miasto, Kraków, województwo małopolskie, 31-123, Polska",
+      "osm": "way/39393947"
+    }
+  },
+  {
+    "id": "kosciol-pw-swietego-franciszka-salezego",
+    "name": "Kościół pw. Świętego Franciszka Salezego",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.068303,
+    "longitude": 19.936954,
+    "geocoded": {
+      "query": "Kościół pw. Świętego Franciszka Salezego, Kraków",
+      "displayName": "Kościół pw. Świętego Franciszka Salezego, 16, Krowoderska, Piasek, Stare Miasto, Kraków, województwo małopolskie, 31-141, Polska",
+      "osm": "way/39393958"
+    }
+  },
+  {
+    "id": "kosciol-pw-swietego-mikolaja",
+    "name": "Kościół pw. Świętego Mikołaja",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.060874,
+    "longitude": 19.947172,
+    "geocoded": {
+      "query": "Kościół pw. Świętego Mikołaja, Kraków",
+      "displayName": "Kościół pw. Świętego Mikołaja, 9a, Mikołaja Kopernika, Wesoła, Stare Miasto, Kraków, województwo małopolskie, 31-501, Polska",
+      "osm": "way/39394969"
+    }
+  },
+  {
+    "id": "kosciol-pw-niepokalanego-poczecia-najswietszej-maryi-panny-2",
+    "name": "Kościół pw. Niepokalanego Poczęcia Najświętszej Maryi Panny",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.068553,
+    "longitude": 19.952347,
+    "geocoded": {
+      "query": "Kościół pw. Niepokalanego Poczęcia Najświętszej Maryi Panny, Kraków",
+      "displayName": "Kościół pw. Niepokalanego Poczęcia Najświętszej Maryi Panny, 18, Rakowicka, Osiedle Oficerskie, Grzegórzki, Kraków, województwo małopolskie, 31-510, Polska",
+      "osm": "way/203560726"
+    }
+  },
+  {
+    "id": "synagoga-tempel-w-krakowie",
+    "name": "Synagoga Tempel w Krakowie",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.052938,
+    "longitude": 19.944444,
+    "geocoded": {
+      "query": "Synagoga Tempel w Krakowie, Kraków",
+      "displayName": "Synagoga Tempel w Krakowie, Podbrzezie, Kazimierz, Stare Miasto, Kraków, województwo małopolskie, 31-050, Polska",
+      "osm": "way/39405479"
+    }
+  },
+  {
+    "id": "synagoga-kupa",
+    "name": "Synagoga Kupa",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.052609,
+    "longitude": 19.945739,
+    "geocoded": {
+      "query": "Synagoga Kupa, Kraków",
+      "displayName": "Synagoga Kupa, Warszauera, Kazimierz, Stare Miasto, Kraków, województwo małopolskie, 31-057, Polska",
+      "osm": "way/39405481"
+    }
+  },
+  {
+    "id": "synagoga-izaaka-jakubowicza",
+    "name": "Synagoga Izaaka Jakubowicza",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.051672,
+    "longitude": 19.946647,
+    "geocoded": {
+      "query": "Synagoga Izaaka Jakubowicza, Kraków",
+      "displayName": "Synagoga Izaaka Jakubowicza, Jakuba, Kazimierz, Stare Miasto, Kraków, województwo małopolskie, 31-057, Polska",
+      "osm": "way/39405483"
+    }
+  },
+  {
+    "id": "kosciol-pw-swietego-bernardyna-ze-sieny",
+    "name": "Kościół pw. Świętego Bernardyna ze Sieny",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.053418,
+    "longitude": 19.938361,
+    "geocoded": {
+      "query": "Kościół pw. Świętego Bernardyna ze Sieny, Kraków",
+      "displayName": "Kościół pw. Świętego Bernardyna ze Sieny, Bernardyńska, Stradom, Stare Miasto, Kraków, województwo małopolskie, 31-068, Polska",
+      "osm": "way/39407996"
+    }
+  },
+  {
+    "id": "pomnik-tadeusza-kosciuszki",
+    "name": "Pomnik Tadeusza Kościuszki",
+    "category": "historic",
+    "aliases": [],
+    "latitude": 50.054913,
+    "longitude": 19.935064,
+    "geocoded": {
+      "query": "Pomnik Tadeusza Kościuszki, Kraków",
+      "displayName": "Tadeusz Kościuszko, Podzamcze, Stare Miasto, Kraków, województwo małopolskie, 31-003, Polska",
+      "osm": "way/398928087"
+    }
+  },
+  {
+    "id": "wieza-zygmunta-iii-wazy",
+    "name": "Wieża Zygmunta III Wazy",
+    "category": "historic",
+    "aliases": [],
+    "latitude": 50.054934,
+    "longitude": 19.937284,
+    "geocoded": {
+      "query": "Wieża Zygmunta III Wazy, Kraków",
+      "displayName": "Wieża Zygmunta III Wazy, Dziedziniec Arkadowy, Stare Miasto, Kraków, województwo małopolskie, 31-003, Polska",
+      "osm": "way/399583588"
+    }
+  },
+  {
+    "id": "bazylika-archikatedralna-swietych-stanislawa-i-waclawa",
+    "name": "Bazylika archikatedralna Świętych Stanisława i Wacława",
+    "category": "place_of_worship",
+    "aliases": [],
+    "latitude": 50.05465,
+    "longitude": 19.935455,
+    "geocoded": {
+      "query": "Bazylika archikatedralna Świętych Stanisława i Wacława, Kraków",
+      "displayName": "Bazylika archikatedralna Świętych Stanisława i Wacława, 1, Zamek Wawel, Stare Miasto, Kraków, województwo małopolskie, 31-001, Polska",
+      "osm": "way/85151350"
+    }
+  },
+  {
+    "id": "muzeum-politechniki-krakowskiej",
+    "name": "Muzeum Politechniki Krakowskiej",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.072688,
+    "longitude": 19.943423,
+    "geocoded": {
+      "query": "Muzeum Politechniki Krakowskiej, Kraków",
+      "displayName": "Muzeum Politechniki Krakowskiej, Warszawska, Kleparz, Stare Miasto, Kraków, województwo małopolskie, 31-404, Polska",
+      "osm": "way/87527975"
+    }
+  },
+  {
+    "id": "muzeum-im-emeryka-hutten-czapskiego",
+    "name": "Muzeum im. Emeryka Hutten-Czapskiego",
+    "category": "museum",
+    "aliases": [],
+    "latitude": 50.059937,
+    "longitude": 19.930148,
+    "geocoded": {
+      "query": "Muzeum im. Emeryka Hutten-Czapskiego, Kraków",
+      "displayName": "Muzeum im. Emeryka Hutten-Czapskiego, Marszałka Józefa Piłsudskiego, Nowy Świat, Stare Miasto, Kraków, województwo małopolskie, 31-108, Polska",
+      "osm": "way/929760911"
+    }
+  }
+]

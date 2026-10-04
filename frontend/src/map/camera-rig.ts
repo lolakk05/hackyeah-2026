@@ -1,11 +1,14 @@
 import * as THREE from 'three';
 
+import { MAP_EXTENT } from './geo';
 import type { P } from './osm';
 
 const TILT_MIN = THREE.MathUtils.degToRad(18); // almost street level
 const TILT_MAX = THREE.MathUtils.degToRad(85); // straight down
 const DIST_MIN = 40;
-const DIST_MAX = 2200;
+const DIST_MAX = 2800;
+/** How far outside the loaded area the camera may move (metres). */
+const PAN_MARGIN = 400;
 
 /**
  * Orbit camera for the city: looks at a ground target from a distance, with
@@ -48,8 +51,8 @@ export class CameraRig {
     const x = this.goal.target.x - dxPixels * k * cos - dyPixels * k * sin;
     const z = this.goal.target.z + dxPixels * k * sin - dyPixels * k * cos;
     this.goal.target = {
-      x: THREE.MathUtils.clamp(x, -2500, 2500),
-      z: THREE.MathUtils.clamp(z, -2500, 2500),
+      x: THREE.MathUtils.clamp(x, MAP_EXTENT.minX - PAN_MARGIN, MAP_EXTENT.maxX + PAN_MARGIN),
+      z: THREE.MathUtils.clamp(z, MAP_EXTENT.minZ - PAN_MARGIN, MAP_EXTENT.maxZ + PAN_MARGIN),
     };
   }
 
@@ -69,6 +72,18 @@ export class CameraRig {
   private nearestAngle(a: number) {
     const cur = this.goal.azimuth;
     return cur + Math.atan2(Math.sin(a - cur), Math.cos(a - cur));
+  }
+
+  /** True when the camera has (almost) reached its goal, so nothing on screen moves. */
+  isSettled(): boolean {
+    const g = this.goal;
+    return (
+      Math.abs(g.target.x - this.target.x) < 0.05 &&
+      Math.abs(g.target.z - this.target.z) < 0.05 &&
+      Math.abs(g.distance - this.distance) < 0.05 &&
+      Math.abs(g.azimuth - this.azimuth) < 0.0005 &&
+      Math.abs(g.tilt - this.tilt) < 0.0005
+    );
   }
 
   /** Glide towards the goal and place the camera. */

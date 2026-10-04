@@ -64,13 +64,13 @@ def test_import_metadata_categories_and_partial_results():
     element = {
         "type": "way",
         "id": 123,
-        "center": {"lat": 50, "lon": 19},
-        "tags": {"leisure": "garden", "amenity": "bench", "name": "Garden"},
+        "center": {"lat": 50.0617, "lon": 19.9373},
+        "tags": {"tourism": "museum", "wikidata": "Q123", "name": "Museum"},
     }
     result = convert({"elements": [element, element]}, "https://example.test")
     assert len(result["features"]) == 1
     feature = result["features"][0]
-    assert feature["properties"]["category"] == "garden"
+    assert feature["properties"]["category"] == "museum"
     assert feature["properties"]["coordinate_source"] == "bounds_center"
     assert result["metadata"]["license"] == "ODbL-1.0"
     with pytest.raises(ValueError, match="incomplete"):
