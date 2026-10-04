@@ -1,4 +1,4 @@
-# Kraków Quest — HackYeah 2026
+# Spacer.io - HackYeah 2026
 
 **Zwiedzaj Kraków bez barier.** Aplikacja mobilna, która układa spacer po mieście na zadany czas,
 pokazuje, które miejsca są dostępne dla osób na wózku i z ograniczoną mobilnością, i zamienia
