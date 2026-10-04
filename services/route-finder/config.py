@@ -1,4 +1,4 @@
-"""Configuration resolved once during application startup."""
+"""Configuration resolved once when the application is created."""
 
 import os
 from pathlib import Path
@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field, HttpUrl
 
 class Settings(BaseModel):
     poi_file: Path = Path(__file__).with_name("krakow_pois.geojson")
+    cors_allow_origins: list[str] = Field(default_factory=lambda: ["*"])
     osrm_base_url: HttpUrl = HttpUrl("https://routing.openstreetmap.de/routed-foot")
     osrm_step_free_base_url: HttpUrl | None = None
     osrm_wheelchair_base_url: HttpUrl | None = None
@@ -38,6 +39,13 @@ class Settings(BaseModel):
             "CACHE_TTL_S": "cache_ttl_s",
             "CACHE_SIZE": "cache_size",
         }
-        return cls.model_validate(
-            {field: os.environ[name] for name, field in names.items() if name in os.environ}
-        )
+        values: dict[str, object] = {
+            field: os.environ[name] for name, field in names.items() if name in os.environ
+        }
+        if "CORS_ALLOW_ORIGINS" in os.environ:
+            values["cors_allow_origins"] = [
+                origin.strip()
+                for origin in os.environ["CORS_ALLOW_ORIGINS"].split(",")
+                if origin.strip()
+            ]
+        return cls.model_validate(values)

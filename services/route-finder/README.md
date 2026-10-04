@@ -78,7 +78,8 @@ Dane: © OpenStreetMap contributors, [ODbL](https://www.openstreetmap.org/copyri
 
 ## Konfiguracja
 
-Zmienne środowiskowe są czytane przy starcie. Plik `.env` nie jest ładowany automatycznie.
+Zmienne środowiskowe są czytane podczas tworzenia aplikacji. Plik `.env` nie jest ładowany automatycznie.
+API obsługuje CORS; konfigurację originów i preflight opisuje [docs/OPIS_API.md](docs/OPIS_API.md).
 
 | Zmienna | Domyślna wartość | Znaczenie |
 |---|---|---|

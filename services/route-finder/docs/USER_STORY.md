@@ -8,6 +8,9 @@ Nazwy pól, przykłady requestów i limity należą do [API.md](API.md).
 Użytkownik chce wykorzystać dostępny czas na zwiedzanie Krakowa. W zewnętrznej
 aplikacji wybiera długość podróży, początek w bieżącej lokalizacji albo na Rynku
 i niezależne preferencje: poruszanie się na wózku oraz unikanie schodów.
+Może wybrać język polski lub angielski. Jeśli znajduje się zbyt daleko od centrum,
+np. przy Tauron Arenie, otrzymuje informację o pominięciu swojej lokalizacji
+i plan spaceru od Rynku. Dotarcie na Rynek organizuje poza tym planem.
 
 Aplikacja przesyła wybór do Route Finder. Serwis zwraca trasę z kolejnymi POI,
 przewidywanym czasem oraz danymi nawigacyjnymi. Aplikacja przedstawia punkty jako
@@ -32,8 +35,10 @@ prowadzenie użytkownika na żywo jest zadaniem klienta.
 | Wymaganie | Co uznajemy za poprawne zachowanie |
 |---|---|
 | Wybór czasu | Plan mieści się w budżecie przemieszczania; krótszy wynik jest jawnie oznaczony. Zwiedzanie i postoje są osobnym czasem. |
-| Start od użytkownika | Trasa uwzględnia przejście od początku dopasowanego do sieci do pierwszej atrakcji; przesunięcie GPS do sieci jest ujawnione. |
+| Start od użytkownika | W dozwolonym obszarze trasa uwzględnia dojście do pierwszej atrakcji. Poza nim API wybiera Rynek, ujawnia zmianę startu i nie wlicza dotarcia na Rynek. |
 | Domyślny start | Po wyborze Rynku użytkownik otrzymuje jednoznaczny początek planu. |
+| Brak powtórzeń | Każda atrakcja jest odwiedzana raz w planie; rozpoznane duplikaty danych są pomijane. Powtarzanie ulic jest dopuszczalne. |
+| Język | Komunikaty planera i dostępne tłumaczenia nazw POI odpowiadają wyborowi użytkownika. Bez tłumaczenia zachowana jest nazwa oryginalna. |
 | Preferencje dostępności | Używany jest odpowiedni graf; brak jego konfiguracji nie powoduje cichego zastosowania zwykłej trasy. Wózek implikuje unikanie schodów. |
 | Więcej atrakcji | Planer potrafi uwzględniać dodatkowe POI w ramach budżetu i opublikowanych limitów. Maksimum nie oznacza gwarantowanej liczby. |
 | Roadmapa | Kolejność miejsc i ich identyfikatory są jednoznaczne; każde miejsce jest powiązane z punktem sieci. |
