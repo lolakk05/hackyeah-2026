@@ -36,7 +36,8 @@ Zasady:
 - `question`: tekst długości 1–4000 znaków, zawierający coś więcej niż białe znaki.
 - Wysyłamy JSON przez `JSON.stringify`, kodowany w UTF-8.
 - `place_id`, `messages`, `history`, `model` i inne dodatkowe pola są odrzucane (`422`).
-- Model otrzymuje jedną wiadomość użytkownika. Każdy request jest niezależny; API nie pamięta poprzednich pytań.
+- Serwer dodaje stałe instrukcje lokalnego przewodnika po Krakowie, a pytanie przesyła jako osobną wiadomość użytkownika. Frontend nie wysyła system promptu. Każdy request jest niezależny; API nie pamięta poprzednich pytań.
+- Instrukcje wymagają krótkiej odpowiedzi po polsku, zwykłym tekstem, bez Markdowna. `answer` wyświetlamy bez renderera Markdown i bez interpretowania HTML. JSON jest opakowaniem odpowiedzi HTTP, a nie formatem opowieści modelu.
 - API zwraca całą odpowiedź po zakończeniu generacji. Nie używamy SSE, WebSocketów ani streamingu tokenów.
 - Model i adres Ollamy konfiguruje serwer. Frontend łączy się z portem `8001`, a nie bezpośrednio z portem Ollamy `11434`.
 
@@ -257,7 +258,7 @@ export function GuideChat() {
 }
 ```
 
-`Text` wyświetla odpowiedź jako tekst i zachowuje podziały wierszy. Jeśli zespół chce renderować Markdown, powinien użyć odpowiedniego komponentu z bezpiecznym renderowaniem. Anulowanie przerywa oczekiwanie aplikacji; obecny serwis nie gwarantuje zatrzymania generacji w Ollamie po rozłączeniu klienta.
+`Text` wyświetla odpowiedź jako zwykły tekst i zachowuje podziały wierszy. Nie dodawaj renderera Markdown ani HTML. Serwer usuwa typowe znaczniki Markdown, również gdy model zignoruje instrukcję formatowania. Nie jest to pełny parser Markdown ani filtr bezpieczeństwa HTML, dlatego frontend zawsze traktuje wynik jako tekst. Anulowanie przerywa oczekiwanie aplikacji; obecny serwis nie gwarantuje zatrzymania generacji w Ollamie po rozłączeniu klienta.
 
 ## 5. Obsługa błędów
 

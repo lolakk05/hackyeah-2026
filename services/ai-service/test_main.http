@@ -6,12 +6,8 @@ Content-Type: application/json
 
 {"question":"Wymień 3 ciekawe miejsca do zobaczenia na Wawelu w Krakowie. Odpowiedz krótko."}
 
-GET http://127.0.0.1:8000/
-Accept: application/json
+### Ask about a Krakow landmark
+POST http://127.0.0.1:8001/guide
+Content-Type: application/json
 
-###
-
-GET http://127.0.0.1:8000/hello/User
-Accept: application/json
-
-###
+{"question":"Czym są Sukiennice?"}

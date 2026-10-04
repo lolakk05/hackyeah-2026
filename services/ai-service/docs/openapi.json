@@ -2,13 +2,13 @@
   "openapi": "3.1.0",
   "info": {
     "title": "AI Service",
-    "description": "POST /guide wysyła question do lokalnej Ollamy i zwraca answer.",
+    "description": "POST /guide odpowiada jako lokalny przewodnik po Krakowie. Pole answer zawiera zwykły tekst.",
     "version": "0.1.0"
   },
   "paths": {
     "/guide": {
       "post": {
-        "summary": "Zadaj pytanie lokalnemu modelowi",
+        "summary": "Zadaj pytanie przewodnikowi po Krakowie",
         "operationId": "ask_guide_guide_post",
         "requestBody": {
           "content": {
@@ -52,59 +52,6 @@
           }
         }
       }
-    },
-    "/": {
-      "get": {
-        "summary": "Root",
-        "operationId": "root__get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          }
-        }
-      }
-    },
-    "/hello/{name}": {
-      "get": {
-        "summary": "Say Hello",
-        "operationId": "say_hello_hello__name__get",
-        "parameters": [
-          {
-            "name": "name",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Name"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
     }
   },
   "components": {
@@ -114,7 +61,7 @@
           "answer": {
             "type": "string",
             "title": "Answer",
-            "description": "Treść odpowiedzi modelu."
+            "description": "Odpowiedź przewodnika po Krakowie w zwykłym tekście, bez Markdowna."
           }
         },
         "type": "object",
@@ -145,7 +92,7 @@
             "title": "Question",
             "description": "Treść pytania wysyłana do modelu jako wiadomość użytkownika.",
             "examples": [
-              "Wymień 3 ciekawe miejsca do zobaczenia na Wawelu w Krakowie. Odpowiedz krótko."
+              "Wymień 3 ciekawe miejsca do zobaczenia w Krakowie. Odpowiedz krótko."
             ]
           }
         },

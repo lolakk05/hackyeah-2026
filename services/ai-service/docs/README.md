@@ -45,11 +45,23 @@ Przykładowy kształt odpowiedzi; tekst generuje model:
 
 ```json
 {
-  "answer": "1. Katedra Wawelska. 2. Zamek Królewski. 3. Smocza Jama."
+  "answer": "Na Wawelu warto zobaczyć katedrę, Zamek Królewski i Smoczą Jamę."
 }
 ```
 
-`question` musi być tekstem długości 1–4000 znaków i zawierać coś więcej niż białe znaki. Dodatkowe pola, w tym `place_id`, są odrzucane. Model i adres Ollamy ustawia serwer. Do modelu trafia jedna wiadomość `user`, bez dodatkowego system promptu, historii rozmowy, katalogu POI ani ograniczenia odpowiedzi do zatwierdzonych fragmentów. Każdy request jest niezależnym pytaniem.
+`question` musi być tekstem długości 1–4000 znaków i zawierać coś więcej niż białe znaki. Dodatkowe pola, w tym `place_id`, `system` i `messages`, są odrzucane. Model i adres Ollamy ustawia serwer. Do modelu trafiają dwie wiadomości: stałe instrukcje `system` z serwera i pytanie `user`. Każdy request jest niezależny, bez historii rozmowy ani katalogu POI.
+
+## Zasady przewodnika
+
+Stałe instrukcje są w `GUIDE_SYSTEM_PROMPT` w `main.py`. Model ma odpowiadać po polsku jako lokalny przewodnik po Krakowie, przyjaźnie i krótko, zwykle w 3–6 zdaniach. Przy pytaniu o obiekt powinien uwzględnić pochodzenie nazwy, historię, ciekawostki i współczesne zastosowanie, jeśli zna te informacje. Ma odróżniać legendy od faktów i przyznawać się do niewiedzy.
+
+Instrukcje wymagają wyłącznie polskich słów, poprawnej polskiej gramatyki i polskich nazw miejsc, bez obcojęzycznych wtrąceń, również gdy użytkownik pyta w innym języku. Przed odpowiedzią model ma sprawdzić język i zastąpić obce wtrącenia polskimi odpowiednikami.
+
+Instrukcje wymagają zwykłego tekstu w zdaniach lub krótkich akapitach: bez Markdowna, nagłówków, list, pogrubień, tabel, kodu, HTML i JSON w treści odpowiedzi. Transport HTTP nadal używa `application/json`, z tekstem w polu `answer`. Frontend nie musi dodawać tych zasad do pytania.
+
+Pytanie użytkownika pozostaje osobną wiadomością `user`, również gdy zawiera żądanie zmiany roli lub udaje instrukcję systemową. Prompt zabrania zmiany roli i formatu oraz ujawniania instrukcji. To instrukcje dla modelu, nie gwarancja odporności na prompt injection ani bezbłędnych faktów. Model nie ma narzędzi ani dostępu do bieżących danych.
+
+Ponieważ model może zignorować instrukcję formatowania, serwer dodatkowo usuwa typowe znaczniki Markdown: nagłówki, numerację i punktory list, pogrubienia, kursywę, backticki oraz znaczniki cytatów i bloków kodu. Linki zamienia na nazwę z adresem w nawiasie. Zachowuje treść i podziały wierszy. To konwersja typowych formatów, a nie pełny parser Markdown ani filtr bezpieczeństwa HTML. Frontend nadal wyświetla `answer` jako tekst. Gdy po konwersji odpowiedź jest pusta, API zwraca `502`.
 
 W Postmanie wybierz **Body → raw → JSON**, a w Swaggerze **Try it out → Execute**. Wklej sam JSON, bez znaczników Markdown.
 
@@ -82,7 +94,7 @@ console.log(result.answer);
 
 Główny backend przekazuje ten JSON do `http://127.0.0.1:8001/guide`, jeśli oba procesy są na tej samej maszynie. Trasa `/api/guide` nie jest dodana przez ten serwis. API nie konfiguruje CORS; bezpośrednie wywołania z przeglądarki o innym originie wymagałyby konfiguracji CORS. `127.0.0.1` na telefonie lub w kontenerze wskazuje urządzenie lub kontener, na którym wykonano request.
 
-Treść odpowiedzi wyświetlaj jako tekst albo przez renderer Markdown z sanitizacją. Model nie dostaje narzędzi i endpoint nie wykonuje wygenerowanego kodu. Odpowiedzi są swobodnie generowane: wcześniejsza ochrona polegająca na niewysyłaniu pytania do modelu i wyborze wyłącznie zatwierdzonych faktów nie obowiązuje w tym kontrakcie.
+Treść `answer` wyświetlaj jako zwykły tekst: w React Native przez `Text`, a w przeglądarce jako tekst komponentu lub przez `textContent`. Endpoint nie wykonuje wygenerowanego kodu. Odpowiedzi są swobodnie generowane i nie są wybierane z katalogu zatwierdzonych faktów.
 
 ## Konfiguracja
 
@@ -117,4 +129,4 @@ Błędy mają standardowy format FastAPI z polem `detail`. Błędy połączenia 
 uv run pytest -q
 ```
 
-Testy używają rzeczywistego SDK Ollamy z symulowanym transportem HTTP. Sprawdzają przekazanie pytania, kontrakt odpowiedzi, walidację i błędy transportu. Do testu z prawdziwym modelem użyj requestu z `test_main.http` lub uruchom `uv run python scripts/smoke_ollama.py` (skrypt wywołuje endpoint w procesie, komunikując się z lokalnym serwerem Ollama).
+Testy używają rzeczywistego SDK Ollamy z symulowanym transportem HTTP. Sprawdzają oddzielenie instrukcji systemowych od pytania, kontrakt odpowiedzi, walidację i błędy transportu. Nie dowodzą odporności samego modelu na wszystkie próby zmiany zasad. Do testu z prawdziwym modelem użyj requestu z `test_main.http` lub uruchom `uv run python scripts/smoke_ollama.py` (skrypt wywołuje endpoint w procesie, komunikując się z lokalnym serwerem Ollama).
