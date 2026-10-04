@@ -3,7 +3,7 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "@better-auth/prisma-adapter";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from '@prisma/client';
-import { admin } from "better-auth/plugins";
+import { admin, bearer } from "better-auth/plugins";
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL,
@@ -30,6 +30,7 @@ export const auth = betterAuth({
     ],
 
   plugins: [
+    bearer(),
     admin()
   ]
 });

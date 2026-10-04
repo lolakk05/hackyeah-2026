@@ -57,4 +57,10 @@ export class UsersController {
   remove(@Param('id') id: string) {
     return this.usersService.remove(+id);
   }
-}
+
+  @Post('login-admin')
+  async loginAdmin(@Body() body: { email: string; password: string }) {
+    const { email, password } = body;
+    return await this.usersService.loginAdmin(email, password);
+  }
+} 

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
   import { PrismaService } from '../prisma/prisma.service';
@@ -35,5 +35,12 @@ export class UsersService {
 
   remove(id: number) {
     return `This action removes a #${id} user`;
+  }
+
+  async loginAdmin(email: string, password: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+    
   }
 }
