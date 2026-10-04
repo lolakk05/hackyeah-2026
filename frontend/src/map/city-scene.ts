@@ -69,6 +69,8 @@ export interface CityScene {
   setUser: (p: P | null) => void;
   /** Reported problems (warning signs on poles). */
   setIssues: (issues: { id: string; position: P; severity: 'info' | 'hard' | 'blocked' }[]) => void;
+  /** Make one reported problem bigger (the one whose details are open), or none. */
+  highlightIssue: (id: string | null) => void;
   setStops: (stops: { id: string; position: P; height: number; color: string; state: 'done' | 'next' | 'later' }[]) => void;
   /** Animate markers; call every frame. */
   tick: (timeSeconds: number) => void;
@@ -255,6 +257,9 @@ export function createCityScene(pal: CityPalette): CityScene {
   }
   const ISSUE_COLORS = { blocked: '#FF4D4D', hard: '#FFA126', info: '#3FD0FF' } as const;
   let issuePositions: P[] = [];
+  let issueIds: string[] = [];
+  let highlighted = -1;
+  const big = new THREE.Vector3(1.7, 1.7, 1.7);
   const tmpMatrix = new THREE.Matrix4();
   const tmpQuat = new THREE.Quaternion();
   const tmpPos = new THREE.Vector3();
@@ -265,6 +270,7 @@ export function createCityScene(pal: CityPalette): CityScene {
   const setIssues: CityScene['setIssues'] = (issues) => {
     const list = issues.slice(0, MAX_ISSUES);
     issuePositions = list.map((i) => i.position);
+    issueIds = list.map((i) => i.id);
     list.forEach((issue, i) => {
       tmpMatrix.makeTranslation(issue.position.x, 0, issue.position.z);
       issuePoles.setMatrixAt(i, tmpMatrix);
@@ -278,6 +284,21 @@ export function createCityScene(pal: CityPalette): CityScene {
       m.instanceMatrix.needsUpdate = true;
       if (m.instanceColor) m.instanceColor.needsUpdate = true;
     }
+    highlight(highlightedId);
+  };
+
+  let highlightedId: string | null = null;
+  const highlight = (id: string | null) => {
+    highlightedId = id;
+    highlighted = id ? issueIds.indexOf(id) : -1;
+    // bigger ground ring under the chosen one
+    issuePositions.forEach((p, i) => {
+      tmpPos.set(p.x, 0, p.z);
+      tmpQuat.identity();
+      tmpMatrix.compose(tmpPos, tmpQuat, i === highlighted ? big : unit);
+      issueSpots.setMatrixAt(i, tmpMatrix);
+    });
+    issueSpots.instanceMatrix.needsUpdate = true;
     turnSigns(0);
   };
 
@@ -285,8 +306,9 @@ export function createCityScene(pal: CityPalette): CityScene {
   const turnSigns = (t: number) => {
     issuePositions.forEach((p, i) => {
       tmpQuat.setFromAxisAngle(yAxis, t * 0.8 + i * 0.7);
-      tmpPos.set(p.x, 38 + Math.sin(t * 1.6 + i) * 1.5, p.z);
-      tmpMatrix.compose(tmpPos, tmpQuat, unit);
+      const chosen = i === highlighted;
+      tmpPos.set(p.x, (chosen ? 44 : 38) + Math.sin(t * (chosen ? 3.2 : 1.6) + i) * (chosen ? 3 : 1.5), p.z);
+      tmpMatrix.compose(tmpPos, tmpQuat, chosen ? big : unit);
       issueSigns.setMatrixAt(i, tmpMatrix);
     });
     if (issuePositions.length) {
@@ -343,7 +365,19 @@ export function createCityScene(pal: CityPalette): CityScene {
     fullRouteGroup.children.forEach((c) => (c as THREE.Mesh).geometry?.dispose());
   };
 
-  return { scene, landmarkObjects, setCity, setRoute, setFullRoute, setUser, setIssues, setStops, tick, dispose };
+  return {
+    scene,
+    landmarkObjects,
+    setCity,
+    setRoute,
+    setFullRoute,
+    setUser,
+    setIssues,
+    highlightIssue: highlight,
+    setStops,
+    tick,
+    dispose,
+  };
 }
 
 // ─── Landmarks ──────────────────────────────────────────────

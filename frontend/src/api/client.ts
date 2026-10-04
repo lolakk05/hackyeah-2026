@@ -16,7 +16,8 @@ import type { Lang } from '@/i18n/strings';
 import {
   API_BASE_URL,
   ENDPOINTS,
-  MAX_INTERMEDIATE_STOPS,
+  FALLBACK_CAPABILITIES,
+  MINUTES_PER_STOP,
   MOCK_DELAY_MS,
   PLAN_TIMEOUT_MS,
   TOLERANCE_PERCENT,
@@ -34,6 +35,8 @@ import {
   type RfPlanResponse,
   type RfPoi,
 } from './route-finder';
+import { AI_GUIDE_URL, askGuide, buildQuestion } from './ai-guide';
+import { diversifyModels } from './model-choice';
 import { planTripLocally, walkMinutes } from './trip-planner';
 import type {
   AccessibilityNeeds,
@@ -107,6 +110,25 @@ export async function fetchLandmarks(): Promise<Landmark[]> {
   return [];
 }
 
+/**
+ * Every place the app knows, for the "Places" screen.
+ * Real API: GET ENDPOINTS.landmarks (a list of POIs, like the route planner's).
+ * Until that endpoint is set, the sample landmarks are shown.
+ */
+export async function fetchAllLandmarks(): Promise<Landmark[]> {
+  if (!USE_MOCK_API && ENDPOINTS.landmarks) {
+    try {
+      const res = await request<RfPoi[] | { items: RfPoi[] }>(ENDPOINTS.landmarks);
+      const pois = Array.isArray(res) ? res : (res?.items ?? []);
+      if (pois.length) return diversifyModels(pois.map((p) => poiToLandmark(p, apiLang)));
+    } catch (e) {
+      console.warn('[places] could not load places from the API, showing the sample ones', e);
+    }
+  }
+  await wait(MOCK_DELAY_MS);
+  return mockLandmarks();
+}
+
 /** One place with all details. Real API: GET /pois/{id}. */
 export async function fetchLandmark(id: string): Promise<Landmark> {
   if (USE_MOCK_API) {
@@ -134,9 +156,12 @@ export async function planTrip(
 
   // Only fields from the contract (anything else → 422).
   // Wheelchair / no-stairs are not supported by the planner yet, so they are not sent.
+  const caps = await getCapabilities();
+  const minutes = Math.min(caps.maxMinutes, Math.max(caps.minMinutes, prefs.durationMinutes));
   const body: RfPlanRequest = {
-    duration_minutes: Math.min(360, Math.max(5, prefs.durationMinutes)),
-    max_intermediate_stops: MAX_INTERMEDIATE_STOPS,
+    duration_minutes: minutes,
+    // more time → more places: ~1 per 30 min, at least 3 in total (start + 1 + end)
+    max_intermediate_stops: Math.min(caps.maxIntermediateStops, Math.max(1, Math.round(minutes / MINUTES_PER_STOP))),
     tolerance_percent: TOLERANCE_PERCENT,
   };
   if (prefs.startLocation) {
@@ -150,12 +175,38 @@ export async function planTrip(
   return planResponseToTrip(res, apiLang);
 }
 
+let capabilities: typeof FALLBACK_CAPABILITIES | null = null;
+
+/** The planner's limits (asked once). Older backends without /capabilities get safe defaults. */
+async function getCapabilities() {
+  if (capabilities) return capabilities;
+  try {
+    const c = await request<{ max_intermediate_stops?: number; duration_minutes?: { min?: number; max?: number } }>(
+      ENDPOINTS.capabilities,
+      undefined,
+      6_000,
+    );
+    capabilities = {
+      maxIntermediateStops: c.max_intermediate_stops ?? FALLBACK_CAPABILITIES.maxIntermediateStops,
+      minMinutes: c.duration_minutes?.min ?? FALLBACK_CAPABILITIES.minMinutes,
+      maxMinutes: c.duration_minutes?.max ?? FALLBACK_CAPABILITIES.maxMinutes,
+    };
+  } catch (e) {
+    if (e instanceof RouteFinderError && e.status === 404) capabilities = FALLBACK_CAPABILITIES; // old backend
+    else return FALLBACK_CAPABILITIES; // network trouble: try again next time
+  }
+  return capabilities;
+}
+
 /** Ask the AI guide a question about a place (falls back to sample answers). */
 export async function askAboutLandmark(
   landmark: Landmark,
   question: string,
   history: ChatMessage[],
+  signal?: AbortSignal,
 ): Promise<string> {
+  // The AI service (EXPO_PUBLIC_AI_GUIDE_URL): real answers; errors are shown to the user.
+  if (AI_GUIDE_URL) return askGuide(buildQuestion(landmark.name, question, history), signal);
   if (!USE_MOCK_API && ENDPOINTS.ask) {
     try {
       const res = await request<{ answer: string }>(ENDPOINTS.ask(landmark.id), {

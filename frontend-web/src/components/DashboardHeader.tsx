@@ -1,13 +1,9 @@
 import { Icon } from './Icon'
 
 export function DashboardHeader({
-  search,
-  onSearch,
   onRefresh,
   loading,
 }: {
-  search: string
-  onSearch: (value: string) => void
   onRefresh: () => void
   loading: boolean
 }) {
@@ -17,15 +13,6 @@ export function DashboardHeader({
         <span>Panel</span><span className="crumb-divider">/</span><strong>Kraków</strong>
       </div>
       <div className="topbar-actions">
-        <label className="search-field">
-          <Icon name="search" size={17} />
-          <input
-            aria-label="Szukaj miejsca"
-            onChange={(event) => onSearch(event.target.value)}
-            placeholder="Szukaj miejsca..."
-            value={search}
-          />
-        </label>
         <button
           aria-label="Odśwież dane"
           className={`icon-button ${loading ? 'is-loading' : ''}`}

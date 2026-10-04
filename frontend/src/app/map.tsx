@@ -62,12 +62,26 @@ export default function MapScreen() {
   );
   const selected = reports.issues.find((i) => i.id === selectedIssue) ?? null;
 
+  // ── Presentation mode: a 40 s camera show over the city, UI stays on screen ──
+  const [presenting, setPresenting] = useState(false);
+  const togglePresentation = () => {
+    if (presenting) {
+      mapRef.current?.stopPresentation();
+      return;
+    }
+    setSelectedIssue(null);
+    mapRef.current?.focusIssue(null);
+    setPresenting(true);
+    mapRef.current?.playPresentation(() => setPresenting(false));
+  };
+
   const openReport = () => {
     if (!me) return;
     const gps = location.source === 'gps';
     // The stop you are at (within 80 m), if any.
     const nearStop = stops.find((st) => distanceMeters(st.coordinates, me) < 80);
     setSelectedIssue(null);
+    mapRef.current?.focusIssue(null);
     setReportPlace({
       location: me,
       locationSource: gps ? 'gps' : 'map',
@@ -188,7 +202,11 @@ export default function MapScreen() {
         fullRoute={j.plan?.route?.path ?? null}
         issues={mapIssues}
         onPressLandmark={openStop}
-        onPressIssue={setSelectedIssue}
+        onPressIssue={(id) => {
+          tapFeedback();
+          setSelectedIssue(id);
+          mapRef.current?.focusIssue(id);
+        }}
       />
 
       {/* Top: navigation card */}
@@ -235,13 +253,24 @@ export default function MapScreen() {
         />
         <RoundButton label="🗺️" a11y={s.map.showRoute} onPress={() => mapRef.current?.overview()} />
         <RoundButton label="⚠️" a11y={s.issues.report} onPress={openReport} />
+        <RoundButton
+          label={presenting ? '⏹' : '🎬'}
+          a11y={presenting ? s.map.stopPresentation : s.map.presentation}
+          onPress={togglePresentation}
+        />
       </View>
 
       {/* Bottom: main action */}
       <SafeAreaView edges={['bottom']} style={styles.bottom}>
         {selected ? (
           <View style={styles.issue}>
-            <IssueCard report={selected} onClose={() => setSelectedIssue(null)} />
+            <IssueCard
+              report={selected}
+              onClose={() => {
+                setSelectedIssue(null);
+                mapRef.current?.focusIssue(null);
+              }}
+            />
           </View>
         ) : null}
         {nextStop ? (

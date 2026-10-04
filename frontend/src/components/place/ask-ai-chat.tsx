@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 
 import { askAboutLandmark } from '@/api/client';
@@ -23,10 +23,21 @@ export function AskAiChat({ landmark }: { landmark: Landmark }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [thinking, setThinking] = useState(false);
+  /** The request in flight (also blocks a double send); cancelled when the page closes. */
+  const active = useRef<AbortController | null>(null);
+  useEffect(
+    () => () => {
+      active.current?.abort();
+      active.current = null;
+    },
+    [],
+  );
 
   const send = async (text: string) => {
     const question = text.trim();
-    if (!question || thinking) return;
+    if (!question || thinking || active.current) return;
+    const controller = new AbortController();
+    active.current = controller;
     tapFeedback();
     const userMsg: ChatMessage = { id: newId(), role: 'user', text: question };
     const history = [...messages, userMsg];
@@ -34,12 +45,17 @@ export function AskAiChat({ landmark }: { landmark: Landmark }) {
     setInput('');
     setThinking(true);
     try {
-      const answer = await askAboutLandmark(landmark, question, messages);
-      setMessages([...history, { id: newId(), role: 'assistant', text: answer }]);
-    } catch {
-      setMessages([...history, { id: newId(), role: 'assistant', text: s.guide.error }]);
+      const answer = await askAboutLandmark(landmark, question, messages, controller.signal);
+      if (!controller.signal.aborted) setMessages([...history, { id: newId(), role: 'assistant', text: answer }]);
+    } catch (e) {
+      if (controller.signal.aborted) return;
+      const msg = e instanceof Error && e.message ? `${s.guide.error}\n${e.message}` : s.guide.error;
+      setMessages([...history, { id: newId(), role: 'assistant', text: msg }]);
     } finally {
-      setThinking(false);
+      if (active.current === controller) {
+        active.current = null;
+        setThinking(false);
+      }
     }
   };
 

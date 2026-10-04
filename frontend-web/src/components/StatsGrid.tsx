@@ -1,50 +1,48 @@
 import type { AdminPlace } from '../data/types'
 import { Icon } from './Icon'
 
-export function StatsGrid({ places }: { places: AdminPlace[] }) {
-  const confirmedAccessible = places.filter(
-    (place) => place.accessibility.wheelchair === 'full',
-  ).length
-  const partiallyAccessible = places.filter(
-    (place) => place.accessibility.wheelchair === 'partial',
-  ).length
-  const inaccessible = places.filter(
-    (place) => place.accessibility.wheelchair === 'none',
-  ).length
-
+export function StatsGrid({
+  places,
+  loading,
+}: {
+  places: AdminPlace[]
+  loading: boolean
+}) {
+  const accessiblePlaces = places.filter((place) => place.wheelchairAccessible).length
+  const placesWithStairs = places.filter((place) => place.hasStairs).length
   const stats = [
     {
-      label: 'Miejsca na mapie',
-      value: places.length,
-      note: 'w bazie Krakowa',
+      label: 'Miejsca w panelu',
+      value: loading ? '…' : places.length.toLocaleString('pl-PL'),
+      note: 'lokalizacje w Krakowie',
       icon: 'map' as const,
       color: 'mint',
     },
     {
-      label: 'Dostępne bez barier',
-      value: confirmedAccessible,
-      note: 'pełna dostępność',
+      label: 'Dostępne dla wózków',
+      value: loading ? '…' : accessiblePlaces.toLocaleString('pl-PL'),
+      note: 'według danych miejsca',
       icon: 'wheelchair' as const,
-      color: 'green',
-    },
-    {
-      label: 'Częściowo dostępne',
-      value: partiallyAccessible,
-      note: 'ograniczona dostępność',
-      icon: 'chart' as const,
       color: 'blue',
     },
     {
-      label: 'Niedostępne',
-      value: inaccessible,
-      note: 'brak dostępu dla wózków',
-      icon: 'close' as const,
+      label: 'Z toaletą dostępną',
+      value: loading ? '…' : places.filter((place) => place.hasAccessibleToilet).length.toLocaleString('pl-PL'),
+      note: 'według danych miejsca',
+      icon: 'pin' as const,
+      color: 'green',
+    },
+    {
+      label: 'Miejsca ze schodami',
+      value: loading ? '…' : placesWithStairs.toLocaleString('pl-PL'),
+      note: 'według danych miejsca',
+      icon: 'stairs' as const,
       color: 'amber',
     },
   ]
 
   return (
-    <section className="stats-grid" aria-label="Podsumowanie">
+    <section className="stats-grid" aria-label="Podsumowanie miejsc">
       {stats.map((stat) => (
         <article className="stat-card panel" key={stat.label}>
           <div className={`stat-icon ${stat.color}`}><Icon name={stat.icon} size={19} /></div>
