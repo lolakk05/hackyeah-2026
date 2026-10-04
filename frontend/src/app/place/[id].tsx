@@ -21,6 +21,7 @@ import { Brand, formatDuration } from '@/constants/duo-theme';
 import { formatCoins, levelInfo } from '@/game/progression';
 import { useLandmark } from '@/hooks/use-landmark';
 import { useI18n } from '@/i18n/language-context';
+import { useAccount } from '@/state/account-context';
 import { useJourney, type StopReward } from '@/state/journey-context';
 import { themedStyles, useDuo } from '@/state/theme-context';
 
@@ -32,6 +33,7 @@ export default function PlaceScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { landmark, loading, error } = useLandmark(id);
   const j = useJourney();
+  const account = useAccount();
 
   const [completing, setCompleting] = useState(false);
   const [report, setReport] = useState<ReportCategory | null>(null);
@@ -131,7 +133,7 @@ export default function PlaceScreen() {
             </DuoText>
             <View style={styles.chips}>
               <Chip text={fmt(s.place.visit, { time: formatDuration(landmark.visitMinutes) })} />
-              {status === 'completed' ? <Chip text={s.place.visited} /> : null}
+              {status === 'completed' || account.stats.places.includes(landmark.id) ? <Chip text={s.place.visited} /> : null}
             </View>
           </View>
 
