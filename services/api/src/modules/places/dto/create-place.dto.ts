@@ -39,8 +39,9 @@ export class CreatePlaceDto {
   @IsOptional()
   hasAccessibleToilet?: boolean;
 
-  @IsString()
-  price!: string;
+
+  @IsNumber()
+  price!: number;
 
   @IsString()
   address!: string;

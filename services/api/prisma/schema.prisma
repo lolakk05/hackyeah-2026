@@ -60,7 +60,7 @@ model Place {
   wheelchairAccessible Boolean @default(false)
   hasAccessibleToilet  Boolean @default(false)
 
-  price     String
+  price     Float
   address   String
   latitude  Float
   longitude Float
